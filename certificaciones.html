@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Certificaciones | Brandon Zevallos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #050a0e;
+      --bg2: #080f14;
+      --green: #00ff88;
+      --cyan: #00e5ff;
+      --red: #ff2d55;
+      --dim: #1a2a2e;
+      --text: #c8d8e0;
+      --text-dim: #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-display: 'Orbitron', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* CURSOR */
+    .cursor {
+      position: fixed;
+      width: 10px; height: 10px;
+      background: var(--green);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s;
+      box-shadow: 0 0 12px var(--green);
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 36px; height: 36px;
+      border: 1px solid var(--green);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: all 0.12s ease;
+      opacity: 0.5;
+    }
+
+    /* SCANLINES */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,255,136,0.012) 2px,
+        rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.85);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      color: var(--green);
+      letter-spacing: 4px;
+      text-decoration: none;
+    }
+
+    .nav-back {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 2px;
+      transition: color 0.3s;
+    }
+    .nav-back:hover { color: var(--green); }
+    .nav-back::before { content: '← '; color: var(--green); }
+
+    /* PAGE HEADER */
+    .page-header {
+      padding: 8rem 4rem 3rem;
+      border-bottom: 1px solid var(--dim);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(60px); }
+    }
+
+    .page-header-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .page-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--green);
+      letter-spacing: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -1px;
+      margin-bottom: 1rem;
+    }
+    .page-title span { color: var(--green); }
+
+    .page-subtitle {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+    }
+
+    /* MAIN CONTENT */
+    main {
+      padding: 4rem;
+    }
+
+    /* CATEGORY TITLE */
+    .cat-header {
+      margin: 3rem 0 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .cat-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--cyan);
+      letter-spacing: 4px;
+    }
+    .cat-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, rgba(0,229,255,0.2), transparent);
+    }
+
+    /* GRID */
+    .certs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+
+    /* CERT CARD BASE */
+    .cert-card {
+      border: 1px solid var(--dim);
+      padding: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: border-color 0.3s, transform 0.3s;
+      background: rgba(8,15,20,0.5);
+    }
+    .cert-card:hover {
+      border-color: rgba(0,255,136,0.3);
+      transform: translateY(-2px);
+    }
+
+    .cert-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .cert-info h4 {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      margin-bottom: 0.3rem;
+    }
+    .cert-info p {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+    .cert-status {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      margin-top: 0.5rem;
+      letter-spacing: 2px;
+    }
+    .status-active  { color: var(--green); }
+    .status-progress { color: #ffbd2e; }
+    .status-planned { color: var(--text-dim); }
+
+    /* COURSERA CARD */
+    .cert-coursera {
+      flex-direction: column;
+      gap: 0.8rem;
+      border-color: rgba(0,229,255,0.12);
+      background: rgba(0,229,255,0.02);
+    }
+    .cert-coursera:hover {
+      border-color: rgba(0,229,255,0.4);
+      transform: translateY(-2px);
+    }
+
+    .cert-badge {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .badge-ibm {
+      background: #1f70c1;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.6rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .badge-coursera {
+      background: rgba(0,229,255,0.1);
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.6rem;
+      border: 1px solid rgba(0,229,255,0.3);
+      letter-spacing: 1px;
+    }
+    .cert-date {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+    .cert-verify {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+      cursor: none;
+    }
+    .cert-verify:hover { border-bottom-color: var(--cyan); }
+
+    /* SPECIALIZATION HIGHLIGHT */
+    .cert-specialization {
+      grid-column: 1 / -1;
+      border-color: rgba(0,229,255,0.25);
+      background: rgba(0,229,255,0.04);
+      position: relative;
+      overflow: hidden;
+    }
+    .cert-specialization::after {
+      content: 'SPECIALIZATION';
+      position: absolute;
+      top: 1rem; right: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.55rem;
+      color: var(--cyan);
+      letter-spacing: 3px;
+      opacity: 0.5;
+    }
+    .cert-specialization:hover { border-color: rgba(0,229,255,0.5); }
+
+    /* REVEAL ANIMATION */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* BACK BUTTON */
+    .back-section {
+      padding: 2rem 4rem 4rem;
+      text-align: center;
+    }
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      padding: 0.9rem 2rem;
+      border: 1px solid var(--green);
+      color: var(--green);
+      text-decoration: none;
+      background: transparent;
+      cursor: none;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--green);
+      transform: translateX(-100%);
+      transition: transform 0.3s;
+      z-index: -1;
+    }
+    .btn:hover { color: var(--bg); }
+    .btn:hover::before { transform: translateX(0); }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      nav, .page-header, main, .back-section { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .certs-grid { grid-template-columns: 1fr; }
+      .cert-specialization { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="index.html" class="nav-logo">BZP</a>
+    <a href="index.html" class="nav-back">VOLVER AL INICIO</a>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-grid"></div>
+    <div class="page-header-content">
+      <p class="page-label">// CERTIFICACIONES & FORMACIÓN</p>
+      <h1 class="page-title">Certs &amp; <span>Training</span></h1>
+      <p class="page-subtitle">Formación académica, certificaciones obtenidas y objetivos próximos</p>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- FORMACIÓN PRINCIPAL -->
+    <div class="cat-header">
+      <span class="cat-label">// FORMACIÓN ACADÉMICA</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card reveal">
+        <div class="cert-icon">🎓</div>
+        <div class="cert-info">
+          <h4>CIBERSEGURIDAD</h4>
+          <p>Estudios universitarios en curso</p>
+          <p>Perú</p>
+          <p class="cert-status status-active">● EN CURSO</p>
+        </div>
+      </div>
+
+      <div class="cert-card reveal">
+        <div class="cert-icon">⚖️</div>
+        <div class="cert-info">
+          <h4>ABOGADO</h4>
+          <p>Derecho — Universidad</p>
+          <p>Perú</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- IBM COURSERA -->
+    <div class="cat-header" style="margin-top:3.5rem;">
+      <span class="cat-label">// IBM · COURSERA</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="certs-grid">
+
+      <!-- Especialización (ocupa todo el ancho) -->
+      <div class="cert-card cert-coursera cert-specialization reveal">
+        <div class="cert-badge">
+          <span class="badge-ibm">IBM</span>
+          <span class="badge-coursera">Coursera</span>
+        </div>
+        <div class="cert-info">
+          <h4>Generative AI Fundamentals</h4>
+          <p>Specialization — 5 cursos completados</p>
+          <p class="cert-date">📅 Mayo 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="https://coursera.org/verify/specialization/QCX2J1BC0POE" target="_blank" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-coursera reveal">
+        <div class="cert-badge">
+          <span class="badge-ibm">IBM</span>
+          <span class="badge-coursera">Coursera</span>
+        </div>
+        <div class="cert-info">
+          <h4>Generative AI: Introduction and Applications</h4>
+          <p>IBM Skills Network</p>
+          <p class="cert-date">📅 Mayo 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="https://coursera.org/verify/0DW3R0N0NHGF" target="_blank" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-coursera reveal">
+        <div class="cert-badge">
+          <span class="badge-ibm">IBM</span>
+          <span class="badge-coursera">Coursera</span>
+        </div>
+        <div class="cert-info">
+          <h4>Generative AI: Prompt Engineering Basics</h4>
+          <p>IBM Skills Network</p>
+          <p class="cert-date">📅 Mayo 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="https://coursera.org/verify/RDH9WE48H1U0" target="_blank" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-coursera reveal">
+        <div class="cert-badge">
+          <span class="badge-ibm">IBM</span>
+          <span class="badge-coursera">Coursera</span>
+        </div>
+        <div class="cert-info">
+          <h4>Generative AI: Foundation Models and Platforms</h4>
+          <p>IBM Skills Network</p>
+          <p class="cert-date">📅 Mayo 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="https://coursera.org/verify/L0T057Y7J4TP" target="_blank" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-coursera reveal">
+        <div class="cert-badge">
+          <span class="badge-ibm">IBM</span>
+          <span class="badge-coursera">Coursera</span>
+        </div>
+        <div class="cert-info">
+          <h4>Generative AI: Impact, Considerations, and Ethical Issues</h4>
+          <p>IBM Skills Network</p>
+          <p class="cert-date">📅 Mayo 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="https://coursera.org/verify/XDSQE67OOKSX" target="_blank" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-coursera reveal">
+        <div class="cert-badge">
+          <span class="badge-ibm">IBM</span>
+          <span class="badge-coursera">Coursera</span>
+        </div>
+        <div class="cert-info">
+          <h4>Generative AI: Business Transformation and Career Growth</h4>
+          <p>IBM Skills Network</p>
+          <p class="cert-date">📅 Mayo 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="https://coursera.org/verify/3A4SUEFXEW25" target="_blank" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- OBJETIVOS -->
+    <div class="cat-header" style="margin-top:3.5rem;">
+      <span class="cat-label">// PRÓXIMOS OBJETIVOS</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card reveal">
+        <div class="cert-icon">🔐</div>
+        <div class="cert-info">
+          <h4>eJPT</h4>
+          <p>eLearnSecurity Junior Penetration Tester</p>
+          <p class="cert-status status-planned">○ OBJETIVO</p>
+        </div>
+      </div>
+
+      <div class="cert-card reveal">
+        <div class="cert-icon">🛡️</div>
+        <div class="cert-info">
+          <h4>CompTIA Security+</h4>
+          <p>CompTIA</p>
+          <p class="cert-status status-planned">○ OBJETIVO</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BACK -->
+  <div class="back-section">
+    <a href="index.html" class="btn">← VOLVER AL INICIO</a>
+  </div>
+
+  <script>
+    // Cursor
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+      ring.style.left = e.clientX + 'px';
+      ring.style.top = e.clientY + 'px';
+    });
+
+    // Reveal on scroll
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>
