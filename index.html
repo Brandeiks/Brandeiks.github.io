@@ -39,9 +39,9 @@
       background: var(--green);
       border-radius: 50%;
       pointer-events: none;
-      z-index: 99999;
-      left: -100px; top: -100px;
+      z-index: 9999;
       transform: translate(-50%, -50%);
+      transition: transform 0.1s;
       box-shadow: 0 0 12px var(--green);
     }
     .cursor-ring {
@@ -50,9 +50,9 @@
       border: 1px solid var(--green);
       border-radius: 50%;
       pointer-events: none;
-      z-index: 99998;
-      left: -100px; top: -100px;
+      z-index: 9998;
       transform: translate(-50%, -50%);
+      transition: all 0.12s ease;
       opacity: 0.5;
     }
 
@@ -536,38 +536,21 @@
     .cert-coursera:hover { border-color: rgba(0,229,255,0.4); }
     .cert-badge { display: flex; gap: 0.5rem; }
     .badge-ibm {
-      background: #1f70c1;
-      color: #fff;
-      font-family: var(--font-mono);
-      font-size: 0.62rem;
-      padding: 0.2rem 0.5rem;
-      font-weight: bold;
-      letter-spacing: 1px;
+      background: #1f70c1; color: #fff;
+      font-family: var(--font-mono); font-size: 0.62rem;
+      padding: 0.2rem 0.5rem; font-weight: bold; letter-spacing: 1px;
     }
     .badge-coursera {
-      background: rgba(0,229,255,0.12);
-      color: var(--cyan);
-      font-family: var(--font-mono);
-      font-size: 0.62rem;
-      padding: 0.2rem 0.5rem;
-      border: 1px solid rgba(0,229,255,0.3);
-      letter-spacing: 1px;
+      background: rgba(0,229,255,0.12); color: var(--cyan);
+      font-family: var(--font-mono); font-size: 0.62rem;
+      padding: 0.2rem 0.5rem; border: 1px solid rgba(0,229,255,0.3); letter-spacing: 1px;
     }
-    .cert-date {
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      color: var(--text-dim);
-      margin-top: 0.2rem;
-    }
+    .cert-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 0.2rem; }
     .cert-verify {
-      display: inline-block;
-      margin-top: 0.6rem;
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      color: var(--cyan);
-      text-decoration: none;
-      border-bottom: 1px solid transparent;
-      transition: border-color 0.2s;
+      display: inline-block; margin-top: 0.6rem;
+      font-family: var(--font-mono); font-size: 0.65rem;
+      color: var(--cyan); text-decoration: none;
+      border-bottom: 1px solid transparent; transition: border-color 0.2s;
     }
     .cert-verify:hover { border-bottom-color: var(--cyan); }
 
@@ -868,7 +851,7 @@
         <div class="cert-icon">🎓</div>
         <div class="cert-info">
           <h4>CIBERSEGURIDAD</h4>
-          <p>Estudios universitarios en curso — UPC</p>
+          <p>Estudios universitarios en curso</p>
           <p class="cert-status status-active">● EN CURSO</p>
         </div>
       </div>
@@ -877,7 +860,7 @@
         <div class="cert-icon">⚖️</div>
         <div class="cert-info">
           <h4>ABOGADO</h4>
-          <p>Colegio de Abogados de Lima</p>
+          <p>Derecho — Perú</p>
           <p class="cert-status status-active">● COMPLETADO</p>
         </div>
       </div>
@@ -925,7 +908,7 @@
       </p>
 
       <div class="contact-links reveal">
-        <a href="/cdn-cgi/l/email-protection#c4a6bea1b2a5a8a8abb7b4a5b7b0b6a5aaa584a3a9a5ada8eaa7aba9" class="contact-link">
+        <a href="/cdn-cgi/l/email-protection#0d6f77687b6c6161627e7d6c7e797f6c636c4d6a606c6461236e6260" class="contact-link">
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
           EMAIL
         </a>
@@ -933,13 +916,13 @@
           <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
           GITHUB
         </a>
-        <a href="https://www.linkedin.com/in/brandon-zevallos-pastrana-051155168/" target="_blank" class="contact-link">
+        <a href="https://www.linkedin.com/in/brandeiks" target="_blank" class="contact-link">
           <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
           LINKEDIN
         </a>
       </div>
 
-      <a href="/cdn-cgi/l/email-protection#95f7eff0e3f4f9f9fae6e5f4e6e1e7f4fbf4d5f2f8f4fcf9bbf6faf8" class="btn reveal">SEND MESSAGE</a>
+      <a href="/cdn-cgi/l/email-protection#f0928a9586919c9c9f838091838482919e91b0979d91999cde939f9d" class="btn reveal">SEND MESSAGE</a>
     </div>
   </section>
 
@@ -951,25 +934,15 @@
 
   <script>
     // CURSOR
-    window.addEventListener('DOMContentLoaded', function() {
-      var cursor = document.getElementById('cursor');
-      var ring = document.getElementById('cursorRing');
-      var mx = -100, my = -100, rx = -100, ry = -100;
-      if (cursor && ring) {
-        document.addEventListener('mousemove', function(e) {
-          mx = e.clientX; my = e.clientY;
-          cursor.style.left = mx + 'px';
-          cursor.style.top = my + 'px';
-        });
-        function animateRing() {
-          rx += (mx - rx) * 0.15;
-          ry += (my - ry) * 0.15;
-          ring.style.left = rx + 'px';
-          ring.style.top = ry + 'px';
-          requestAnimationFrame(animateRing);
-        }
-        animateRing();
-      }
+    document.addEventListener('DOMContentLoaded', () => {
+      const cursor = document.getElementById('cursor');
+      const ring = document.getElementById('cursorRing');
+      document.addEventListener('mousemove', e => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+        ring.style.left = e.clientX + 'px';
+        ring.style.top = e.clientY + 'px';
+      });
     });
 
     // SCROLL REVEAL
