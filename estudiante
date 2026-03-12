@@ -648,10 +648,11 @@
       <h1 class="hero-name">Brandon<br><span>Zevallos</span></h1>
       <p class="hero-role">SECURITY RESEARCHER</p>
       <p class="hero-desc">
-        <strong>Estudiante de Ciberseguridad & Abogado.</strong><br>
-        Enfocado en ethical hacking, análisis forense y la intersección entre
-        el <span style="color:var(--green)">derecho digital</span> y la seguridad ofensiva.
-        Desde Perú, construyendo en el cruce entre ley y código.
+        <strong>Lawyer || Cybersecurity Engineering Student</strong><br>
+        Attorney registered with the Lima Bar Association (Colegio de Abogados de Lima), 
+        with efficient and responsible experience in both the private and public sectors. 
+        I am currently complementing my education by pursuing a degree in Cybersecurity 
+        Engineering at the Universidad Peruana de Ciencias Aplicadas (UPC).
       </p>
       <div class="hero-btns">
         <a href="#projects" class="btn">VER PROYECTOS</a>
