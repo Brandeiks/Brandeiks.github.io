@@ -40,8 +40,9 @@
       border-radius: 50%;
       pointer-events: none;
       z-index: 9999;
+      left: -100px; top: -100px;
       transform: translate(-50%, -50%);
-      transition: transform 0.1s;
+      transition: left 0.05s, top 0.05s;
       box-shadow: 0 0 12px var(--green);
     }
     .cursor-ring {
@@ -51,8 +52,9 @@
       border-radius: 50%;
       pointer-events: none;
       z-index: 9998;
+      left: -100px; top: -100px;
       transform: translate(-50%, -50%);
-      transition: all 0.12s ease;
+      transition: left 0.12s ease, top 0.12s ease;
       opacity: 0.5;
     }
 
@@ -527,6 +529,50 @@
     .status-progress { color: #ffbd2e; }
     .status-planned { color: var(--text-dim); }
 
+    /* COURSERA CARDS */
+    .cert-coursera {
+      flex-direction: column;
+      gap: 0.8rem;
+      border-color: rgba(0, 229, 255, 0.15);
+    }
+    .cert-coursera:hover { border-color: rgba(0,229,255,0.4); }
+    .cert-badge { display: flex; gap: 0.5rem; }
+    .badge-ibm {
+      background: #1f70c1;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.5rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .badge-coursera {
+      background: rgba(0,229,255,0.12);
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid rgba(0,229,255,0.3);
+      letter-spacing: 1px;
+    }
+    .cert-date {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+    .cert-verify {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .cert-verify:hover { border-bottom-color: var(--cyan); }
+
     /* CONTACT */
     #contact {
       text-align: center;
@@ -601,11 +647,6 @@
     }
 
     .reveal {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.7s ease, transform 0.7s ease;
-    }
-    .reveal.visible {
       opacity: 1;
       transform: translateY(0);
     }
@@ -829,7 +870,7 @@
         <div class="cert-icon">🎓</div>
         <div class="cert-info">
           <h4>CIBERSEGURIDAD</h4>
-          <p>Estudios universitarios en curso</p>
+          <p>Estudios universitarios en curso — UPC</p>
           <p class="cert-status status-active">● EN CURSO</p>
         </div>
       </div>
@@ -838,7 +879,20 @@
         <div class="cert-icon">⚖️</div>
         <div class="cert-info">
           <h4>ABOGADO</h4>
-          <p>Derecho — Perú</p>
+          <p>Colegio de Abogados de Lima</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+        </div>
+      </div>
+
+      <div class="cert-card cert-coursera reveal">
+        <div class="cert-badge">
+          <span class="badge-ibm">IBM</span>
+          <span class="badge-coursera">Coursera</span>
+        </div>
+        <div class="cert-info">
+          <h4>Generative AI Fundamentals</h4>
+          <p>Specialization — 5 cursos · IBM Skills Network</p>
+          <p class="cert-date">📅 Mayo 2025</p>
           <p class="cert-status status-active">● COMPLETADO</p>
         </div>
       </div>
@@ -846,38 +900,15 @@
       <div class="cert-card reveal">
         <div class="cert-icon">🔐</div>
         <div class="cert-info">
-          <h4>eJPT</h4>
-          <p>eLearnSecurity Junior Penetration Tester</p>
-          <p class="cert-status status-planned">○ OBJETIVO</p>
+          <h4>eJPT · Security+</h4>
+          <p>Próximas certificaciones objetivo</p>
+          <p class="cert-status status-planned">○ PRÓXIMAMENTE</p>
         </div>
       </div>
+    </div>
 
-      <div class="cert-card reveal">
-        <div class="cert-icon">🛡️</div>
-        <div class="cert-info">
-          <h4>CompTIA Security+</h4>
-          <p>CompTIA</p>
-          <p class="cert-status status-planned">○ OBJETIVO</p>
-        </div>
-      </div>
-
-      <div class="cert-card reveal">
-        <div class="cert-icon">💻</div>
-        <div class="cert-info">
-          <h4>TryHackMe</h4>
-          <p>Plataforma de laboratorios activa</p>
-          <p class="cert-status status-active">● ACTIVO</p>
-        </div>
-      </div>
-
-      <div class="cert-card reveal">
-        <div class="cert-icon">📋</div>
-        <div class="cert-info">
-          <h4>[ Tu próxima cert ]</h4>
-          <p>Espacio para agregar más</p>
-          <p class="cert-status status-progress">◐ EN PROGRESO</p>
-        </div>
-      </div>
+    <div class="reveal" style="margin-top: 2.5rem; text-align: center;">
+      <a href="certificaciones.html" class="btn">VIEW CERTS //</a>
     </div>
   </section>
 
@@ -896,7 +927,7 @@
       </p>
 
       <div class="contact-links reveal">
-        <a href="mailto:bzevallospastrana@gmail.com" class="contact-link">
+        <a href="/cdn-cgi/l/email-protection#c4a6bea1b2a5a8a8abb7b4a5b7b0b6a5aaa584a3a9a5ada8eaa7aba9" class="contact-link">
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
           EMAIL
         </a>
@@ -910,7 +941,7 @@
         </a>
       </div>
 
-      <a href="mailto:bzevallospastrana@gmail.com" class="btn reveal">SEND MESSAGE</a>
+      <a href="/cdn-cgi/l/email-protection#95f7eff0e3f4f9f9fae6e5f4e6e1e7f4fbf4d5f2f8f4fcf9bbf6faf8" class="btn reveal">SEND MESSAGE</a>
     </div>
   </section>
 
@@ -920,17 +951,15 @@
     <p>Built with <span>❤</span> & <span>kali linux</span></p>
   </footer>
 
-  <script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     // CURSOR
     const cursor = document.getElementById('cursor');
     const ring = document.getElementById('cursorRing');
     document.addEventListener('mousemove', e => {
       cursor.style.left = e.clientX + 'px';
       cursor.style.top = e.clientY + 'px';
-      setTimeout(() => {
-        ring.style.left = e.clientX + 'px';
-        ring.style.top = e.clientY + 'px';
-      }, 80);
+      ring.style.left = e.clientX + 'px';
+      ring.style.top = e.clientY + 'px';
     });
 
     // SCROLL REVEAL
@@ -951,11 +980,3 @@
       sections.forEach(s => {
         if (window.scrollY >= s.offsetTop - 120) current = s.getAttribute('id');
       });
-      document.querySelectorAll('.nav-links a').forEach(a => {
-        a.style.color = a.getAttribute('href') === '#' + current
-          ? 'var(--green)' : '';
-      });
-    });
-  </script>
-</body>
-</html>
