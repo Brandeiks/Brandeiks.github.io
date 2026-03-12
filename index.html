@@ -951,15 +951,19 @@
     <p>Built with <span>❤</span> & <span>kali linux</span></p>
   </footer>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script>
     // CURSOR
-    const cursor = document.getElementById('cursor');
-    const ring = document.getElementById('cursorRing');
-    document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
-      ring.style.left = e.clientX + 'px';
-      ring.style.top = e.clientY + 'px';
+    window.addEventListener('DOMContentLoaded', function() {
+      var cursor = document.getElementById('cursor');
+      var ring = document.getElementById('cursorRing');
+      if (cursor && ring) {
+        document.addEventListener('mousemove', function(e) {
+          cursor.style.left = e.clientX + 'px';
+          cursor.style.top = e.clientY + 'px';
+          ring.style.left = e.clientX + 'px';
+          ring.style.top = e.clientY + 'px';
+        });
+      }
     });
 
     // SCROLL REVEAL
