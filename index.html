@@ -21,7 +21,6 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     html { scroll-behavior: smooth; }
 
     body {
@@ -32,7 +31,9 @@
       cursor: none;
     }
 
-    /* CUSTOM CURSOR */
+    /* CURSOR — FIX APPLIED */
+    a, button, .btn, .contact-link, .nav-links a { cursor: none; }
+
     .cursor {
       position: fixed;
       width: 10px; height: 10px;
@@ -41,7 +42,7 @@
       pointer-events: none;
       z-index: 9999;
       transform: translate(-50%, -50%);
-      transition: transform 0.1s;
+      transition: transform 0.08s;
       box-shadow: 0 0 12px var(--green);
     }
     .cursor-ring {
@@ -55,8 +56,10 @@
       transition: all 0.12s ease;
       opacity: 0.5;
     }
+    .cursor.clicked { transform: translate(-50%, -50%) scale(0.5); }
+    .cursor-ring.clicked { transform: translate(-50%, -50%) scale(1.4); opacity: 0.2; }
 
-    /* SCANLINE OVERLAY */
+    /* SCANLINE */
     body::before {
       content: '';
       position: fixed;
@@ -117,6 +120,8 @@
     }
     .nav-links a:hover { color: var(--green); }
     .nav-links a:hover::before { opacity: 1; }
+    .nav-links a.active { color: var(--green); }
+    .nav-links a.active::before { opacity: 1; }
 
     /* HERO */
     #hero {
@@ -224,6 +229,7 @@
       transition: all 0.3s;
       position: relative;
       overflow: hidden;
+      display: inline-block;
     }
 
     .btn::before {
@@ -246,7 +252,7 @@
     .btn-ghost::before { background: var(--text-dim); }
     .btn-ghost:hover { color: var(--bg); }
 
-    /* TERMINAL WIDGET */
+    /* TERMINAL */
     .terminal {
       position: absolute;
       right: 4rem;
@@ -259,6 +265,7 @@
       overflow: hidden;
       opacity: 0;
       animation: fadeUp 0.8s 1.2s forwards;
+      box-shadow: 0 0 40px rgba(0,255,136,0.05);
     }
 
     .terminal-bar {
@@ -296,20 +303,13 @@
     .t-val { color: var(--cyan); }
     .t-warn { color: var(--red); }
 
-    .blink {
-      animation: blink 1s step-end infinite;
-    }
+    .blink { animation: blink 1s step-end infinite; }
     @keyframes blink { 50% { opacity: 0; } }
 
-    /* SECTIONS COMMON */
-    section {
-      padding: 6rem 4rem;
-      position: relative;
-    }
+    /* SECTIONS */
+    section { padding: 6rem 4rem; position: relative; }
 
-    .section-header {
-      margin-bottom: 4rem;
-    }
+    .section-header { margin-bottom: 4rem; }
 
     .section-label {
       font-family: var(--font-mono);
@@ -333,10 +333,19 @@
       margin-top: 1rem;
     }
 
-    /* ABOUT */
-    #about {
-      background: var(--bg2);
+    /* REVEAL ANIMATION */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
     }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ABOUT */
+    #about { background: var(--bg2); }
 
     .about-grid {
       display: grid;
@@ -393,13 +402,11 @@
       background: linear-gradient(90deg, var(--green), var(--cyan));
       position: relative;
       transform-origin: left;
-      animation: barGrow 1.5s ease forwards;
       transform: scaleX(0);
+      transition: transform 1.2s ease;
     }
 
-    @keyframes barGrow {
-      to { transform: scaleX(1); }
-    }
+    .skill-bar.animate { transform: scaleX(1); }
 
     .skill-label {
       font-family: var(--font-mono);
@@ -477,9 +484,7 @@
     }
 
     /* CERTS */
-    #certs {
-      background: var(--bg2);
-    }
+    #certs { background: var(--bg2); }
 
     .certs-grid {
       display: grid;
@@ -498,11 +503,7 @@
 
     .cert-card:hover { border-color: rgba(0,255,136,0.3); }
 
-    .cert-icon {
-      font-size: 1.8rem;
-      line-height: 1;
-      flex-shrink: 0;
-    }
+    .cert-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
 
     .cert-info h4 {
       font-family: var(--font-display);
@@ -527,11 +528,11 @@
     .status-progress { color: #ffbd2e; }
     .status-planned { color: var(--text-dim); }
 
-    /* COURSERA CARDS */
+    /* COURSERA */
     .cert-coursera {
       flex-direction: column;
       gap: 0.8rem;
-      border-color: rgba(0, 229, 255, 0.15);
+      border-color: rgba(0,229,255,0.15);
     }
     .cert-coursera:hover { border-color: rgba(0,229,255,0.4); }
     .cert-badge { display: flex; gap: 0.5rem; }
@@ -551,18 +552,14 @@
       font-family: var(--font-mono); font-size: 0.65rem;
       color: var(--cyan); text-decoration: none;
       border-bottom: 1px solid transparent; transition: border-color 0.2s;
+      cursor: none;
     }
     .cert-verify:hover { border-bottom-color: var(--cyan); }
 
     /* CONTACT */
-    #contact {
-      text-align: center;
-    }
+    #contact { text-align: center; }
 
-    .contact-inner {
-      max-width: 600px;
-      margin: 0 auto;
-    }
+    .contact-inner { max-width: 600px; margin: 0 auto; }
 
     .contact-inner p {
       font-size: 1.05rem;
@@ -591,17 +588,11 @@
       padding: 0.8rem 1.5rem;
       border: 1px solid var(--dim);
       transition: all 0.3s;
+      cursor: none;
     }
 
-    .contact-link:hover {
-      border-color: var(--green);
-      color: var(--green);
-    }
-
-    .contact-link svg {
-      width: 16px; height: 16px;
-      fill: currentColor;
-    }
+    .contact-link:hover { border-color: var(--green); color: var(--green); }
+    .contact-link svg { width: 16px; height: 16px; fill: currentColor; }
 
     /* FOOTER */
     footer {
@@ -625,11 +616,6 @@
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-
-    .reveal {
-      opacity: 1;
-      transform: translateY(0);
     }
 
     /* RESPONSIVE */
@@ -671,10 +657,9 @@
       <p class="hero-role">SECURITY RESEARCHER</p>
       <p class="hero-desc">
         <strong>Lawyer || Cybersecurity Engineering Student</strong><br>
-        Attorney registered with the Lima Bar Association (Colegio de Abogados de Lima), 
-        with efficient and responsible experience in both the private and public sectors. 
-        I am currently complementing my education by pursuing a degree in Cybersecurity 
-        Engineering at the Universidad Peruana de Ciencias Aplicadas (UPC).
+        Attorney registered with the Lima Bar Association (Colegio de Abogados de Lima),
+        with efficient and responsible experience in both the private and public sectors.
+        Currently pursuing a degree in Cybersecurity Engineering at the Universidad Peruana de Ciencias Aplicadas (UPC).
       </p>
       <div class="hero-btns">
         <a href="#projects" class="btn">VIEW PROJECTS</a>
@@ -700,7 +685,7 @@
         <div class="t-out">&nbsp;&nbsp;"background": <span class="t-val">"Abogado"</span>,</div>
         <div class="t-out">&nbsp;&nbsp;"focus": <span class="t-val">"Ethical Hacking"</span>,</div>
         <div class="t-out">&nbsp;&nbsp;"location": <span class="t-val">"Perú 🇵🇪"</span>,</div>
-        <div class="t-out">&nbsp;&nbsp;"status": <span class="t-warn">"Learning & Building"</span></div>
+        <div class="t-out">&nbsp;&nbsp;"status": <span class="t-warn">"Learning &amp; Building"</span></div>
         <div class="t-out">}</div>
         <br>
         <div><span class="t-prompt">$ </span><span class="t-cmd blink">_</span></div>
@@ -829,7 +814,7 @@
         <p class="project-tag">// PRÓXIMAMENTE</p>
         <h3 class="project-name">[ En desarrollo ]</h3>
         <p class="project-desc">
-          Nuevos proyectos en camino. Agrega tus próximos writeups, herramientas o investigaciones aquí.
+          Nuevos proyectos en camino. Próximos writeups, herramientas o investigaciones.
         </p>
         <div class="project-stack">
           <span class="stack-tag">???</span>
@@ -908,7 +893,7 @@
       </p>
 
       <div class="contact-links reveal">
-        <a href="/cdn-cgi/l/email-protection#0d6f77687b6c6161627e7d6c7e797f6c636c4d6a606c6461236e6260" class="contact-link">
+        <a href="mailto:brandon@example.com" class="contact-link">
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
           EMAIL
         </a>
@@ -922,7 +907,7 @@
         </a>
       </div>
 
-      <a href="/cdn-cgi/l/email-protection#f0928a9586919c9c9f838091838482919e91b0979d91999cde939f9d" class="btn reveal">SEND MESSAGE</a>
+      <a href="mailto:brandon@example.com" class="btn reveal">SEND MESSAGE</a>
     </div>
   </section>
 
@@ -933,29 +918,77 @@
   </footer>
 
   <script>
-    // CURSOR
+    // ── CURSOR (BUG FIXED) ──────────────────────────────────────────────
+    const cursor = document.getElementById('cursor');
+    const cursorRing = document.getElementById('cursorRing');
+
     document.addEventListener('mousemove', e => {
-    document.getElementById('cursor').style.left = e.clientX + 'px';
-    document.getElementById('cursor').style.top = e.clientY + 'px';
-    document.getElementById('cursorRing').style.left = e.clientX + 'px';
-    document.getElementById('cursorRing').style.top = e.clientY + 'px';
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top  = e.clientY + 'px';
+      cursorRing.style.left = e.clientX + 'px';
+      cursorRing.style.top  = e.clientY + 'px';
     });
 
-    // SCROLL REVEAL
+    document.addEventListener('mousedown', () => {
+      cursor.classList.add('clicked');
+      cursorRing.classList.add('clicked');
+    });
+
+    document.addEventListener('mouseup', () => {
+      cursor.classList.remove('clicked');
+      cursorRing.classList.remove('clicked');
+    });
+
+    // Enlarge ring on interactive elements
+    document.querySelectorAll('a, button, .btn').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursorRing.style.width  = '54px';
+        cursorRing.style.height = '54px';
+        cursorRing.style.opacity = '0.3';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursorRing.style.width  = '36px';
+        cursorRing.style.height = '36px';
+        cursorRing.style.opacity = '0.5';
+      });
+    });
+
+    // ── SCROLL REVEAL ───────────────────────────────────────────────────
     const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver(entries => {
+    const revealObserver = new IntersectionObserver(entries => {
       entries.forEach((entry, i) => {
         if (entry.isIntersecting) {
           setTimeout(() => entry.target.classList.add('visible'), i * 80);
         }
       });
     }, { threshold: 0.1 });
-    reveals.forEach(el => observer.observe(el));
+    reveals.forEach(el => revealObserver.observe(el));
 
-    // ACTIVE NAV
+    // ── SKILL BARS ──────────────────────────────────────────────────────
+    const skillBars = document.querySelectorAll('.skill-bar');
+    const barObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate');
+          barObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    skillBars.forEach(bar => barObserver.observe(bar));
+
+    // ── ACTIVE NAV ──────────────────────────────────────────────────────
     const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-links a');
+
     window.addEventListener('scroll', () => {
       let current = '';
       sections.forEach(s => {
-        if (window.scrollY >= s.offsetTop - 120) current = s.getAttribute('id');
+        if (window.scrollY >= s.offsetTop - 140) current = s.getAttribute('id');
       });
+      navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+      });
+    });
+  </script>
+</body>
+</html>
