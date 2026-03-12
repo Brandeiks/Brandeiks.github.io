@@ -934,15 +934,12 @@
 
   <script>
     // CURSOR
-    document.addEventListener('DOMContentLoaded', () => {
-      const cursor = document.getElementById('cursor');
-      const ring = document.getElementById('cursorRing');
-      document.addEventListener('mousemove', e => {
-        cursor.style.left = e.clientX + 'px';
-        cursor.style.top = e.clientY + 'px';
-        ring.style.left = e.clientX + 'px';
-        ring.style.top = e.clientY + 'px';
-      });
+    document.addEventListener('mousemove', e => {
+    document.getElementById('cursor').style.left = e.clientX + 'px';
+    document.getElementById('cursor').style.top = e.clientY + 'px';
+    document.getElementById('cursorRing').style.left = e.clientX + 'px';
+    document.getElementById('cursorRing').style.top = e.clientY + 'px';
+    });
     });
 
     // SCROLL REVEAL
