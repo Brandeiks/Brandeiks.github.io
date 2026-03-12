@@ -10,20 +10,17 @@
   <meta name="keywords" content="cybersecurity, ethical hacking, ciberderecho, peru, abogado, seguridad informatica, UPC">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <meta name="robots" content="index, follow">
-
-  <!-- Open Graph -->
   <meta property="og:title" content="Brandon Zevallos Pastrana | Cybersecurity">
   <meta property="og:description" content="Lawyer &amp; Cybersecurity Engineering Student — Ethical Hacking · Ciberderecho · Perú">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://brandeiks.github.io">
   <meta property="og:locale" content="es_PE">
-
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Brandon Zevallos | Cybersecurity">
   <meta name="twitter:description" content="Lawyer &amp; Cybersecurity Engineering Student — Ethical Hacking · Ciberderecho · Perú">
 
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+
   <style>
     :root {
       --bg: #050a0e;
@@ -50,60 +47,118 @@
       cursor: none;
     }
 
-    /* CURSOR — FIX APPLIED */
+    /* ── LOADER ── */
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: #050a0e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+    #loader.fade-out { opacity: 0; pointer-events: none; }
+    #loader.hidden   { display: none; }
+
+    .loader-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      color: #00ff88;
+      letter-spacing: 6px;
+      text-shadow: 0 0 10px rgba(0,255,136,0.5);
+      animation: blink 1s step-end infinite;
+    }
+    .loader-track {
+      width: 280px;
+      height: 6px;
+      background: #1a2a2e;
+      overflow: hidden;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,255,136,0.2);
+    }
+    #loader-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00ff88, #00e5ff, #00ff88);
+      background-size: 200% 100%;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 15px #00ff88;
+      animation: gradientMove 1.5s ease infinite;
+    }
+    @keyframes gradientMove {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .loader-sub {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      color: #4a6a74;
+      letter-spacing: 3px;
+    }
+    .loader-percentage {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem;
+      color: #00ff88;
+      opacity: 0.8;
+    }
+
+    /* ── CURSOR ── */
     a, button, .btn, .contact-link, .nav-links a { cursor: none; }
 
     .cursor {
       position: fixed;
       width: 10px; height: 10px;
-      background: var(--green);
+      background: #00ff88;
       border-radius: 50%;
       pointer-events: none;
       z-index: 9999;
       transform: translate(-50%, -50%);
       transition: transform 0.08s;
-      box-shadow: 0 0 12px var(--green);
-      /* #2 PERFORMANCE */
-      will-change: transform, left, top;
+      box-shadow: 0 0 12px #00ff88;
+      opacity: 0;
+      will-change: left, top;
       backface-visibility: hidden;
     }
     .cursor-ring {
       position: fixed;
       width: 36px; height: 36px;
-      border: 1px solid var(--green);
+      border: 1px solid #00ff88;
       border-radius: 50%;
       pointer-events: none;
       z-index: 9998;
       transform: translate(-50%, -50%);
       transition: all 0.12s ease;
-      opacity: 0.5;
-      /* #2 PERFORMANCE */
-      will-change: transform, left, top, width, height;
+      opacity: 0;
+      will-change: left, top, width, height;
       backface-visibility: hidden;
     }
     .cursor.clicked { transform: translate(-50%, -50%) scale(0.5); }
-    .cursor-ring.clicked { transform: translate(-50%, -50%) scale(1.4); opacity: 0.2; }
+    .cursor-ring.clicked { transform: translate(-50%, -50%) scale(1.4); }
 
-    /* #3 ACCESIBILIDAD — Screen reader only */
+    /* ── ACCESIBILIDAD ── */
     .sr-only {
       position: absolute;
       width: 1px; height: 1px;
       padding: 0; margin: -1px;
       overflow: hidden;
-      clip: rect(0, 0, 0, 0);
+      clip: rect(0,0,0,0);
       white-space: nowrap;
       border: 0;
     }
 
-    /* SCANLINE */
+    /* ── SCANLINE ── */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
       background: repeating-linear-gradient(
         0deg,
-        transparent,
-        transparent 2px,
+        transparent, transparent 2px,
         rgba(0,255,136,0.012) 2px,
         rgba(0,255,136,0.012) 4px
       );
@@ -111,7 +166,7 @@
       z-index: 1000;
     }
 
-    /* NAV */
+    /* ── NAV ── */
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -124,7 +179,6 @@
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(0,255,136,0.08);
     }
-
     .nav-logo {
       font-family: var(--font-display);
       font-size: 1rem;
@@ -132,13 +186,7 @@
       letter-spacing: 4px;
       text-decoration: none;
     }
-
-    .nav-links {
-      display: flex;
-      gap: 2.5rem;
-      list-style: none;
-    }
-
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
     .nav-links a {
       font-family: var(--font-mono);
       font-size: 0.8rem;
@@ -148,18 +196,11 @@
       transition: color 0.3s;
       position: relative;
     }
-    .nav-links a::before {
-      content: '> ';
-      color: var(--green);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .nav-links a:hover { color: var(--green); }
-    .nav-links a:hover::before { opacity: 1; }
-    .nav-links a.active { color: var(--green); }
-    .nav-links a.active::before { opacity: 1; }
+    .nav-links a::before { content: '> '; color: var(--green); opacity: 0; transition: opacity 0.3s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--green); }
+    .nav-links a:hover::before, .nav-links a.active::before { opacity: 1; }
 
-    /* HERO */
+    /* ── HERO ── */
     #hero {
       min-height: 100vh;
       display: flex;
@@ -168,22 +209,18 @@
       padding: 6rem 4rem 4rem;
       overflow: hidden;
     }
-
     .hero-grid {
-      position: absolute;
-      inset: 0;
+      position: absolute; inset: 0;
       background-image:
         linear-gradient(rgba(0,255,136,0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,255,136,0.04) 1px, transparent 1px);
       background-size: 60px 60px;
       animation: gridMove 20s linear infinite;
     }
-
     @keyframes gridMove {
-      0% { transform: translateY(0); }
+      0%   { transform: translateY(0); }
       100% { transform: translateY(60px); }
     }
-
     .hero-glow {
       position: absolute;
       width: 600px; height: 600px;
@@ -192,469 +229,158 @@
       transform: translate(-50%, -50%);
       pointer-events: none;
     }
-
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      max-width: 900px;
-    }
-
+    .hero-content { position: relative; z-index: 2; max-width: 900px; }
     .hero-tag {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--green);
-      letter-spacing: 4px;
-      margin-bottom: 1.5rem;
-      opacity: 0;
-      animation: fadeUp 0.6s 0.2s forwards;
+      font-family: var(--font-mono); font-size: 0.75rem; color: var(--green);
+      letter-spacing: 4px; margin-bottom: 1.5rem;
+      opacity: 0; animation: fadeUp 0.6s 0.2s forwards;
     }
-
     .hero-name {
-      font-family: var(--font-display);
-      font-size: clamp(2.5rem, 6vw, 5rem);
-      font-weight: 900;
-      line-height: 1;
-      letter-spacing: -1px;
-      margin-bottom: 0.5rem;
-      opacity: 0;
-      animation: fadeUp 0.6s 0.4s forwards;
+      font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 900; line-height: 1; letter-spacing: -1px; margin-bottom: 0.5rem;
+      opacity: 0; animation: fadeUp 0.6s 0.4s forwards;
     }
-
     .hero-name span { color: var(--green); }
-
     .hero-role {
-      font-family: var(--font-display);
-      font-size: clamp(1rem, 2.5vw, 1.6rem);
-      color: var(--cyan);
-      letter-spacing: 6px;
-      margin-bottom: 2rem;
-      opacity: 0;
-      animation: fadeUp 0.6s 0.6s forwards;
+      font-family: var(--font-display); font-size: clamp(1rem, 2.5vw, 1.6rem);
+      color: var(--cyan); letter-spacing: 6px; margin-bottom: 2rem;
+      opacity: 0; animation: fadeUp 0.6s 0.6s forwards;
     }
-
     .hero-desc {
-      font-size: 1.1rem;
-      line-height: 1.8;
-      color: var(--text-dim);
-      max-width: 600px;
-      margin-bottom: 3rem;
-      opacity: 0;
-      animation: fadeUp 0.6s 0.8s forwards;
+      font-size: 1.1rem; line-height: 1.8; color: var(--text-dim);
+      max-width: 600px; margin-bottom: 3rem;
+      opacity: 0; animation: fadeUp 0.6s 0.8s forwards;
     }
-
     .hero-desc strong { color: var(--text); }
-
     .hero-btns {
-      display: flex;
-      gap: 1.2rem;
-      flex-wrap: wrap;
-      opacity: 0;
-      animation: fadeUp 0.6s 1s forwards;
+      display: flex; gap: 1.2rem; flex-wrap: wrap;
+      opacity: 0; animation: fadeUp 0.6s 1s forwards;
     }
 
+    /* ── BTN ── */
     .btn {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      letter-spacing: 2px;
-      padding: 0.9rem 2rem;
-      border: 1px solid var(--green);
-      color: var(--green);
-      text-decoration: none;
-      background: transparent;
-      cursor: none;
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
-      display: inline-block;
+      font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 2px;
+      padding: 0.9rem 2rem; border: 1px solid var(--green);
+      color: var(--green); text-decoration: none; background: transparent;
+      cursor: none; transition: all 0.3s; position: relative;
+      overflow: hidden; display: inline-block;
     }
-
     .btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: var(--green);
-      transform: translateX(-100%);
-      transition: transform 0.3s;
-      z-index: -1;
+      content: ''; position: absolute; inset: 0;
+      background: var(--green); transform: translateX(-100%);
+      transition: transform 0.3s; z-index: -1;
     }
-
     .btn:hover { color: var(--bg); }
     .btn:hover::before { transform: translateX(0); }
-
-    .btn-ghost {
-      border-color: var(--text-dim);
-      color: var(--text-dim);
-    }
+    .btn-ghost { border-color: var(--text-dim); color: var(--text-dim); }
     .btn-ghost::before { background: var(--text-dim); }
     .btn-ghost:hover { color: var(--bg); }
 
-    /* TERMINAL */
+    /* ── TERMINAL ── */
     .terminal {
-      position: absolute;
-      right: 4rem;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 420px;
-      background: rgba(8,15,20,0.9);
-      border: 1px solid rgba(0,255,136,0.2);
-      border-radius: 4px;
-      overflow: hidden;
-      opacity: 0;
-      animation: fadeUp 0.8s 1.2s forwards;
+      position: absolute; right: 4rem; top: 50%;
+      transform: translateY(-50%); width: 420px;
+      background: rgba(8,15,20,0.9); border: 1px solid rgba(0,255,136,0.2);
+      border-radius: 4px; overflow: hidden;
+      opacity: 0; animation: fadeUp 0.8s 1.2s forwards;
       box-shadow: 0 0 40px rgba(0,255,136,0.05);
     }
-
     .terminal-bar {
-      background: rgba(0,255,136,0.06);
-      padding: 0.6rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      background: rgba(0,255,136,0.06); padding: 0.6rem 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
       border-bottom: 1px solid rgba(0,255,136,0.1);
     }
-
     .dot { width: 10px; height: 10px; border-radius: 50%; }
     .dot-r { background: #ff5f57; }
     .dot-y { background: #ffbd2e; }
     .dot-g { background: #28ca41; }
-
-    .terminal-title {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      margin-left: 0.5rem;
-      letter-spacing: 1px;
-    }
-
-    .terminal-body {
-      padding: 1.2rem;
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      line-height: 1.9;
-    }
-
+    .terminal-title { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); margin-left: 0.5rem; letter-spacing: 1px; }
+    .terminal-body { padding: 1.2rem; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.9; }
     .t-prompt { color: var(--green); }
-    .t-cmd { color: var(--text); }
-    .t-out { color: var(--text-dim); }
-    .t-val { color: var(--cyan); }
-    .t-warn { color: var(--red); }
-
-    .blink { animation: blink 1s step-end infinite; }
+    .t-cmd    { color: var(--text); }
+    .t-out    { color: var(--text-dim); }
+    .t-val    { color: var(--cyan); }
+    .t-warn   { color: var(--red); }
+    .blink    { animation: blink 1s step-end infinite; }
     @keyframes blink { 50% { opacity: 0; } }
 
-    /* SECTIONS */
+    /* ── SECTIONS ── */
     section { padding: 6rem 4rem; position: relative; }
-
     .section-header { margin-bottom: 4rem; }
+    .section-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.8rem; }
+    .section-title { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 700; letter-spacing: 2px; }
+    .section-line { width: 60px; height: 2px; background: var(--green); margin-top: 1rem; }
 
-    .section-label {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      color: var(--green);
-      letter-spacing: 4px;
-      margin-bottom: 0.8rem;
-    }
+    /* ── REVEAL ── */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
 
-    .section-title {
-      font-family: var(--font-display);
-      font-size: clamp(1.8rem, 4vw, 3rem);
-      font-weight: 700;
-      letter-spacing: 2px;
-    }
-
-    .section-line {
-      width: 60px;
-      height: 2px;
-      background: var(--green);
-      margin-top: 1rem;
-    }
-
-    /* REVEAL ANIMATION */
-    .reveal {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* ABOUT */
+    /* ── ABOUT ── */
     #about { background: var(--bg2); }
-
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5rem;
-      align-items: start;
-    }
-
-    .about-text p {
-      font-size: 1.05rem;
-      line-height: 1.9;
-      color: var(--text-dim);
-      margin-bottom: 1.2rem;
-    }
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: start; }
+    .about-text p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1.2rem; }
     .about-text p strong { color: var(--text); }
     .about-text p .highlight { color: var(--green); }
-
-    .about-skills h3 {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--green);
-      letter-spacing: 3px;
-      margin-bottom: 1.5rem;
-    }
-
-    .skill-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-    }
-
-    .skill-item {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .skill-item span:first-child {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      color: var(--green);
-    }
-
-    .skill-bar-bg {
-      flex: 1;
-      height: 2px;
-      background: var(--dim);
-      position: relative;
-    }
-
-    .skill-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--green), var(--cyan));
-      position: relative;
-      transform-origin: left;
-      transform: scaleX(0);
-      transition: transform 1.2s ease;
-    }
-
+    .about-skills h3 { font-family: var(--font-mono); font-size: 0.75rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.5rem; }
+    .skill-list { list-style: none; display: flex; flex-direction: column; gap: 0.8rem; }
+    .skill-item { display: flex; align-items: center; gap: 1rem; }
+    .skill-item span:first-child { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); }
+    .skill-bar-bg { flex: 1; height: 2px; background: var(--dim); }
+    .skill-bar { height: 100%; background: linear-gradient(90deg, var(--green), var(--cyan)); transform-origin: left; transform: scaleX(0); transition: transform 1.2s ease; }
     .skill-bar.animate { transform: scaleX(1); }
+    .skill-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); width: 130px; }
 
-    .skill-label {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      width: 130px;
-    }
-
-    /* PROJECTS */
-    .projects-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .project-card {
-      background: var(--bg2);
-      border: 1px solid var(--dim);
-      padding: 2rem;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.3s, transform 0.3s;
-    }
-
-    .project-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 3px;
-      height: 0;
-      background: var(--green);
-      transition: height 0.4s;
-    }
-
+    /* ── PROJECTS ── */
+    .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+    .project-card { background: var(--bg2); border: 1px solid var(--dim); padding: 2rem; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
+    .project-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 0; background: var(--green); transition: height 0.4s; }
     .project-card:hover { border-color: rgba(0,255,136,0.3); transform: translateY(-4px); }
     .project-card:hover::before { height: 100%; }
+    .project-tag { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1rem; opacity: 0.7; }
+    .project-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 0.8rem; }
+    .project-desc { font-size: 0.92rem; line-height: 1.7; color: var(--text-dim); margin-bottom: 1.5rem; }
+    .project-stack { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .stack-tag { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); padding: 0.2rem 0.6rem; letter-spacing: 1px; }
 
-    .project-tag {
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      color: var(--green);
-      letter-spacing: 3px;
-      margin-bottom: 1rem;
-      opacity: 0.7;
-    }
-
-    .project-name {
-      font-family: var(--font-display);
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-      margin-bottom: 0.8rem;
-    }
-
-    .project-desc {
-      font-size: 0.92rem;
-      line-height: 1.7;
-      color: var(--text-dim);
-      margin-bottom: 1.5rem;
-    }
-
-    .project-stack {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .stack-tag {
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      color: var(--cyan);
-      border: 1px solid rgba(0,229,255,0.2);
-      padding: 0.2rem 0.6rem;
-      letter-spacing: 1px;
-    }
-
-    /* CERTS */
+    /* ── CERTS ── */
     #certs { background: var(--bg2); }
-
-    .certs-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1.2rem;
-    }
-
-    .cert-card {
-      border: 1px solid var(--dim);
-      padding: 1.5rem;
-      display: flex;
-      align-items: flex-start;
-      gap: 1rem;
-      transition: border-color 0.3s;
-    }
-
+    .certs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.2rem; }
+    .cert-card { border: 1px solid var(--dim); padding: 1.5rem; display: flex; align-items: flex-start; gap: 1rem; transition: border-color 0.3s; }
     .cert-card:hover { border-color: rgba(0,255,136,0.3); }
-
     .cert-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
-
-    .cert-info h4 {
-      font-family: var(--font-display);
-      font-size: 0.9rem;
-      letter-spacing: 1px;
-      margin-bottom: 0.3rem;
-    }
-
-    .cert-info p {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-dim);
-    }
-
-    .cert-status {
-      font-family: var(--font-mono);
-      font-size: 0.62rem;
-      margin-top: 0.4rem;
-      letter-spacing: 2px;
-    }
-    .status-active { color: var(--green); }
-    .status-progress { color: #ffbd2e; }
+    .cert-info h4 { font-family: var(--font-display); font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 0.3rem; }
+    .cert-info p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cert-status { font-family: var(--font-mono); font-size: 0.62rem; margin-top: 0.4rem; letter-spacing: 2px; }
+    .status-active  { color: var(--green); }
     .status-planned { color: var(--text-dim); }
-
-    /* COURSERA */
-    .cert-coursera {
-      flex-direction: column;
-      gap: 0.8rem;
-      border-color: rgba(0,229,255,0.15);
-    }
+    .cert-coursera { flex-direction: column; gap: 0.8rem; border-color: rgba(0,229,255,0.15); }
     .cert-coursera:hover { border-color: rgba(0,229,255,0.4); }
     .cert-badge { display: flex; gap: 0.5rem; }
-    .badge-ibm {
-      background: #1f70c1; color: #fff;
-      font-family: var(--font-mono); font-size: 0.62rem;
-      padding: 0.2rem 0.5rem; font-weight: bold; letter-spacing: 1px;
-    }
-    .badge-coursera {
-      background: rgba(0,229,255,0.12); color: var(--cyan);
-      font-family: var(--font-mono); font-size: 0.62rem;
-      padding: 0.2rem 0.5rem; border: 1px solid rgba(0,229,255,0.3); letter-spacing: 1px;
-    }
+    .badge-ibm { background: #1f70c1; color: #fff; font-family: var(--font-mono); font-size: 0.62rem; padding: 0.2rem 0.5rem; font-weight: bold; letter-spacing: 1px; }
+    .badge-coursera { background: rgba(0,229,255,0.12); color: var(--cyan); font-family: var(--font-mono); font-size: 0.62rem; padding: 0.2rem 0.5rem; border: 1px solid rgba(0,229,255,0.3); letter-spacing: 1px; }
     .cert-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 0.2rem; }
-    .cert-verify {
-      display: inline-block; margin-top: 0.6rem;
-      font-family: var(--font-mono); font-size: 0.65rem;
-      color: var(--cyan); text-decoration: none;
-      border-bottom: 1px solid transparent; transition: border-color 0.2s;
-      cursor: none;
-    }
-    .cert-verify:hover { border-bottom-color: var(--cyan); }
 
-    /* CONTACT */
+    /* ── CONTACT ── */
     #contact { text-align: center; }
-
     .contact-inner { max-width: 600px; margin: 0 auto; }
-
-    .contact-inner p {
-      font-size: 1.05rem;
-      color: var(--text-dim);
-      line-height: 1.8;
-      margin-bottom: 3rem;
-    }
-
-    .contact-links {
-      display: flex;
-      justify-content: center;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-      margin-bottom: 3rem;
-    }
-
-    .contact-link {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      text-decoration: none;
-      letter-spacing: 2px;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.8rem 1.5rem;
-      border: 1px solid var(--dim);
-      transition: all 0.3s;
-      cursor: none;
-    }
-
+    .contact-inner p { font-size: 1.05rem; color: var(--text-dim); line-height: 1.8; margin-bottom: 3rem; }
+    .contact-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 3rem; }
+    .contact-link { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.5rem; border: 1px solid var(--dim); transition: all 0.3s; cursor: none; }
     .contact-link:hover { border-color: var(--green); color: var(--green); }
     .contact-link svg { width: 16px; height: 16px; fill: currentColor; }
 
-    /* FOOTER */
-    footer {
-      padding: 2rem 4rem;
-      border-top: 1px solid var(--dim);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    footer p {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-    }
-
+    /* ── FOOTER ── */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
     footer span { color: var(--green); }
 
-    /* ANIMATIONS */
+    /* ── ANIMATIONS ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* RESPONSIVE */
+    /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
       nav { padding: 1rem 1.5rem; }
       section { padding: 4rem 1.5rem; }
@@ -663,8 +389,6 @@
       .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
       footer { flex-direction: column; gap: 1rem; text-align: center; }
       .nav-links { display: none; }
-
-      /* #4 MOBILE — Restaurar cursor nativo en táctil */
       body, a, button, .btn, .contact-link, .nav-links a { cursor: auto; }
       .cursor, .cursor-ring { display: none; }
     }
@@ -675,41 +399,14 @@
   <div class="cursor" id="cursor"></div>
   <div class="cursor-ring" id="cursorRing"></div>
 
-  <!-- #5 LOADER -->
-  <div id="loader" style="
-    position:fixed; inset:0; z-index:9000;
-    background:var(--bg);
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    gap:1.2rem;
-    transition: opacity 0.5s ease;
-  ">
-    <div style="
-      font-family:var(--font-display);
-      font-size:0.85rem;
-      color:var(--green);
-      letter-spacing:6px;
-      animation: blink 1s step-end infinite;
-    ">[SYSTEM BOOT]</div>
-    <div style="
-      width:180px; height:2px;
-      background:var(--dim);
-      overflow:hidden;
-      border-radius:2px;
-    ">
-      <div id="loader-bar" style="
-        height:100%;
-        background:linear-gradient(90deg, var(--green), var(--cyan));
-        width:0%;
-        transition:width 0.8s ease;
-      "></div>
+  <!-- LOADER -->
+  <div id="loader">
+    <div class="loader-text">[SYSTEM BOOT]</div>
+    <div class="loader-track">
+      <div id="loader-bar"></div>
     </div>
-    <div style="
-      font-family:var(--font-mono);
-      font-size:0.65rem;
-      color:var(--text-dim);
-      letter-spacing:2px;
-    ">INITIALIZING PORTFOLIO...</div>
+    <div class="loader-sub">INITIALIZING PORTFOLIO...</div>
+    <div class="loader-percentage" id="loaderPercentage">0%</div>
   </div>
 
   <!-- NAV -->
@@ -727,7 +424,6 @@
   <section id="hero">
     <div class="hero-grid"></div>
     <div class="hero-glow"></div>
-
     <div class="hero-content">
       <p class="hero-tag">// CYBERSECURITY PORTFOLIO</p>
       <h1 class="hero-name">Brandon<br><span>Zevallos Pastrana</span></h1>
@@ -741,10 +437,9 @@
       <div class="hero-btns">
         <a href="#projects" class="btn">VIEW PROJECTS</a>
         <a href="#contact" class="btn btn-ghost">TO CONTACT</a>
-        <a href="https://github.com/Brandeiks" target="_blank" class="btn btn-ghost">GITHUB ↗</a>
+        <a href="https://github.com/Brandeiks" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">GITHUB ↗</a>
       </div>
     </div>
-
     <div class="terminal">
       <div class="terminal-bar">
         <div class="dot dot-r"></div>
@@ -777,58 +472,21 @@
       <h2 class="section-title">Who Am I?</h2>
       <div class="section-line"></div>
     </div>
-
     <div class="about-grid">
       <div class="about-text reveal">
-        <p>
-          Soy <strong>Brandon Zevallos Pastrana</strong>, estudiante de Ciberseguridad y Abogado
-          de formación. Mi perfil une dos mundos que rara vez se cruzan:
-          el <span class="highlight">hacking ético</span> y el <span class="highlight">marco legal</span> del entorno digital.
-        </p>
-        <p>
-          Me especializo en seguridad ofensiva, análisis de vulnerabilidades y forense digital.
-          Mi background jurídico me da una perspectiva única sobre <strong>ciberderecho, privacidad de datos
-          y cumplimiento normativo</strong> en entornos de ciberseguridad.
-        </p>
-        <p>
-          Actualmente construyendo mi camino en el mundo de la <strong>seguridad informática</strong>,
-          participando en laboratorios, CTFs y proyectos prácticos que consolidan mis habilidades técnicas.
-        </p>
+        <p>Soy <strong>Brandon Zevallos Pastrana</strong>, estudiante de Ciberseguridad y Abogado de formación. Mi perfil une dos mundos que rara vez se cruzan: el <span class="highlight">hacking ético</span> y el <span class="highlight">marco legal</span> del entorno digital.</p>
+        <p>Me especializo en seguridad ofensiva, análisis de vulnerabilidades y forense digital. Mi background jurídico me da una perspectiva única sobre <strong>ciberderecho, privacidad de datos y cumplimiento normativo</strong> en entornos de ciberseguridad.</p>
+        <p>Actualmente construyendo mi camino en el mundo de la <strong>seguridad informática</strong>, participando en laboratorios, CTFs y proyectos prácticos que consolidan mis habilidades técnicas.</p>
       </div>
-
       <div class="about-skills reveal">
         <h3>// HABILIDADES TÉCNICAS</h3>
         <ul class="skill-list">
-          <li class="skill-item">
-            <span>▸</span>
-            <span class="skill-label">Ethical Hacking</span>
-            <div class="skill-bar-bg"><div class="skill-bar" style="width:70%"></div></div>
-          </li>
-          <li class="skill-item">
-            <span>▸</span>
-            <span class="skill-label">Redes & Protocolos</span>
-            <div class="skill-bar-bg"><div class="skill-bar" style="width:65%"></div></div>
-          </li>
-          <li class="skill-item">
-            <span>▸</span>
-            <span class="skill-label">Linux / Kali</span>
-            <div class="skill-bar-bg"><div class="skill-bar" style="width:75%"></div></div>
-          </li>
-          <li class="skill-item">
-            <span>▸</span>
-            <span class="skill-label">OSINT</span>
-            <div class="skill-bar-bg"><div class="skill-bar" style="width:60%"></div></div>
-          </li>
-          <li class="skill-item">
-            <span>▸</span>
-            <span class="skill-label">Ciberderecho</span>
-            <div class="skill-bar-bg"><div class="skill-bar" style="width:85%"></div></div>
-          </li>
-          <li class="skill-item">
-            <span>▸</span>
-            <span class="skill-label">Forense Digital</span>
-            <div class="skill-bar-bg"><div class="skill-bar" style="width:55%"></div></div>
-          </li>
+          <li class="skill-item"><span>▸</span><span class="skill-label">Ethical Hacking</span><div class="skill-bar-bg"><div class="skill-bar" style="width:70%"></div></div></li>
+          <li class="skill-item"><span>▸</span><span class="skill-label">Redes &amp; Protocolos</span><div class="skill-bar-bg"><div class="skill-bar" style="width:65%"></div></div></li>
+          <li class="skill-item"><span>▸</span><span class="skill-label">Linux / Kali</span><div class="skill-bar-bg"><div class="skill-bar" style="width:75%"></div></div></li>
+          <li class="skill-item"><span>▸</span><span class="skill-label">OSINT</span><div class="skill-bar-bg"><div class="skill-bar" style="width:60%"></div></div></li>
+          <li class="skill-item"><span>▸</span><span class="skill-label">Ciberderecho</span><div class="skill-bar-bg"><div class="skill-bar" style="width:85%"></div></div></li>
+          <li class="skill-item"><span>▸</span><span class="skill-label">Forense Digital</span><div class="skill-bar-bg"><div class="skill-bar" style="width:55%"></div></div></li>
         </ul>
       </div>
     </div>
@@ -838,64 +496,39 @@
   <section id="projects">
     <div class="section-header reveal">
       <p class="section-label">// 02 PROYECTOS</p>
-      <h2 class="section-title">Projects & Labs</h2>
+      <h2 class="section-title">Projects &amp; Labs</h2>
       <div class="section-line"></div>
     </div>
-
     <div class="projects-grid">
       <div class="project-card reveal">
         <p class="project-tag">// CTF / LAB</p>
         <h3 class="project-name">TryHackMe Labs</h3>
-        <p class="project-desc">
-          Resolución de máquinas y laboratorios en TryHackMe, cubriendo
-          reconocimiento, explotación de vulnerabilidades web, escalada de privilegios y post-explotación.
-        </p>
+        <p class="project-desc">Resolución de máquinas y laboratorios en TryHackMe, cubriendo reconocimiento, explotación de vulnerabilidades web, escalada de privilegios y post-explotación.</p>
         <div class="project-stack">
-          <span class="stack-tag">Nmap</span>
-          <span class="stack-tag">Burp Suite</span>
-          <span class="stack-tag">Metasploit</span>
-          <span class="stack-tag">Linux</span>
+          <span class="stack-tag">Nmap</span><span class="stack-tag">Burp Suite</span><span class="stack-tag">Metasploit</span><span class="stack-tag">Linux</span>
         </div>
       </div>
-
       <div class="project-card reveal">
         <p class="project-tag">// INVESTIGACIÓN</p>
-        <h3 class="project-name">Legal Tech & Ciberderecho</h3>
-        <p class="project-desc">
-          Análisis del marco legal peruano en ciberseguridad: Ley N° 30096,
-          normativas de protección de datos (LPDP) y su aplicación en incidentes de seguridad informática.
-        </p>
+        <h3 class="project-name">Legal Tech &amp; Ciberderecho</h3>
+        <p class="project-desc">Análisis del marco legal peruano en ciberseguridad: Ley N° 30096, normativas de protección de datos (LPDP) y su aplicación en incidentes de seguridad informática.</p>
         <div class="project-stack">
-          <span class="stack-tag">Ley 30096</span>
-          <span class="stack-tag">LPDP</span>
-          <span class="stack-tag">GDPR</span>
-          <span class="stack-tag">Perú</span>
+          <span class="stack-tag">Ley 30096</span><span class="stack-tag">LPDP</span><span class="stack-tag">GDPR</span><span class="stack-tag">Perú</span>
         </div>
       </div>
-
       <div class="project-card reveal">
         <p class="project-tag">// PORTFOLIO</p>
         <h3 class="project-name">Brandeiks.github.io</h3>
-        <p class="project-desc">
-          Sitio de portafolio personal construido desde cero, con estética de terminal
-          y diseño orientado a la comunidad de seguridad informática.
-        </p>
+        <p class="project-desc">Sitio de portafolio personal construido desde cero, con estética de terminal y diseño orientado a la comunidad de seguridad informática.</p>
         <div class="project-stack">
-          <span class="stack-tag">HTML/CSS</span>
-          <span class="stack-tag">JavaScript</span>
-          <span class="stack-tag">GitHub Pages</span>
+          <span class="stack-tag">HTML/CSS</span><span class="stack-tag">JavaScript</span><span class="stack-tag">GitHub Pages</span>
         </div>
       </div>
-
-      <div class="project-card reveal" style="border-style: dashed; opacity:0.5;">
+      <div class="project-card reveal" style="border-style:dashed;opacity:0.5;">
         <p class="project-tag">// PRÓXIMAMENTE</p>
         <h3 class="project-name">[ En desarrollo ]</h3>
-        <p class="project-desc">
-          Nuevos proyectos en camino. Próximos writeups, herramientas o investigaciones.
-        </p>
-        <div class="project-stack">
-          <span class="stack-tag">???</span>
-        </div>
+        <p class="project-desc">Nuevos proyectos en camino. Próximos writeups, herramientas o investigaciones.</p>
+        <div class="project-stack"><span class="stack-tag">???</span></div>
       </div>
     </div>
   </section>
@@ -904,10 +537,9 @@
   <section id="certs">
     <div class="section-header reveal">
       <p class="section-label">// 03 CERTIFICACIONES</p>
-      <h2 class="section-title">Certs & Training</h2>
+      <h2 class="section-title">Certs &amp; Training</h2>
       <div class="section-line"></div>
     </div>
-
     <div class="certs-grid">
       <div class="cert-card reveal">
         <div class="cert-icon">🎓</div>
@@ -917,7 +549,6 @@
           <p class="cert-status status-active">● EN CURSO</p>
         </div>
       </div>
-
       <div class="cert-card reveal">
         <div class="cert-icon">⚖️</div>
         <div class="cert-info">
@@ -926,7 +557,6 @@
           <p class="cert-status status-active">● COMPLETADO</p>
         </div>
       </div>
-
       <div class="cert-card cert-coursera reveal">
         <div class="cert-badge">
           <span class="badge-ibm">IBM</span>
@@ -939,7 +569,6 @@
           <p class="cert-status status-active">● COMPLETADO</p>
         </div>
       </div>
-
       <div class="cert-card reveal">
         <div class="cert-icon">🔐</div>
         <div class="cert-info">
@@ -949,8 +578,7 @@
         </div>
       </div>
     </div>
-
-    <div class="reveal" style="margin-top: 2.5rem; text-align: center;">
+    <div class="reveal" style="margin-top:2.5rem;text-align:center;">
       <a href="certificaciones.html" class="btn">VIEW CERTS //</a>
     </div>
   </section>
@@ -961,76 +589,82 @@
       <div class="section-header reveal">
         <p class="section-label">// 04 CONTACT</p>
         <h2 class="section-title">Let's Connect</h2>
-        <div class="section-line" style="margin: 1rem auto 0;"></div>
+        <div class="section-line" style="margin:1rem auto 0;"></div>
       </div>
-
-      <p class="reveal">
-        ¿Tienes un proyecto de seguridad, una consulta legal-digital o quieres
-        colaborar? Escríbeme. Siempre abierto a nuevas conexiones en el mundo infosec.
-      </p>
-
+      <p class="reveal">¿Tienes un proyecto de seguridad, una consulta legal-digital o quieres colaborar? Escríbeme. Siempre abierto a nuevas conexiones en el mundo infosec.</p>
       <div class="contact-links reveal">
         <a href="mailto:brandon@example.com" class="contact-link" aria-label="Enviar email a Brandon Zevallos">
-          <svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          <span aria-hidden="true">EMAIL</span>
-          <span class="sr-only">Email</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <span aria-hidden="true">EMAIL</span><span class="sr-only">Email</span>
         </a>
-        <a href="https://github.com/Brandeiks" target="_blank" rel="noopener noreferrer" class="contact-link" aria-label="Perfil de GitHub de Brandon Zevallos (abre en nueva pestaña)">
-          <svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span aria-hidden="true">GITHUB</span>
-          <span class="sr-only">GitHub</span>
+        <a href="https://github.com/Brandeiks" target="_blank" rel="noopener noreferrer" class="contact-link" aria-label="Perfil de GitHub (abre en nueva pestaña)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span aria-hidden="true">GITHUB</span><span class="sr-only">GitHub</span>
         </a>
-        <a href="https://www.linkedin.com/in/brandeiks" target="_blank" rel="noopener noreferrer" class="contact-link" aria-label="Perfil de LinkedIn de Brandon Zevallos (abre en nueva pestaña)">
-          <svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-          <span aria-hidden="true">LINKEDIN</span>
-          <span class="sr-only">LinkedIn</span>
+        <a href="https://www.linkedin.com/in/brandeiks" target="_blank" rel="noopener noreferrer" class="contact-link" aria-label="Perfil de LinkedIn (abre en nueva pestaña)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          <span aria-hidden="true">LINKEDIN</span><span class="sr-only">LinkedIn</span>
         </a>
       </div>
-
-      <a href="/cdn-cgi/l/email-protection#6e0c1c0f000a01002e0b160f031e020b400d0103" class="btn reveal">SEND MESSAGE</a>
+      <a href="mailto:brandon@example.com" class="btn reveal">SEND MESSAGE</a>
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer>
     <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Todos los derechos reservados</p>
-    <p>Built with <span>❤</span> & <span>kali linux</span></p>
+    <p>Built with <span>❤</span> &amp; <span>kali linux</span></p>
   </footer>
 
   <script>
-    // ── LOADER (#5) ─────────────────────────────────────────────────────
-    const loader    = document.getElementById('loader');
-    const loaderBar = document.getElementById('loader-bar');
+    // ── LOADER ──────────────────────────────────────────────────────────
+    const loader           = document.getElementById('loader');
+    const loaderBar        = document.getElementById('loader-bar');
+    const loaderPercentage = document.getElementById('loaderPercentage');
+    let progress  = 0;
+    let loaderDone = false;
 
-    requestAnimationFrame(() => { loaderBar.style.width = '100%'; });
-
-    const hideLoader = () => {
-      loader.style.opacity = '0';
-      setTimeout(() => { loader.style.display = 'none'; }, 500);
+    const finishLoader = () => {
+      if (loaderDone) return;
+      loaderDone = true;
+      loader.classList.add('fade-out');
+      setTimeout(() => { loader.classList.add('hidden'); }, 500);
     };
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', hideLoader);
-    } else {
-      hideLoader();
-    }
-    setTimeout(hideLoader, 2000); // fallback máx 2s
+    const interval = setInterval(() => {
+      progress += Math.random() * 15;
+      if (progress > 100) progress = 100;
+      loaderBar.style.width = progress + '%';
+      if (loaderPercentage) loaderPercentage.textContent = Math.floor(progress) + '%';
+      if (progress >= 100) {
+        clearInterval(interval);
+        setTimeout(finishLoader, 500);
+      }
+    }, 200);
+
+    // Garantizar ocultamiento máx 3s
+    setTimeout(() => {
+      clearInterval(interval);
+      loaderBar.style.width = '100%';
+      if (loaderPercentage) loaderPercentage.textContent = '100%';
+      setTimeout(finishLoader, 500);
+    }, 3000);
+
+    // Fallback extra tras window load
+    window.addEventListener('load', () => {
+      setTimeout(finishLoader, 2000);
+    });
 
     // ── CURSOR ──────────────────────────────────────────────────────────
-    const cursor = document.getElementById('cursor');
+    const cursor     = document.getElementById('cursor');
     const cursorRing = document.getElementById('cursorRing');
 
-    // Ocultar hasta el primer movimiento para evitar que aparezca en (0,0)
-    cursor.style.opacity = '0';
-    cursorRing.style.opacity = '0';
-
     document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top  = e.clientY + 'px';
+      cursor.style.left     = e.clientX + 'px';
+      cursor.style.top      = e.clientY + 'px';
       cursorRing.style.left = e.clientX + 'px';
       cursorRing.style.top  = e.clientY + 'px';
-      // Mostrar al primer movimiento
-      cursor.style.opacity = '1';
+      cursor.style.opacity     = '1';
       cursorRing.style.opacity = '0.5';
     });
 
@@ -1038,28 +672,25 @@
       cursor.classList.add('clicked');
       cursorRing.classList.add('clicked');
     });
-
     document.addEventListener('mouseup', () => {
       cursor.classList.remove('clicked');
       cursorRing.classList.remove('clicked');
     });
 
-    // Enlarge ring on interactive elements
     document.querySelectorAll('a, button, .btn').forEach(el => {
       el.addEventListener('mouseenter', () => {
-        cursorRing.style.width  = '54px';
-        cursorRing.style.height = '54px';
+        cursorRing.style.width   = '54px';
+        cursorRing.style.height  = '54px';
         cursorRing.style.opacity = '0.3';
       });
       el.addEventListener('mouseleave', () => {
-        cursorRing.style.width  = '36px';
-        cursorRing.style.height = '36px';
+        cursorRing.style.width   = '36px';
+        cursorRing.style.height  = '36px';
         cursorRing.style.opacity = '0.5';
       });
     });
 
-    // ── SCROLL REVEAL ───────────────────────────────────────────────────
-    const reveals = document.querySelectorAll('.reveal');
+    // ── SCROLL REVEAL ────────────────────────────────────────────────────
     const revealObserver = new IntersectionObserver(entries => {
       entries.forEach((entry, i) => {
         if (entry.isIntersecting) {
@@ -1067,10 +698,9 @@
         }
       });
     }, { threshold: 0.1 });
-    reveals.forEach(el => revealObserver.observe(el));
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
-    // ── SKILL BARS ──────────────────────────────────────────────────────
-    const skillBars = document.querySelectorAll('.skill-bar');
+    // ── SKILL BARS ───────────────────────────────────────────────────────
     const barObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -1079,22 +709,20 @@
         }
       });
     }, { threshold: 0.3 });
-    skillBars.forEach(bar => barObserver.observe(bar));
+    document.querySelectorAll('.skill-bar').forEach(bar => barObserver.observe(bar));
 
-    // ── ACTIVE NAV ──────────────────────────────────────────────────────
-    const sections = document.querySelectorAll('section[id]');
+    // ── ACTIVE NAV ───────────────────────────────────────────────────────
     const navLinks = document.querySelectorAll('.nav-links a');
-
     window.addEventListener('scroll', () => {
       let current = '';
-      sections.forEach(s => {
+      document.querySelectorAll('section[id]').forEach(s => {
         if (window.scrollY >= s.offsetTop - 140) current = s.getAttribute('id');
       });
       navLinks.forEach(a => {
         a.classList.toggle('active', a.getAttribute('href') === '#' + current);
       });
     });
-
   </script>
+
 </body>
 </html>
