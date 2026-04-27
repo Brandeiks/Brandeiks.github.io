@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Database — DockerLabs Writeup | Brandeiks</title>
-  <meta name="description" content="Writeup de la máquina Database de DockerLabs — Dificultad: Fácil. SQLi + SMB + Java reverse shell + SUID env.">
+  <meta name="description" content="Writeup de la máquina Database de DockerLabs — Dificultad: Media. SQLi + SMB + Java reverse shell + SUID env.">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
   <style>
@@ -102,6 +102,7 @@
     .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
     .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
     .badge-easy   { color: var(--green);  border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .badge-medium { color: var(--orange); border-color: rgba(255,140,0,0.4);  background: rgba(255,140,0,0.05); }
     .badge-docker { color: var(--cyan);   border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
     .badge-linux  { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
     .badge-sqli   { color: var(--red);    border-color: rgba(255,45,85,0.3);  background: rgba(255,45,85,0.05); }
@@ -307,7 +308,7 @@
     <h1 class="writeup-title"><span>Database</span></h1>
     <p class="writeup-subtitle">DockerLabs — Linux · SQLi → SMB → Java Reverse Shell → SUID env</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-easy">● FÁCIL</span>
+      <span class="meta-badge badge-medium">● MEDIO</span>
       <span class="meta-badge badge-docker">DOCKERLABS</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-sqli">SQL INJECTION</span>
@@ -339,7 +340,7 @@
       <p class="sidebar-title">// INFO</p>
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-cyan">DockerLabs</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
-      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-green">Fácil</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-yellow">Medio</span></div>
       <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
@@ -373,7 +374,7 @@
       <div class="section-line"></div>
       <div class="prose">
         <p>
-          <strong>Database</strong> es una máquina de dificultad <span class="hl">fácil</span> de la plataforma
+          <strong>Database</strong> es una máquina de dificultad <span class="hl">media</span> de la plataforma
           <span class="hl-cyan">DockerLabs</span>. Corre sobre <strong>Linux Ubuntu 22.04 (Jammy)</strong>
           y expone una aplicación web PHP con un formulario de login vulnerable a
           <span class="hl">inyección SQL</span>, un servicio <span class="hl-cyan">SMB</span> con recursos
