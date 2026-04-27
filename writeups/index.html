@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Writeups | Brandeiks</title>
+  <meta name="description" content="Writeups de máquinas CTF — DockerLabs, TryHackMe, HackTheBox por Brandon Zevallos Pastrana.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back:hover { color: var(--green); }
+    .nav-back::before { content: '← '; }
+
+    /* HERO */
+    .hero {
+      min-height: 38vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove { 0% { transform: translateY(0); } 100% { transform: translateY(60px); } }
+    .hero-glow {
+      position: absolute; width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.06) 0%, transparent 70%);
+      top: 0; left: -100px; pointer-events: none;
+    }
+    .hero-content { position: relative; z-index: 2; }
+    .hero-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); letter-spacing: 4px; margin-bottom: 1rem; }
+    .hero-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; letter-spacing: 2px; line-height: 1; }
+    .hero-title span { color: var(--green); }
+    .hero-sub { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-dim); margin-top: 1rem; letter-spacing: 1px; }
+    .hero-stats { display: flex; gap: 2.5rem; margin-top: 2rem; }
+    .stat { font-family: var(--font-mono); }
+    .stat-num { font-size: 1.8rem; color: var(--green); display: block; line-height: 1; }
+    .stat-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 0.2rem; }
+
+    /* FILTERS */
+    .filters-bar {
+      padding: 2rem 4rem; display: flex; gap: 1rem; flex-wrap: wrap;
+      border-bottom: 1px solid var(--dim); background: var(--bg2);
+      position: sticky; top: 65px; z-index: 100;
+    }
+    .filter-btn {
+      font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px;
+      padding: 0.4rem 1rem; border: 1px solid var(--dim);
+      background: transparent; color: var(--text-dim);
+      transition: all 0.2s; cursor: none;
+    }
+    .filter-btn:hover, .filter-btn.active { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.05); }
+    .filter-btn.active { box-shadow: 0 0 12px rgba(0,255,136,0.15); }
+    .filter-btn[data-diff="muy-facil"].active  { border-color: var(--cyan);   color: var(--cyan);   background: rgba(0,229,255,0.05); }
+    .filter-btn[data-diff="facil"].active      { border-color: var(--green);  color: var(--green);  background: rgba(0,255,136,0.05); }
+    .filter-btn[data-diff="medio"].active      { border-color: var(--yellow); color: var(--yellow); background: rgba(255,215,0,0.05); }
+    .filter-btn[data-diff="dificil"].active    { border-color: var(--red);    color: var(--red);    background: rgba(255,45,85,0.05); }
+
+    /* MAIN */
+    .main { padding: 3rem 4rem; max-width: 1400px; margin: 0 auto; }
+
+    /* PLATFORM SECTION */
+    .platform-section { margin-bottom: 4rem; }
+    .platform-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; }
+    .platform-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); letter-spacing: 3px; }
+    .platform-title { font-family: var(--font-disp); font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; }
+    .platform-line { flex: 1; height: 1px; background: var(--dim); }
+    .platform-count { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); }
+
+    /* CARDS GRID */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
+
+    /* WRITEUP CARD */
+    .writeup-card {
+      background: var(--bg2); border: 1px solid var(--dim);
+      padding: 1.8rem; position: relative; overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+      text-decoration: none; color: inherit; display: block;
+    }
+    .writeup-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 3px; height: 0; transition: height 0.4s;
+    }
+    .writeup-card:hover { transform: translateY(-4px); }
+    .writeup-card[data-diff="muy-facil"]::before { background: var(--cyan); }
+    .writeup-card[data-diff="muy-facil"]:hover   { border-color: rgba(0,229,255,0.3); }
+    .writeup-card[data-diff="facil"]::before     { background: var(--green); }
+    .writeup-card[data-diff="facil"]:hover       { border-color: rgba(0,255,136,0.3); }
+    .writeup-card[data-diff="medio"]::before     { background: var(--yellow); }
+    .writeup-card[data-diff="medio"]:hover       { border-color: rgba(255,215,0,0.3); }
+    .writeup-card[data-diff="dificil"]::before   { background: var(--red); }
+    .writeup-card[data-diff="dificil"]:hover     { border-color: rgba(255,45,85,0.3); }
+    .writeup-card:hover::before { height: 100%; }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+    .card-platform { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); letter-spacing: 2px; }
+    .card-diff {
+      font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 2px;
+      padding: 0.2rem 0.6rem; border: 1px solid;
+    }
+    .diff-muy-facil { color: var(--cyan);   border-color: rgba(0,229,255,0.4);  background: rgba(0,229,255,0.05); }
+    .diff-facil     { color: var(--green);  border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .diff-medio     { color: var(--yellow); border-color: rgba(255,215,0,0.4);  background: rgba(255,215,0,0.05); }
+    .diff-dificil   { color: var(--red);    border-color: rgba(255,45,85,0.4);  background: rgba(255,45,85,0.05); }
+
+    .card-name { font-family: var(--font-disp); font-size: 1.15rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 0.6rem; }
+    .card-desc { font-size: 0.88rem; line-height: 1.6; color: var(--text-dim); margin-bottom: 1.2rem; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.2rem; }
+    .card-tag { font-family: var(--font-mono); font-size: 0.62rem; color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); padding: 0.15rem 0.5rem; letter-spacing: 1px; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; }
+    .card-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); }
+    .card-arrow { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); transition: color 0.2s, transform 0.2s; display: inline-block; }
+    .writeup-card:hover .card-arrow { color: var(--green); transform: translateX(4px); }
+
+    /* COMING SOON CARD */
+    .card-soon {
+      background: transparent; border: 1px dashed rgba(255,255,255,0.06);
+      padding: 1.8rem; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 160px; gap: 0.5rem;
+    }
+    .card-soon span { font-family: var(--font-mono); font-size: 0.68rem; color: rgba(74,106,116,0.5); letter-spacing: 3px; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 4rem; opacity: 0.4; }
+    .empty-state p { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim); letter-spacing: 2px; }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* HIDDEN */
+    .hidden { display: none !important; }
+
+    /* FOOTER */
+    footer {
+      padding: 2rem 4rem; border-top: 1px solid var(--dim);
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 4rem;
+    }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .hero { padding: 6rem 1.5rem 2.5rem; }
+      .filters-bar { padding: 1.2rem 1.5rem; top: 57px; }
+      .main { padding: 2rem 1.5rem; }
+      .cards-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../index.html" class="nav-back">PORTFOLIO</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <p class="hero-label">// CTF · WRITEUPS</p>
+    <h1 class="hero-title">WRITE<span>UPS</span></h1>
+    <p class="hero-sub">Documentación técnica de máquinas resueltas — DockerLabs · TryHackMe · HackTheBox</p>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num" id="totalCount">1</span><span class="stat-label">TOTAL</span></div>
+      <div class="stat"><span class="stat-num" id="dockerCount">1</span><span class="stat-label">DOCKERLABS</span></div>
+      <div class="stat"><span class="stat-num">—</span><span class="stat-label">TRYHACKME</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters-bar">
+  <button class="filter-btn active" data-diff="all">TODOS</button>
+  <button class="filter-btn" data-diff="muy-facil">● MUY FÁCIL</button>
+  <button class="filter-btn" data-diff="facil">● FÁCIL</button>
+  <button class="filter-btn" data-diff="medio">● MEDIO</button>
+  <button class="filter-btn" data-diff="dificil">● DIFÍCIL</button>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DOCKERLABS -->
+  <div class="platform-section" id="dockerlabs-section">
+    <div class="platform-header reveal">
+      <span class="platform-label">// 01</span>
+      <h2 class="platform-title">DOCKERLABS</h2>
+      <div class="platform-line"></div>
+      <span class="platform-count" id="docker-visible-count">1 writeup</span>
+    </div>
+    <div class="cards-grid" id="dockerlabs-grid">
+
+      <!-- DATABASE -->
+      <a href="dockerlabs/medio/database.html" class="writeup-card reveal" data-diff="medio" data-platform="dockerlabs">
+        <div class="card-top">
+          <span class="card-platform">DOCKERLABS</span>
+          <span class="card-diff diff-medio">MEDIO</span>
+        </div>
+        <h3 class="card-name">Database</h3>
+        <p class="card-desc">SQLi + enumeración SMB + Java reverse shell + escalada mediante SUID env.</p>
+        <div class="card-tags">
+          <span class="card-tag">SQLi</span>
+          <span class="card-tag">SMB</span>
+          <span class="card-tag">Java Shell</span>
+          <span class="card-tag">SUID</span>
+          <span class="card-tag">PrivEsc</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Abril 2026</span>
+          <span class="card-arrow">READ →</span>
+        </div>
+      </a>
+
+      <!-- COMING SOON -->
+      <div class="card-soon reveal" data-diff="all" data-platform="dockerlabs">
+        <span>[ PRÓXIMAMENTE ]</span>
+        <span style="font-size:0.58rem;opacity:0.5;">MÁS WRITEUPS EN CAMINO</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TRYHACKME (placeholder) -->
+  <div class="platform-section" id="tryhackme-section">
+    <div class="platform-header reveal">
+      <span class="platform-label">// 02</span>
+      <h2 class="platform-title">TRYHACKME</h2>
+      <div class="platform-line"></div>
+      <span class="platform-count">0 writeups</span>
+    </div>
+    <div class="empty-state reveal">
+      <p>// PRÓXIMAMENTE — WRITEUPS EN DESARROLLO</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeups personales</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => { if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 80); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  // FILTERS
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const cards = document.querySelectorAll('.writeup-card, .card-soon');
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const diff = btn.dataset.diff;
+      cards.forEach(card => {
+        const cardDiff = card.dataset.diff;
+        if (diff === 'all' || cardDiff === diff || cardDiff === 'all') {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+      // Update docker count
+      const visible = document.querySelectorAll('#dockerlabs-grid .writeup-card:not(.hidden)').length;
+      document.getElementById('docker-visible-count').textContent = visible + (visible === 1 ? ' writeup' : ' writeups');
+    });
+  });
+</script>
+</body>
+</html>
