@@ -237,9 +237,9 @@
     <h1 class="hero-title">WRITE<span>UPS</span></h1>
     <p class="hero-sub">Documentación técnica de máquinas resueltas — DockerLabs · TryHackMe · HackTheBox</p>
     <div class="hero-stats">
-      <div class="stat"><span class="stat-num" id="totalCount">4</span><span class="stat-label">TOTAL</span></div>
+      <div class="stat"><span class="stat-num" id="totalCount">5</span><span class="stat-label">TOTAL</span></div>
       <div class="stat"><span class="stat-num" id="dockerCount">4</span><span class="stat-label">DOCKERLABS</span></div>
-      <div class="stat"><span class="stat-num">—</span><span class="stat-label">HACKTHEBOX</span></div>
+      <div class="stat"><span class="stat-num">1</span><span class="stat-label">HACKTHEBOX</span></div>
       <div class="stat"><span class="stat-num">—</span><span class="stat-label">TRYHACKME</span></div>
     </div>
   </div>
@@ -360,16 +360,43 @@
     </div>
   </div>
 
-  <!-- HACKTHEBOX (placeholder) -->
+  <!-- HACKTHEBOX -->
   <div class="platform-section" id="hackthebox-section">
     <div class="platform-header reveal">
       <span class="platform-label">// 02</span>
       <h2 class="platform-title">HACKTHEBOX</h2>
       <div class="platform-line"></div>
-      <span class="platform-count">0 writeups</span>
+      <span class="platform-count" id="htb-visible-count">1 writeup</span>
     </div>
-    <div class="empty-state reveal">
-      <p>// PRÓXIMAMENTE — WRITEUPS EN DESARROLLO</p>
+    <div class="cards-grid" id="hackthebox-grid">
+
+      <!-- OVERLAY -->
+      <a href="hackthebox/muy-facil/overlay.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Overlay</h3>
+        <p class="card-desc">WebShell RCE como www-data → reverse shell con Netcat → escalada a root explotando CVE-2021-3493 (OverlayFS LPE).</p>
+        <div class="card-tags">
+          <span class="card-tag">WebShell</span>
+          <span class="card-tag">RCE</span>
+          <span class="card-tag">Netcat</span>
+          <span class="card-tag">CVE-2021-3493</span>
+          <span class="card-tag">PrivEsc</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Mayo 2026</span>
+          <span class="card-arrow">READ →</span>
+        </div>
+      </a>
+
+      <!-- COMING SOON -->
+      <div class="card-soon reveal" data-diff="all" data-platform="hackthebox">
+        <span>[ PRÓXIMAMENTE ]</span>
+        <span style="font-size:0.58rem;opacity:0.5;">MÁS WRITEUPS EN CAMINO</span>
+      </div>
+
     </div>
   </div>
 
