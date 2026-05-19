@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cap — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Cap de HackTheBox — Dificultad: Fácil. OpenVPN → nmap → IDOR /data/0 → pcap FTP credentials → SSH → Python3.8 CAP_SETUID → root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--cyan); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green); border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-idor    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-pcap    { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .badge-ssh     { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .badge-cap     { color: var(--purple); border-color: rgba(191,95,255,0.35); background: rgba(191,95,255,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-ora   { color: var(--orange); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-orange { color: var(--orange); }
+
+    /* INFO BOXES */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .vuln-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .vuln-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .vuln-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .vuln-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>cap</span>
+    </p>
+    <h1 class="writeup-title"><span style="color:var(--green)">Cap</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Linux · OpenVPN → nmap → IDOR /data/0 → pcap FTP creds → SSH → Python3.8 CAP_SETUID → root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-idor">IDOR</span>
+      <span class="meta-badge badge-pcap">PCAP · WIRESHARK</span>
+      <span class="meta-badge badge-ssh">SSH</span>
+      <span class="meta-badge badge-cap">CAP_SETUID · LPE</span>
+      <span class="meta-date">📅 Abril 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#vpn">02 · Conexión OpenVPN</a></li>
+        <li><a href="#reconocimiento">03 · Reconocimiento · nmap</a></li>
+        <li><a href="#web">04 · Acceso Web · Puerto 80</a></li>
+        <li><a href="#idor">05 · IDOR · /data/0</a></li>
+        <li><a href="#pcap">06 · Análisis pcap · Wireshark</a></li>
+        <li><a href="#ssh">07 · Acceso SSH</a></li>
+        <li><a href="#privesc">08 · Privesc · CAP_SETUID</a></li>
+        <li><a href="#flags">09 · Flags</a></li>
+        <li><a href="#referencia">10 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">11 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.2.33</span></div>
+      <div class="info-row"><span class="info-label">Web</span><span class="info-val val-cyan">Gunicorn</span></div>
+      <div class="info-row"><span class="info-label">Usuario</span><span class="info-val val-cyan">nathan</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>openvpn</span> → conexión HTB</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>ping</span> → host activo</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → FTP / SSH / HTTP</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>IDOR</span> → /data/0</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Wireshark</span> → creds FTP</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH</span> → nathan shell</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>getcap</span> → python3.8</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CAP_SETUID</span> → root</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- ===================== 01 RESUMEN ===================== -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          <strong>Cap</strong> es una máquina Linux de dificultad <span class="hl">fácil</span>
+          que corre un servidor HTTP con funciones administrativas, entre ellas la captura de
+          tráfico de red. La aplicación web expone un panel de monitoreo con la ruta
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/data/&lt;ID&gt;</code>
+          donde el ID es un número entero secuencial. La ausencia de controles de acceso
+          adecuados da lugar a una vulnerabilidad de tipo
+          <span class="hl-red">IDOR (Insecure Direct Object Reference)</span>: al manipular
+          el ID a <code style="color:var(--yellow);font-family:var(--font-mono)">/data/0</code>
+          se accede a la captura de otro usuario, que contiene tráfico
+          <span class="hl-cyan">FTP en texto plano</span> con credenciales válidas.
+        </p>
+        <p>
+          Con esas credenciales se accede vía <span class="hl-cyan">SSH</span> al sistema como
+          el usuario <strong>nathan</strong> y se obtiene la flag de usuario. Para la escalada
+          de privilegios, el binario
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/usr/bin/python3.8</code>
+          tiene asignada la capability <span class="hl-pur">CAP_SETUID</span>, lo que permite
+          ejecutar código Python que cambia el UID del proceso a 0 (root) y lanza una shell,
+          obteniendo acceso total al sistema.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>VPN</td><td>sudo openvpn Dedicated_Lab_Masker10.ovpn</td><td>Túnel HTB establecido</td></tr>
+          <tr><td>Reconocimiento</td><td>ping 10.129.2.33 -c 3</td><td>Host activo, TTL 63 → Linux</td></tr>
+          <tr><td>Escaneo</td><td>sudo nmap -p- -sV 10.129.2.33 --min-rate 50000</td><td>Puertos 21 (FTP), 22 (SSH), 80 (HTTP)</td></tr>
+          <tr><td>Enum. Web</td><td>http://10.129.2.33 → dashboard como Nathan</td><td>Aplicación de captura de red</td></tr>
+          <tr><td>IDOR</td><td>http://10.129.2.33/data/0</td><td>Pcap ajeno con 72 paquetes</td></tr>
+          <tr><td>Análisis pcap</td><td>Wireshark → filtro ftp → TCP Stream</td><td>USER nathan / PASS Buck3tH4TF0RM3!</td></tr>
+          <tr><td>Foothold</td><td>ssh nathan@10.129.2.33</td><td>Shell como nathan, user.txt</td></tr>
+          <tr><td>Enumeración</td><td>getcap -r / 2>/dev/null</td><td>/usr/bin/python3.8 = cap_setuid+eip</td></tr>
+          <tr><td>Privesc</td><td>python3.8 -c 'import os; os.setuid(0); os.execl("/bin/sh","sh")'</td><td>Shell como root, root.txt</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 02 VPN ===================== -->
+    <div class="section" id="vpn">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Conexión OpenVPN</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">CONECTARSE A LA VPN DE HACKTHEBOX</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de interactuar con cualquier máquina de HackTheBox, es necesario establecer
+          un túnel VPN hacia la red de laboratorio. Sin esta conexión, la IP de la máquina
+          objetivo (<span class="hl-cyan">10.129.x.x</span>) no es alcanzable desde Internet,
+          ya que pertenece a un segmento de red privado de HTB.
+        </p>
+        <p>
+          Descargamos el archivo <code style="color:var(--yellow);font-family:var(--font-mono)">.ovpn</code>
+          desde el portal de HTB (sección <em>Connect</em>) y lo ubicamos en
+          <code style="color:var(--yellow);font-family:var(--font-mono)">~/Downloads/</code>.
+          El comando <span class="hl-cyan">sudo openvpn</span> lanza el cliente OpenVPN con
+          privilegios de root (necesarios para crear la interfaz de red virtual <code style="color:var(--yellow);font-family:var(--font-mono)">tun0</code>).
+          El parámetro del archivo <code style="color:var(--yellow);font-family:var(--font-mono)">Dedicated_Lab_Masker10.ovpn</code>
+          contiene la configuración completa del servidor VPN: dirección IP del servidor
+          HTB, certificados de autenticación, protocolo (TCP/443 en este caso), rutas a
+          inyectar en la tabla de enrutamiento local y parámetros de cifrado
+          (AES-256-CBC). Una vez establecida la conexión, el sistema añade automáticamente
+          las rutas necesarias para que el tráfico hacia <code style="color:var(--yellow);font-family:var(--font-mono)">10.10.x.x</code> y
+          <code style="color:var(--yellow);font-family:var(--font-mono)">10.129.x.x</code> pase por el túnel.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd Downloads && sudo openvpn Dedicated_Lab_Masker10.ovpn">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VPN</span>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">Downloads</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">sudo openvpn <span class="arg">Dedicated_Lab_Masker10.ovpn</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>2026-04-19 22:54:04 OpenVPN 2.7.1 x86_64-pc-linux-gnu [SSL (OpenSSL)] ...</div>
+        <div>2026-04-19 22:54:05 <span class="o-green">VERIFY OK: depth=0, C=GR, O=Hack The Box, CN=us-dedicated-120-dhcp</span></div>
+        <div>2026-04-19 22:54:06 <span class="o-green">Peer Connection Initiated with [AF_INET]38.46.224.242:443</span></div>
+        <div>2026-04-19 22:54:06 PUSH: Received control message: 'PUSH_REPLY,route 10.10.8.0 ...</div>
+        <div>2026-04-19 22:54:06 <span class="o-cyan">OPTIONS IMPORT: route options modified</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// SEÑAL DE CONEXIÓN EXITOSA</p>
+        <p>
+          La línea <strong>Peer Connection Initiated</strong> confirma que el túnel TLS
+          está establecido. A partir de este momento, las IPs del rango
+          <strong>10.129.x.x</strong> son alcanzables desde nuestra máquina Kali.
+          Este proceso debe mantenerse corriendo en una terminal aparte durante todo
+          el ejercicio.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 03 RECONOCIMIENTO ===================== -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">VERIFICAR QUE LA MÁQUINA ESTÁ ACTIVA — PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de lanzar cualquier herramienta de escaneo, verificamos que la máquina
+          objetivo responde en la red. Usamos <span class="hl-cyan">ping</span> con el
+          flag <span class="hl-cyan">-c 3</span> para enviar exactamente
+          <strong>3 paquetes ICMP Echo Request</strong> y detenerse automáticamente
+          (sin este flag, ping continuaría indefinidamente). Si la máquina está activa,
+          responderá con paquetes ICMP Echo Reply. El campo
+          <code style="color:var(--yellow);font-family:var(--font-mono)">ttl=63</code>
+          en la respuesta es un indicador del sistema operativo: Linux suele partir de
+          TTL 64 y lo decrementamos en 1 por cada salto de red, mientras que Windows
+          parte de 128. Un TTL cercano a 64 apunta a un sistema <strong>Linux</strong>,
+          lo cual es coherente con la descripción de la máquina.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 10.129.2.33 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.2.33</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 10.129.2.33 (10.129.2.33) 56(84) bytes of data.</div>
+        <div><span class="o-green">64 bytes from 10.129.2.33: icmp_seq=1 ttl=63 time=114 ms</span></div>
+        <div><span class="o-green">64 bytes from 10.129.2.33: icmp_seq=2 ttl=63 time=114 ms</span></div>
+        <div><span class="o-green">64 bytes from 10.129.2.33: icmp_seq=3 ttl=63 time=115 ms</span></div>
+        <div>&nbsp;</div>
+        <div>--- 10.129.2.33 ping statistics ---</div>
+        <div><span class="o-green">3 packets transmitted, 3 received, 0% packet loss</span>, time 2001ms</div>
+        <div>rtt min/avg/max/mdev = 113.606/114.252/114.913/0.533 ms</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la máquina confirmada como activa, realizamos un escaneo de puertos completo
+          con <span class="hl-cyan">nmap</span>. Cada flag tiene un propósito específico:
+        </p>
+        <p>
+          <span class="hl-cyan">-p-</span> escanea <strong>todos los 65535 puertos TCP</strong>,
+          no solo los 1000 más comunes que nmap usa por defecto. Es fundamental para no
+          pasar por alto servicios en puertos no estándar.
+          <span class="hl-cyan">-sV</span> activa la <strong>detección de versiones</strong>:
+          nmap envía sondas específicas a cada puerto abierto para identificar el software
+          exacto y su versión (ej. vsftpd 3.0.3, OpenSSH 8.2p1).
+          <span class="hl-cyan">--min-rate 50000</span> fuerza a nmap a enviar al menos
+          <strong>50,000 paquetes por segundo</strong>, reduciendo el tiempo total del
+          escaneo de minutos a segundos. Esta agresividad es aceptable en un entorno
+          de laboratorio controlado. Finalmente, la IP
+          <code style="color:var(--yellow);font-family:var(--font-mono)">10.129.2.33</code>
+          es el objetivo del escaneo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sV 10.129.2.33 --min-rate 50000">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ESCANEO</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sV</span> <span class="arg">10.129.2.33</span> <span class="flag">--min-rate</span> <span class="arg">50000</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-20 01:02 -0400</div>
+        <div>Warning: 10.129.2.33 giving up on port because retransmission cap hit (10).</div>
+        <div>Nmap scan report for 10.129.2.33</div>
+        <div>Host is up (1.1s latency).</div>
+        <div>Not shown: 45501 closed tcp ports (reset), 20031 filtered tcp ports (no-response)</div>
+        <div>PORT&nbsp;&nbsp;&nbsp; STATE SERVICE VERSION</div>
+        <div><span class="o-green">21/tcp</span>  open  ftp&nbsp;&nbsp;&nbsp; <span class="o-cyan">vsftpd 3.0.3</span></div>
+        <div><span class="o-green">22/tcp</span>  open  ssh&nbsp;&nbsp;&nbsp; <span class="o-cyan">OpenSSH 8.2p1</span> Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)</div>
+        <div><span class="o-green">80/tcp</span>  open  http&nbsp;&nbsp; <span class="o-cyan">Gunicorn</span></div>
+        <div>Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 38.83 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ANÁLISIS DE RESULTADOS</p>
+        <p>
+          Se detectan <strong>3 puertos abiertos</strong>:
+          <strong>21 (FTP)</strong> con vsftpd 3.0.3 — servidor FTP, potencial vector si hay credenciales.
+          <strong>22 (SSH)</strong> con OpenSSH 8.2p1 — acceso remoto seguro, útil una vez tengamos credenciales.
+          <strong>80 (HTTP)</strong> con Gunicorn — servidor Python WSGI, indica una aplicación web desarrollada
+          en Python (probablemente Flask o Django). El siguiente paso es explorar la aplicación web.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 04 WEB ===================== -->
+    <div class="section" id="web">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Acceso Web · Puerto 80</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">EXPLORAR LA APLICACIÓN EN EL PUERTO 80</span>
+      </div>
+      <div class="prose">
+        <p>
+          Accedemos a <code style="color:var(--yellow);font-family:var(--font-mono)">http://10.129.2.33</code>
+          en el navegador. La aplicación presenta un <strong>dashboard de administración de red</strong>
+          que muestra estadísticas de tráfico capturado: número de paquetes IP, TCP y UDP.
+          En la esquina superior derecha se aprecia el nombre del usuario autenticado:
+          <span class="hl-cyan">Nathan</span>.
+        </p>
+        <p>
+          El menú lateral incluye la opción <strong>Security Snapshot (5 Second PCAP + Analysis)</strong>,
+          que al ejecutarse genera una captura de tráfico de 5 segundos y la almacena bajo
+          la ruta <code style="color:var(--yellow);font-family:var(--font-mono)">/data/&lt;ID&gt;</code>.
+          El ID es un número entero que se incrementa con cada captura que realiza el usuario
+          actual. Al observar la URL tras generar una nueva captura, nos encontramos en
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/data/2</code> o similar.
+        </p>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VULNERABILIDAD DETECTADA — IDOR</p>
+        <p>
+          La aplicación usa un <strong>identificador numérico secuencial y predecible</strong>
+          para referenciar capturas de red. No existe ningún control de autorización que
+          verifique que el usuario autenticado sea el propietario de la captura solicitada.
+          Cualquier usuario puede acceder a las capturas de <strong>cualquier otro usuario</strong>
+          simplemente cambiando el número en la URL. Esto es una vulnerabilidad
+          <strong>IDOR (Insecure Direct Object Reference)</strong>.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 05 IDOR ===================== -->
+    <div class="section" id="idor">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">IDOR · Acceso a /data/0</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">EXPLOTAR IDOR — NAVEGAR A /data/0</span>
+      </div>
+      <div class="prose">
+        <p>
+          Sabiendo que el servidor asigna IDs secuenciales a cada captura, probamos el
+          ID más bajo posible: <strong>0</strong>. Al navegar a
+          <code style="color:var(--yellow);font-family:var(--font-mono)">http://10.129.2.33/data/0</code>
+          el servidor nos devuelve la captura número 0, que pertenece a otro usuario
+          (no a Nathan). Esta captura muestra <strong>72 paquetes</strong> en total
+          (69 TCP, 69 IP), una cantidad significativamente mayor que la captura vacía
+          de 1 paquete que tendríamos en nuestra propia sesión. Esto indica actividad
+          de red real, potencialmente interesante.
+        </p>
+        <p>
+          El botón <strong>Download</strong> permite descargar el archivo
+          <code style="color:var(--yellow);font-family:var(--font-mono)">.pcap</code>
+          de esa captura para analizarla localmente con Wireshark.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow">URL:</span> <span class="o-cyan">http://10.129.2.33/data/0</span></div>
+        <div>&nbsp;</div>
+        <div>Data Type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Value</div>
+        <div>─────────────────────────────────────────</div>
+        <div>Number of Packets&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-green">72</span></div>
+        <div>Number of IP Packets&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-green">69</span></div>
+        <div>Number of TCP Packets&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-green">69</span></div>
+        <div>Number of UDP Packets&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-yellow">0</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ /data/0?</p>
+        <p>
+          El ID <strong>0</strong> es el primero asignado cuando el sistema inicia. Al
+          pertenecer a la configuración inicial o a otro usuario, su captura puede contener
+          tráfico generado durante la puesta en marcha del servicio. En muchos CTFs y
+          entornos reales, los datos más antiguos (ID más bajos) son los más ricos en
+          información sensible, ya que corresponden a actividad administrativa temprana.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 06 PCAP ===================== -->
+    <div class="section" id="pcap">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Análisis PCAP · Wireshark</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">ABRIR EL PCAP EN WIRESHARK Y FILTRAR FTP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Abrimos el archivo <code style="color:var(--yellow);font-family:var(--font-mono)">.pcap</code>
+          descargado en <span class="hl-cyan">Wireshark</span>. Para encontrar credenciales
+          rápidamente, aplicamos el filtro <code style="color:var(--yellow);font-family:var(--font-mono)">ftp</code>
+          en la barra de filtros de Wireshark. Este filtro muestra únicamente los paquetes del
+          protocolo FTP, descartando todo el tráfico irrelevante.
+        </p>
+        <p>
+          <strong>FTP (File Transfer Protocol)</strong> transmite todos sus datos,
+          incluidas las credenciales, en <span class="hl-red">texto plano sin cifrado</span>.
+          Cualquier persona que capture el tráfico de red puede leer directamente el usuario
+          y la contraseña. En la vista filtrada de Wireshark identificamos los paquetes clave:
+          el paquete con <code style="color:var(--yellow);font-family:var(--font-mono)">Request: USER nathan</code>
+          y el paquete con
+          <code style="color:var(--yellow);font-family:var(--font-mono)">Request: PASS Buck3tH4TF0RM3!</code>,
+          seguidos del response <code style="color:var(--yellow);font-family:var(--font-mono)">230 Login successful</code>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">FOLLOW → TCP STREAM</span>
+      </div>
+      <div class="prose">
+        <p>
+          Para ver la conversación FTP completa en orden cronológico, hacemos
+          <strong>clic derecho</strong> sobre cualquier paquete FTP → <strong>Follow</strong>
+          → <strong>TCP Stream</strong>. Esta función de Wireshark reconstruye el flujo
+          TCP completo mostrando la sesión en su totalidad: el intercambio de comandos
+          entre el cliente FTP y el servidor vsftpd. Los datos en
+          <span class="hl-red">rojo</span> corresponden a lo enviado por el cliente
+          (credenciales) y en <span class="hl-cyan">azul</span> las respuestas del servidor.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">220 (vsFTPd 3.0.3)</span></div>
+        <div><span class="o-red">USER nathan</span></div>
+        <div><span class="o-cyan">331 Please specify the password.</span></div>
+        <div><span class="o-red">PASS Buck3tH4TF0RM3!</span></div>
+        <div><span class="o-green">230 Login successful.</span></div>
+        <div><span class="o-red">SYST</span></div>
+        <div><span class="o-cyan">215 UNIX Type: L8</span></div>
+        <div><span class="o-red">PORT 192,168,196,1,212,140</span></div>
+        <div><span class="o-cyan">200 PORT command successful. Consider using PASV.</span></div>
+        <div><span class="o-red">LIST</span></div>
+        <div><span class="o-cyan">150 Here comes the directory listing.</span></div>
+        <div><span class="o-cyan">226 Directory send OK.</span></div>
+        <div><span class="o-red">RETR notes.txt</span></div>
+        <div><span class="o-red">550 Failed to open file.</span></div>
+        <div><span class="o-red">QUIT</span></div>
+        <div><span class="o-cyan">221 Goodbye.</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">nathan</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CONTRASEÑA</div>
+          <div class="cred-val">Buck3tH4TF0RM3!</div>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// RIESGO — CREDENCIALES EN TEXTO PLANO</p>
+        <p>
+          FTP transmite credenciales sin cifrado alguno. En un entorno real, esto constituye
+          una vulnerabilidad crítica: cualquier dispositivo en la misma red (switch, router,
+          otro host comprometido) puede interceptar estas credenciales con herramientas como
+          Wireshark, tcpdump o ettercap. La solución es migrar a
+          <strong>SFTP o FTPS</strong>, que cifran la sesión completa.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 07 SSH ===================== -->
+    <div class="section" id="ssh">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Acceso SSH · Foothold</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">INGRESAR VÍA SSH CON LAS CREDENCIALES OBTENIDAS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con las credenciales extraídas del tráfico FTP, intentamos acceder vía
+          <span class="hl-cyan">SSH</span> al puerto 22. Usamos el comando
+          <code style="color:var(--yellow);font-family:var(--font-mono)">ssh nathan@10.129.2.33</code>:
+          el formato es <code style="color:var(--yellow);font-family:var(--font-mono)">usuario@IP</code>.
+          Esto funciona gracias a la técnica de <span class="hl-pur">reutilización de contraseña</span>
+          (<em>password reuse</em>): el usuario nathan usó la misma contraseña tanto para FTP como para SSH,
+          un error de seguridad muy común en entornos reales.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh nathan@10.129.2.33">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">nathan@10.129.2.33</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>** WARNING: connection is not using a post-quantum key exchange algorithm.</div>
+        <div>** This session may be vulnerable to "store now, decrypt later" attacks.</div>
+        <div>nathan@10.129.2.33's password: <span class="o-yellow">[Buck3tH4TF0RM3!]</span></div>
+        <div><span class="o-green">Welcome to Ubuntu 20.04.2 LTS (GNU/Linux 5.4.0-80-generic x86_64)</span></div>
+        <div>&nbsp;</div>
+        <div>System load:    0.0</div>
+        <div>Usage of /:     36.9% of 8.73GB</div>
+        <div>Memory usage:   33%</div>
+        <div>Users logged in: 0</div>
+        <div>IPv4 address for eth0: <span class="o-cyan">10.129.2.33</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">nathan@cap:~$</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">OBTENER LA FLAG DE USUARIO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Una vez dentro del sistema como <strong>nathan</strong>, listamos el contenido del
+          directorio home con <code style="color:var(--yellow);font-family:var(--font-mono)">ls</code>
+          y encontramos el archivo <code style="color:var(--yellow);font-family:var(--font-mono)">user.txt</code>.
+          Lo leemos con <code style="color:var(--yellow);font-family:var(--font-mono)">cat user.txt</code>
+          para obtener la <span class="hl">flag de usuario</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ls && cat user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">USER FLAG</span>
+        <div><span class="prompt" style="color:var(--green)">nathan@cap:~$ </span><span class="cmd">ls</span></div>
+        <div style="margin-left:1.2rem; color:var(--text-dim);">user.txt</div>
+        <div><span class="prompt" style="color:var(--green)">nathan@cap:~$ </span><span class="cmd">cat <span class="arg">user.txt</span></span></div>
+        <div style="margin-left:1.2rem;"><span class="arg">6b3dfda0408f9929587704c08e04e52a</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 08 PRIVESC ===================== -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Escalada de Privilegios · CAP_SETUID</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">ENUMERAR CAPABILITIES CON GETCAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Para escalar privilegios buscamos <strong>Linux Capabilities</strong> mal configuradas.
+          Las capabilities son una forma granular de otorgar privilegios específicos a binarios
+          sin necesidad de darles el bit SUID completo. Usamos el comando
+          <code style="color:var(--yellow);font-family:var(--font-mono)">getcap -r / 2>/dev/null</code>
+          para enumerarlas en todo el sistema.
+        </p>
+        <p>
+          <span class="hl-cyan">getcap</span> es la herramienta que lee las capabilities
+          asignadas a archivos ejecutables (almacenadas como atributos extendidos en el
+          sistema de archivos). El flag <span class="hl-cyan">-r</span> (recursive) indica
+          que debe buscar <strong>de forma recursiva</strong> desde el directorio raíz
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/</code>, revisando
+          todos los subdirectorios y archivos del sistema. El redireccionamiento
+          <span class="hl-cyan">2&gt;/dev/null</span> descarta el <strong>stderr</strong>
+          (descriptor de fichero 2), es decir, todos los mensajes de error que genera
+          getcap al intentar acceder a directorios sin permiso (como
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/proc</code>,
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/sys</code>, etc.),
+          manteniendo la salida limpia con solo los resultados relevantes.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="getcap -r / 2>/dev/null">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ENUM CAPABILITIES</span>
+        <div><span class="prompt" style="color:var(--green)">nathan@cap:~$ </span><span class="cmd">getcap <span class="flag">-r</span> <span class="arg">/</span> <span class="comment">2>/dev/null</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">/usr/bin/python3.8 = cap_setuid,cap_net_bind_service+eip</span></div>
+        <div>/usr/bin/ping = cap_net_raw+ep</div>
+        <div>/usr/bin/traceroute6.iputils = cap_net_raw+ep</div>
+        <div>/usr/bin/mtr-packet = cap_net_raw+ep</div>
+        <div>/usr/lib/x86_64-linux-gnu/gstreamer1.0/gstreamer-1.0/gst-ptp-helper = cap_net_bind_service,cap_net_admin+ep</div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VECTOR DE ESCALADA IDENTIFICADO</p>
+        <p>
+          El binario <strong>/usr/bin/python3.8</strong> tiene asignada la capability
+          <strong>cap_setuid+eip</strong>. Esto significa que cualquier proceso ejecutado
+          con este Python puede llamar a <strong>setuid()</strong> para cambiar su UID
+          al de cualquier usuario, incluyendo root (UID 0), sin necesitar la contraseña
+          de root ni el bit SUID tradicional.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">CONSULTAR GTFOBINS — TÉCNICA DE EXPLOTACIÓN</span>
+      </div>
+      <div class="prose">
+        <p>
+          Consultamos <span class="hl-cyan">GTFOBins</span> (gtfobins.github.io), un repositorio
+          de técnicas para abusar de binarios Unix en escenarios de escalada de privilegios.
+          En la entrada de Python con la pestaña <strong>Capabilities</strong>, encontramos
+          el comando exacto que necesitamos:
+          <code style="color:var(--yellow);font-family:var(--font-mono)">python -c 'import os; os.setuid(0); os.execl("/bin/sh", "sh")'</code>.
+          Lo adaptamos a la versión <code style="color:var(--yellow);font-family:var(--font-mono)">python3.8</code>
+          ya que es la que tiene la capability asignada.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">EXPLOTAR CAP_SETUID CON PYTHON3.8</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos el siguiente comando que explota la capability
+          <span class="hl-pur">CAP_SETUID</span> de Python 3.8. Cada parte
+          del comando tiene un rol específico:
+        </p>
+        <p>
+          <code style="color:var(--yellow);font-family:var(--font-mono)">python3.8</code>
+          invoca el intérprete Python 3.8, que es el binario con la capability asignada.
+          El flag <span class="hl-cyan">-c</span> permite pasar código Python directamente
+          como argumento de línea de comandos, sin necesidad de crear un archivo
+          <code style="color:var(--yellow);font-family:var(--font-mono)">.py</code>.
+          Dentro del código: <span class="hl-cyan">import os</span> carga el módulo
+          estándar de Python para interacción con el sistema operativo.
+          <span class="hl-cyan">os.setuid(0)</span> llama a la syscall
+          <code style="color:var(--yellow);font-family:var(--font-mono)">setuid</code>
+          con argumento <code style="color:var(--yellow);font-family:var(--font-mono)">0</code>
+          (UID de root), cambiando el UID real y efectivo del proceso Python a root —
+          esto solo es posible porque el binario tiene <strong>CAP_SETUID</strong>.
+          Por último, <span class="hl-cyan">os.execl("/bin/sh", "sh")</span> reemplaza
+          el proceso Python actual por una shell <code style="color:var(--yellow);font-family:var(--font-mono)">/bin/sh</code>
+          mediante la syscall <code style="color:var(--yellow);font-family:var(--font-mono)">execl</code>.
+          Como el proceso ya tiene UID 0, la shell resultante corre como <strong>root</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="python3.8 -c 'import os; os.setuid(0); os.execl(\"/bin/sh\", \"sh\")'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC</span>
+        <div><span class="prompt" style="color:var(--green)">nathan@cap:~$ </span><span class="cmd">python3.8 <span class="flag">-c</span> <span class="arg">'import os; os.setuid(0); os.execl("/bin/sh", "sh")'</span></span></div>
+        <div><span class="prompt-root"># </span><span class="cmd">whoami</span></div>
+        <div style="margin-left:1.2rem;"><span class="o-red">root</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// EXPLICACIÓN DE os.execl()</p>
+        <p>
+          <strong>os.execl(path, arg0, arg1, ...)</strong> es la versión Python de la syscall
+          Unix <code>execve()</code>. Reemplaza la imagen del proceso actual por un nuevo
+          programa (<code>/bin/sh</code>) sin crear un proceso hijo. El primer argumento es
+          la ruta del ejecutable, y el segundo es el nombre del proceso tal como aparecerá
+          en <code>ps</code> (convencionalmente el mismo nombre del binario). Al heredar el
+          UID root del proceso Python, la shell resultante opera con privilegios completos.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 09 FLAGS ===================== -->
+    <div class="section" id="flags">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Flags</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">OBTENER LA FLAG DE ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Como root, navegamos al directorio
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/root</code>
+          y leemos el archivo <code style="color:var(--yellow);font-family:var(--font-mono)">root.txt</code>
+          para completar la máquina.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="whoami && pwd && cd .. && ls && cd root && ls && cat root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ROOT FLAG</span>
+        <div><span class="prompt-root"># </span><span class="cmd">whoami</span></div>
+        <div style="margin-left:1.2rem;"><span class="o-red">root</span></div>
+        <div><span class="prompt-root"># </span><span class="cmd">pwd</span></div>
+        <div style="margin-left:1.2rem; color:var(--text-dim);">/home/nathan</div>
+        <div><span class="prompt-root"># </span><span class="cmd">cd ..</span></div>
+        <div><span class="prompt-root"># </span><span class="cmd">ls</span></div>
+        <div style="margin-left:1.2rem; color:var(--text-dim);">nathan</div>
+        <div><span class="prompt-root"># </span><span class="cmd">cd ..</span></div>
+        <div><span class="prompt-root"># </span><span class="cmd">ls</span></div>
+        <div style="margin-left:1.2rem; color:var(--text-dim);">bin  boot  cdrom  dev  etc  home  lib  lib32  lib64  lost+found  media  mnt  opt  proc  root  sbin  snap  srv  sys  tmp  usr  var</div>
+        <div><span class="prompt-root"># </span><span class="cmd">cd root</span></div>
+        <div><span class="prompt-root"># </span><span class="cmd">ls</span></div>
+        <div style="margin-left:1.2rem; color:var(--text-dim);">root.txt&nbsp;&nbsp;snap</div>
+        <div><span class="prompt-root"># </span><span class="cmd">cat <span class="arg">root.txt</span></span></div>
+        <div style="margin-left:1.2rem;"><span class="arg">51504efaa385f1d22d0883aae5b1e8bb</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USER FLAG</div>
+          <div class="cred-val">6b3dfda0408f9929587704c08e04e52a</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-val">51504efaa385f1d22d0883aae5b1e8bb</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 10 REFERENCIA ===================== -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">openvpn</div>
+          <div class="cmd-ref-syntax">sudo openvpn archivo.ovpn</div>
+          <div class="cmd-ref-desc">Cliente VPN para conectarse a la red de HackTheBox.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>archivo.ovpn</span> — configuración descargada del portal HTB</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ping</div>
+          <div class="cmd-ref-syntax">ping &lt;IP&gt; -c 3</div>
+          <div class="cmd-ref-desc">Verifica conectividad y detecta SO por TTL.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-c 3</span> — envía exactamente 3 paquetes ICMP</li>
+            <li><span>ttl=63</span> — indica sistema Linux (base 64 - 1 salto)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">sudo nmap -p- -sV &lt;IP&gt; --min-rate 50000</div>
+          <div class="cmd-ref-desc">Escáner de puertos y detección de versiones.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> — todos los 65535 puertos TCP</li>
+            <li><span>-sV</span> — detección de versión de servicio</li>
+            <li><span>--min-rate 50000</span> — velocidad mínima de 50k paquetes/s</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Wireshark (filtro ftp)</div>
+          <div class="cmd-ref-syntax">ftp → Follow → TCP Stream</div>
+          <div class="cmd-ref-desc">Analiza tráfico de red capturado en archivos .pcap.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>filtro ftp</span> — muestra solo paquetes del protocolo FTP</li>
+            <li><span>TCP Stream</span> — reconstruye la sesión completa en orden</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ssh</div>
+          <div class="cmd-ref-syntax">ssh usuario@IP</div>
+          <div class="cmd-ref-desc">Acceso remoto seguro al sistema objetivo.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>usuario</span> — nombre de cuenta en el sistema remoto</li>
+            <li><span>@IP</span> — dirección del host objetivo</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">getcap</div>
+          <div class="cmd-ref-syntax">getcap -r / 2>/dev/null</div>
+          <div class="cmd-ref-desc">Enumera Linux Capabilities en binarios del sistema.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-r</span> — búsqueda recursiva desde la raíz /</li>
+            <li><span>2>/dev/null</span> — descarta errores de permisos</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">python3.8 -c (privesc)</div>
+          <div class="cmd-ref-syntax">python3.8 -c 'import os; os.setuid(0); os.execl("/bin/sh","sh")'</div>
+          <div class="cmd-ref-desc">Explota CAP_SETUID para obtener shell root.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-c</span> — ejecuta código Python inline</li>
+            <li><span>os.setuid(0)</span> — cambia UID a root (requiere CAP_SETUID)</li>
+            <li><span>os.execl()</span> — reemplaza proceso actual por /bin/sh</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">IDOR (manual)</div>
+          <div class="cmd-ref-syntax">http://&lt;IP&gt;/data/0</div>
+          <div class="cmd-ref-desc">Acceso a recursos ajenos manipulando el ID en la URL.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>/data/0</span> — captura #0, pertenece a otro usuario</li>
+            <li><span>sin autenticación extra</span> — el servidor no verifica propiedad</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 11 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Glosario Técnico</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">OpenVPN — Túnel VPN hacia HTB</div>
+          <div class="glos-def">
+            <strong>OpenVPN</strong> es una implementación de VPN (Virtual Private Network) de código
+            abierto que usa el protocolo TLS/SSL para cifrar el túnel. En el contexto de HackTheBox,
+            cada usuario descarga un archivo <code>.ovpn</code> personalizado que contiene certificados
+            únicos de cliente y la configuración del servidor VPN de HTB. Al ejecutar
+            <code>sudo openvpn archivo.ovpn</code>, el sistema crea una interfaz de red virtual
+            (<code>tun0</code>) y añade rutas estáticas para que el tráfico hacia las IPs
+            <code>10.129.x.x</code> y <code>10.10.x.x</code> pase por el túnel cifrado hacia la
+            infraestructura de HTB. Sin esta conexión, las máquinas objetivo son inalcanzables.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">IDOR — Insecure Direct Object Reference</div>
+          <div class="glos-def">
+            <strong>IDOR</strong> es una vulnerabilidad de control de acceso donde una aplicación
+            expone referencias directas a objetos internos (IDs de base de datos, nombres de archivo,
+            números secuenciales) sin verificar que el usuario autenticado tiene autorización para
+            acceder a ese objeto específico. En Cap, la ruta <code>/data/&lt;ID&gt;</code> usa un
+            entero secuencial como referencia al archivo <code>.pcap</code>. Al cambiar el ID de
+            <code>/data/2</code> a <code>/data/0</code>, el servidor retorna la captura de otro
+            usuario sin validar la propiedad. La corrección consiste en vincular cada registro de
+            base de datos al usuario propietario y verificar esa relación en cada petición.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">FTP en Texto Plano — Clear Text Credentials</div>
+          <div class="glos-def">
+            <strong>FTP (File Transfer Protocol)</strong>, definido en el RFC 959 de 1985, transmite
+            todos sus datos —incluyendo credenciales de autenticación— sin ningún tipo de cifrado.
+            Los comandos <code>USER</code> y <code>PASS</code> se envían como texto ASCII legible
+            en la red. Cualquier herramienta de captura de tráfico como Wireshark, tcpdump o
+            ettercap puede interceptarlos. En Wireshark, el filtro <code>ftp</code> muestra
+            directamente estos paquetes. La alternativa segura es <strong>SFTP</strong> (FTP sobre
+            SSH, puerto 22) o <strong>FTPS</strong> (FTP sobre TLS, puertos 990/989), que cifran
+            toda la sesión incluyendo la autenticación.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Wireshark — Análisis de Tráfico de Red</div>
+          <div class="glos-def">
+            <strong>Wireshark</strong> es el analizador de protocolos de red más utilizado en el mundo.
+            Lee archivos <code>.pcap</code> (packet capture) y permite inspeccionar cada paquete
+            capturado con decodificación automática de cientos de protocolos. Los <strong>filtros de
+            visualización</strong> como <code>ftp</code>, <code>http</code> o <code>tcp.port==21</code>
+            permiten aislar el tráfico relevante. La función <strong>Follow TCP Stream</strong>
+            (clic derecho → Follow → TCP Stream) reconstruye el flujo bidireccional completo de
+            una sesión TCP, presentando los datos en orden cronológico y diferenciando por color
+            los datos del cliente (rojo) y del servidor (azul). Es esencial para analizar
+            sesiones FTP, HTTP y otros protocolos en texto plano.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Password Reuse — Reutilización de Contraseñas</div>
+          <div class="glos-def">
+            <strong>Password reuse</strong> es la práctica de usar la misma contraseña para
+            múltiples servicios o cuentas. En Cap, el usuario <em>nathan</em> usa la contraseña
+            <code>Buck3tH4TF0RM3!</code> tanto para FTP como para SSH. Una vez comprometido
+            uno de los servicios (FTP, que transmite en texto plano), el atacante puede
+            probar esas mismas credenciales en todos los demás servicios del sistema. En
+            entornos reales, este vector es una de las causas más frecuentes de compromiso
+            en cadena. La mitigación incluye usar contraseñas únicas por servicio, gestores
+            de contraseñas y autenticación de dos factores.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Linux Capabilities — Sistema Granular de Privilegios</div>
+          <div class="glos-def">
+            Las <strong>Linux Capabilities</strong> (introducidas en el kernel 2.2) dividen los
+            privilegios de root en unidades más pequeñas y específicas, permitiendo otorgar
+            solo los permisos necesarios sin dar acceso root completo. Cada capability tiene un
+            nombre (<code>CAP_NET_BIND_SERVICE</code>, <code>CAP_SETUID</code>, etc.) y puede
+            asignarse a binarios individuales como atributo extendido del sistema de archivos.
+            Los conjuntos <strong>+eip</strong> definen en qué contextos la capability es
+            efectiva (e), inheritable (i) y permitida (p). La herramienta
+            <code>getcap</code> lee estos atributos y <code>setcap</code> los configura.
+            Una capability mal asignada puede ser tan peligrosa como el bit SUID si permite
+            a un proceso sin privilegios realizar operaciones de root.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CAP_SETUID — Escalada de Privilegios</div>
+          <div class="glos-def">
+            <strong>CAP_SETUID</strong> es una Linux Capability que permite a un proceso
+            llamar a las syscalls <code>setuid()</code>, <code>setgid()</code> y funciones
+            relacionadas para cambiar su identidad de usuario sin ser root. Normalmente,
+            solo root puede cambiar el UID a otro valor arbitrario; con CAP_SETUID, cualquier
+            proceso que la posea puede hacer <code>setuid(0)</code> para convertirse en root.
+            Cuando se asigna esta capability a un intérprete de lenguaje de propósito general
+            como Python, el impacto es crítico: el atacante puede escribir código arbitrario
+            que primero llame a <code>os.setuid(0)</code> y luego ejecute cualquier comando
+            con privilegios de root. El comando <code>os.execl("/bin/sh", "sh")</code>
+            reemplaza el proceso Python por una shell root interactiva mediante la syscall
+            <code>execve()</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GTFOBins — Referencia de Explotación de Binarios Unix</div>
+          <div class="glos-def">
+            <strong>GTFOBins</strong> (gtfobins.github.io) es un repositorio colaborativo que
+            cataloga técnicas para abusar de binarios Unix estándar en escenarios de escalada
+            de privilegios, escape de entornos restringidos y ejecución de código arbitrario.
+            Para cada binario, documenta múltiples vectores según el contexto: SUID, sudo,
+            capabilities, cron, etc. La entrada de Python con la pestaña <strong>Capabilities</strong>
+            describe exactamente el ataque <code>cap_setuid</code>: importar el módulo
+            <code>os</code>, llamar a <code>os.setuid(0)</code> y ejecutar una shell. Es
+            la referencia estándar en CTFs y pentesting para identificar rápidamente si un
+            binario con privilegios especiales puede usarse para escalar.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Gunicorn — Servidor WSGI Python</div>
+          <div class="glos-def">
+            <strong>Gunicorn</strong> (Green Unicorn) es un servidor HTTP WSGI
+            (Web Server Gateway Interface) para aplicaciones Python. Actúa como capa intermedia
+            entre el servidor web (nginx, Apache) y el framework de aplicación (Flask, Django).
+            Su presencia en el escaneo de nmap (<code>Gunicorn</code> en el puerto 80) es una
+            pista que la aplicación web está desarrollada en Python. Esto es relevante para el
+            pentesting porque: (1) sugiere vulnerabilidades comunes de frameworks Python,
+            (2) es coherente con que el sistema tenga Python instalado con capabilities
+            especiales, y (3) puede revelar rutas de depuración o endpoints típicos de
+            aplicaciones Flask/Django.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">PCAP — Packet Capture Format</div>
+          <div class="glos-def">
+            <strong>PCAP</strong> (Packet Capture) es el formato estándar para almacenar
+            capturas de tráfico de red. Los archivos <code>.pcap</code> contienen una secuencia
+            de paquetes de red con sus metadatos (timestamp, longitud, datos raw) capturados
+            en una interfaz de red. Herramientas como <code>tcpdump</code>, <code>tshark</code>
+            y <code>Wireshark</code> pueden crear y leer este formato. En el contexto de Cap,
+            la aplicación web usa la librería <code>scapy</code> o similar para capturar
+            5 segundos de tráfico y guardarlo como <code>.pcap</code>. El análisis posterior
+            de este archivo en Wireshark revela toda la actividad de red del período de
+            captura, incluyendo sesiones FTP con credenciales en texto plano.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
