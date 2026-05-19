@@ -233,6 +233,15 @@
     .output-block .o-white  { color: var(--text); }
     .output-block .o-purple { color: var(--purple); }
 
+    /* ASCII ART — fuente fija y line-height estricto para que no se deforme */
+    .output-block.ascii-art {
+      font-size: 0.82rem;
+      line-height: 1.22;
+      letter-spacing: 0;
+      white-space: pre;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+    }
+
     /* INFO BOX */
     .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
     .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
@@ -322,7 +331,7 @@
       <a href="../../writeups/dockerlabs/">dockerlabs</a> /
       <span>mirame</span>
     </p>
-    <h1 class="writeup-title"><span>Mirame</span></h1>
+    <h1 class="writeup-title"><span style="color:var(--green)">Mirame</span></h1>
     <p class="writeup-subtitle">DockerLabs — Linux · SQLi Bypass → sqlmap DB dump → Esteganografía → SSH → SUID find LPE</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
@@ -365,30 +374,6 @@
       <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
       <div class="info-row"><span class="info-label">DBMS</span><span class="info-val val-red">MariaDB (MySQL)</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
-    </div>
-    <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
-      <div class="attack-path">
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>auto_deploy.sh</span> → máquina levantada</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puertos 22, 80</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Gobuster</span> → auth.php, page.php</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SQLi manual</span> → login no sanitizado</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Burp Suite</span> → captura request</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>sqlmap</span> → DB dump usuarios</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Gobuster + passwords</span> → directorio oculto</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>stegseek + john</span> → imagen cifrada</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH</span> → acceso como carlos</div></div>
-        <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">/usr/bin/find SUID</span> → ROOT</div></div>
-      </div>
     </div>
   </aside>
 
@@ -491,17 +476,6 @@
       </div>
 
       <div class="output-block">
-        <div class="o-cyan">                    ##</div>
-        <div class="o-cyan">               ## ## ##        ==</div>
-        <div class="o-cyan">            ## ## ## ## ##    ===</div>
-        <div class="o-green">        /"""""""""""""""""\___/ ===</div>
-        <div class="o-green">   ~~~ {~~ ~~~~ ~~~ ~~~~ ~~~ ~ /  ===- ~~~</div>
-        <div class="o-green">        \______ o           __/</div>
-        <div class="o-green">          \    \         __/</div>
-        <div class="o-green">           \____\_______/</div>
-        <div>&nbsp;</div>
-        <div class="o-cyan">          D O C K E R L A B S</div>
-        <div>&nbsp;</div>
         <div class="o-yellow">Estamos desplegando la máquina vulnerable, espere un momento.</div>
         <div class="o-green">Máquina desplegada, su dirección IP es —&gt; <strong>172.17.0.2</strong></div>
         <div class="o-red">Presiona Ctrl+C cuando termines con la máquina para eliminarla</div>
