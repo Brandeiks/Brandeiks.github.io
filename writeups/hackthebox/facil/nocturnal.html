@@ -290,10 +290,10 @@
 
     /* FOOTER */
     footer {
-      border-top: 1px solid var(--dim); padding: 3rem 4rem;
-      text-align: center; font-family: var(--font-mono); font-size: 0.72rem;
-      color: var(--text-dim); letter-spacing: 2px; line-height: 2;
+      border-top: 1px solid var(--dim); padding: 2rem 4rem;
+      display: flex; justify-content: space-between; align-items: center; margin-top: 4rem;
     }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
     footer span { color: var(--green); }
 
     @media (max-width: 960px) {
@@ -301,7 +301,7 @@
       .sidebar { position: static; order: -1; }
       nav { padding: 1rem 1.5rem; }
       .writeup-hero { padding: 6rem 1.5rem 2rem; }
-      footer { padding: 2rem 1.5rem; }
+      footer { padding: 1.5rem; flex-direction: column; gap: 0.5rem; text-align: center; }
       .cmd-ref-grid { grid-template-columns: 1fr; }
       body, a, button { cursor: auto; }
       .cursor, .cursor-ring { display: none; }
