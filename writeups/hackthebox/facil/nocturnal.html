@@ -166,7 +166,7 @@
       background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
       color: var(--text-dim); font-family: var(--font-mono);
       font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
-      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      cursor: inherit; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
       z-index: 10; white-space: nowrap;
     }
     .cmd-block:hover .copy-btn { opacity: 1; }
@@ -296,12 +296,15 @@
     }
     footer span { color: var(--green); }
 
-    @media (max-width: 900px) {
-      .writeup-layout { grid-template-columns: 1fr; padding: 2rem; }
+    @media (max-width: 960px) {
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
       .sidebar { position: static; order: -1; }
-      nav { padding: 1rem 2rem; }
-      .writeup-hero { padding: 6rem 2rem 2rem; }
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2rem; }
+      footer { padding: 2rem 1.5rem; }
       .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
     }
   </style>
 </head>
@@ -312,8 +315,8 @@
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
 
 <nav>
-  <a href="#" class="nav-logo">BRANDEIKS</a>
-  <a href="#" class="nav-back">WRITEUPS</a>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">WRITEUPS</a>
 </nav>
 
 <!-- HERO -->
@@ -322,7 +325,7 @@
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
     <div class="breadcrumb">
-      <a href="#">HOME</a> / <a href="#">WRITEUPS</a> / <a href="#">HACKTHEBOX</a> / <span>NOCTURNAL</span>
+      <a href="../../index.html">HOME</a> / <a href="../../index.html">WRITEUPS</a> / <a href="../../index.html#hackthebox-section">HACKTHEBOX</a> / <span>NOCTURNAL</span>
     </div>
     <h1 class="writeup-title">NOCT<span>URNAL</span></h1>
     <p class="writeup-subtitle">// HackTheBox · Linux · Fácil · IDOR + Command Injection + CVE-2023-46818</p>
