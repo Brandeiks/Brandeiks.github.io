@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dancing — HTB Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Dancing de HackTheBox — Dificultad: Muy Fácil. SMB Anonymous Access → WorkShares → flag.txt.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #050a0e;
+      --bg2:      #080f14;
+      --bg3:      #0a1520;
+      --green:    #00ff88;
+      --cyan:     #00e5ff;
+      --red:      #ff2d55;
+      --yellow:   #ffd700;
+      --orange:   #ff8c00;
+      --dim:      #1a2a2e;
+      --text:     #c8d8e0;
+      --text-dim: #4a6a74;
+      --font-mono:'Share Tech Mono', monospace;
+      --font-main:'Rajdhani', sans-serif;
+      --font-disp:'Orbitron', sans-serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-main);overflow-x:hidden;cursor:none;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,.012) 2px,rgba(0,255,136,.012) 4px);pointer-events:none;z-index:1000;}
+    a,button{cursor:none;}
+    .cursor{position:fixed;width:10px;height:10px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--green);opacity:0;}
+    .cursor-ring{position:fixed;width:36px;height:36px;border:1px solid var(--green);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:0;transition:all .12s ease;}
+    nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 4rem;background:rgba(5,10,14,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,255,136,.08);}
+    .nav-logo{font-family:var(--font-disp);font-size:1rem;color:var(--green);letter-spacing:4px;text-decoration:none;}
+    .nav-back{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);text-decoration:none;letter-spacing:2px;transition:color .3s;}
+    .nav-back::before{content:'← ';}
+    .nav-back:hover{color:var(--green);}
+    .writeup-hero{min-height:42vh;display:flex;align-items:flex-end;padding:8rem 4rem 3rem;position:relative;overflow:hidden;border-bottom:1px solid var(--dim);}
+    .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,136,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.03) 1px,transparent 1px);background-size:60px 60px;}
+    .hero-glow{position:absolute;width:600px;height:400px;background:radial-gradient(ellipse,rgba(0,255,136,.07) 0%,transparent 70%);top:0;right:0;pointer-events:none;}
+    .writeup-hero-content{position:relative;z-index:2;max-width:900px;}
+    .breadcrumb{font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);letter-spacing:2px;margin-bottom:1.2rem;}
+    .breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
+    .breadcrumb a:hover{color:var(--green);}
+    .breadcrumb span{color:var(--green);}
+    .writeup-title{font-family:var(--font-disp);font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;letter-spacing:2px;line-height:1.1;}
+    .writeup-title span{color:var(--green);}
+    .writeup-subtitle{font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);margin-top:.8rem;letter-spacing:1px;}
+    .writeup-meta{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-top:1.8rem;}
+    .meta-badge{font-family:var(--font-mono);font-size:.68rem;letter-spacing:2px;padding:.3rem .8rem;border:1px solid;}
+    .badge-vfacil{color:#00ffcc;border-color:rgba(0,255,204,.4);background:rgba(0,255,204,.05);}
+    .badge-htb{color:var(--green);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);}
+    .badge-win{color:var(--cyan);border-color:rgba(0,229,255,.3);background:rgba(0,229,255,.05);}
+    .badge-smb{color:var(--yellow);border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.05);}
+    .badge-anon{color:var(--orange);border-color:rgba(255,140,0,.4);background:rgba(255,140,0,.05);}
+    .meta-date{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+    .writeup-layout{display:grid;grid-template-columns:1fr 240px;gap:3rem;max-width:1300px;margin:0 auto;padding:4rem;}
+    .sidebar{position:sticky;top:5rem;height:fit-content;order:2;}
+    .sidebar-box{border:1px solid var(--dim);padding:1.5rem;background:var(--bg2);margin-bottom:1.5rem;}
+    .sidebar-title{font-family:var(--font-mono);font-size:.65rem;color:var(--green);letter-spacing:3px;margin-bottom:1.2rem;}
+    .toc-list{list-style:none;display:flex;flex-direction:column;gap:.4rem;}
+    .toc-list a{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);text-decoration:none;letter-spacing:1px;transition:all .2s;display:block;padding:.25rem .8rem;border-left:2px solid transparent;}
+    .toc-list a:hover,.toc-list a.active{color:var(--green);border-left-color:var(--green);}
+    .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+    .info-label{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);letter-spacing:1px;}
+    .info-val{font-family:var(--font-mono);font-size:.72rem;}
+    .val-green{color:var(--green);}.val-cyan{color:var(--cyan);}.val-yellow{color:var(--yellow);}.val-red{color:var(--red);}.val-vfacil{color:#00ffcc;}
+    .attack-path{display:flex;flex-direction:column;gap:0;}
+    .ap-item{display:flex;align-items:flex-start;gap:.8rem;padding:.5rem 0;}
+    .ap-dot{width:8px;height:8px;background:var(--green);border-radius:50%;margin-top:4px;flex-shrink:0;box-shadow:0 0 6px var(--green);}
+    .ap-line{width:1px;height:16px;background:rgba(0,255,136,.2);margin:0 3.5px;}
+    .ap-text{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);line-height:1.5;}
+    .ap-text span{color:var(--cyan);}
+    .writeup-content{min-width:0;order:1;}
+    .progress-container{position:fixed;top:0;left:0;width:100%;height:3px;background:transparent;z-index:1001;}
+    .progress-bar{height:100%;background:var(--cyan);width:0%;transition:width .15s ease;box-shadow:0 0 8px var(--cyan);}
+    .skip-link{position:absolute;top:-40px;left:0;background:var(--green);color:var(--bg);padding:8px 16px;z-index:10000;text-decoration:none;font-family:var(--font-mono);font-size:.8rem;transition:top .2s;}
+    .skip-link:focus{top:0;}
+    .copy-btn{position:absolute;top:.5rem;right:4.5rem;background:var(--dim);border:1px solid rgba(0,229,255,.3);color:var(--text-dim);font-family:var(--font-mono);font-size:.62rem;padding:.15rem .5rem;letter-spacing:1px;cursor:none;opacity:0;transition:opacity .2s,background .2s,color .2s;z-index:10;white-space:nowrap;}
+    .cmd-block:hover .copy-btn{opacity:1;}
+    .copy-btn:hover{background:var(--cyan);color:var(--bg);border-color:var(--cyan);}
+    .copy-btn.copied{background:var(--cyan);color:var(--bg);border-color:var(--cyan);opacity:1;}
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--cyan);color:#000;padding:.7rem 1.4rem;font-family:var(--font-mono);font-size:.75rem;letter-spacing:2px;font-weight:600;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;pointer-events:none;z-index:10000;}
+    .toast.show{opacity:1;transform:translateY(0);}
+    .section{margin-bottom:4rem;opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease;}
+    .section.visible{opacity:1;transform:translateY(0);}
+    .section-label{font-family:var(--font-mono);font-size:.68rem;color:var(--cyan);letter-spacing:4px;margin-bottom:.5rem;}
+    .section-title{font-family:var(--font-disp);font-size:1.5rem;font-weight:700;letter-spacing:2px;margin-bottom:.6rem;}
+    .section-line{width:40px;height:2px;background:var(--cyan);margin-bottom:2rem;}
+    .prose p{font-size:1.05rem;line-height:1.9;color:var(--text-dim);margin-bottom:1rem;}
+    .prose p strong{color:var(--text);}
+    .prose p .hl{color:var(--green);font-weight:bold;}
+    .prose p .hl-cyan{color:var(--cyan);}
+    .prose p .hl-red{color:var(--red);}
+    .prose p .hl-yel{color:var(--yellow);}
+    .step-marker{display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;margin-top:2.5rem;}
+    .step-num{font-family:var(--font-disp);font-size:.65rem;color:var(--bg);background:var(--cyan);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:900;}
+    .step-title{font-family:var(--font-mono);font-size:.8rem;color:var(--cyan);letter-spacing:2px;}
+    .cmd-block{background:var(--bg3);border:1px solid rgba(0,229,255,.15);border-left:3px solid var(--cyan);padding:1rem 1.2rem;margin:1rem 0;font-family:var(--font-mono);font-size:.82rem;overflow-x:auto;position:relative;line-height:1.8;}
+    .cmd-block .cmd-label{position:absolute;top:.5rem;right:.8rem;font-size:.6rem;color:var(--text-dim);letter-spacing:2px;}
+    .cmd-block .prompt{color:var(--cyan);user-select:none;}
+    .cmd-block .cmd{color:var(--text);}
+    .cmd-block .flag{color:var(--green);}
+    .cmd-block .arg{color:var(--yellow);}
+    .cmd-block .comment{color:var(--text-dim);font-size:.75rem;}
+    .output-block{background:#020608;border:1px solid var(--dim);padding:1rem 1.2rem;margin:.5rem 0 1.5rem;font-family:var(--font-mono);font-size:.77rem;line-height:1.9;color:var(--text-dim);overflow-x:auto;}
+    .output-block .o-green{color:var(--green);}.output-block .o-cyan{color:var(--cyan);}.output-block .o-red{color:var(--red);}.output-block .o-yellow{color:var(--yellow);}.output-block .o-white{color:var(--text);}
+    .info-box{border:1px solid rgba(0,229,255,.2);background:rgba(0,229,255,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .info-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--cyan);letter-spacing:3px;margin-bottom:.6rem;}
+    .info-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .info-box p strong{color:var(--cyan);}
+    .warn-box{border:1px solid rgba(255,140,0,.25);background:rgba(255,140,0,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .warn-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--orange);letter-spacing:3px;margin-bottom:.6rem;}
+    .warn-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .warn-box p strong{color:var(--orange);}
+    .cred-box{border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;display:flex;gap:2rem;flex-wrap:wrap;}
+    .cred-item .cred-label{font-family:var(--font-mono);font-size:.6rem;color:var(--text-dim);letter-spacing:2px;margin-bottom:.3rem;}
+    .cred-item .cred-val{font-family:var(--font-mono);font-size:.95rem;color:var(--green);}
+    .vuln-table{width:100%;border-collapse:collapse;margin:1.5rem 0;}
+    .vuln-table th,.vuln-table td{font-family:var(--font-mono);font-size:.72rem;padding:.8rem 1rem;text-align:left;border-bottom:1px solid var(--dim);}
+    .vuln-table th{color:var(--cyan);letter-spacing:2px;border-bottom-color:rgba(0,229,255,.2);}
+    .vuln-table td{color:var(--text-dim);}
+    .vuln-table td:first-child{color:var(--green);}
+    hr.divider{border:none;height:1px;background:linear-gradient(90deg,rgba(0,229,255,.3),transparent);margin:3rem 0;}
+    .cmd-ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.5rem;}
+    .cmd-ref-card{border:1px solid var(--dim);background:var(--bg2);padding:1.5rem;transition:border-color .3s;}
+    .cmd-ref-card:hover{border-color:rgba(0,229,255,.25);}
+    .cmd-ref-name{font-family:var(--font-mono);font-size:.9rem;color:var(--cyan);margin-bottom:.5rem;letter-spacing:1px;}
+    .cmd-ref-syntax{font-family:var(--font-mono);font-size:.72rem;color:var(--green);background:var(--bg3);padding:.4rem .7rem;margin-bottom:.8rem;display:inline-block;}
+    .cmd-ref-desc{font-size:.92rem;color:var(--text-dim);line-height:1.7;margin-bottom:.8rem;}
+    .cmd-ref-flags{list-style:none;display:flex;flex-direction:column;gap:.3rem;}
+    .cmd-ref-flags li{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+    .cmd-ref-flags li span{color:var(--yellow);}
+    .glosario-grid{display:grid;grid-template-columns:1fr;gap:1rem;margin-top:1.5rem;}
+    .glos-card{border:1px solid var(--dim);background:var(--bg2);padding:1.4rem 1.5rem;transition:border-color .3s;}
+    .glos-card:hover{border-color:rgba(0,229,255,.2);}
+    .glos-term{font-family:var(--font-mono);font-size:.88rem;color:var(--cyan);margin-bottom:.4rem;letter-spacing:1px;}
+    .glos-def{font-size:.95rem;color:var(--text-dim);line-height:1.75;}
+    .glos-def strong{color:var(--green);}
+    footer{padding:2rem 4rem;border-top:1px solid var(--dim);display:flex;justify-content:space-between;align-items:center;margin-top:4rem;}
+    footer p{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);letter-spacing:1px;}
+    footer span{color:var(--green);}
+    @media(max-width:960px){nav,.writeup-hero,footer{padding-left:1.5rem;padding-right:1.5rem;}.writeup-layout{grid-template-columns:1fr;padding:2rem 1.5rem;}.sidebar{position:static;}.cmd-ref-grid{grid-template-columns:1fr;}body,a,button{cursor:auto;}.cursor,.cursor-ring{display:none;}}
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/htb/">hackthebox</a> /
+      <span>dancing</span>
+    </p>
+    <h1 class="writeup-title"><span>Dancing</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Windows · SMB Null Session → WorkShares Anonymous Access → flag.txt</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-vfacil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-win">WINDOWS</span>
+      <span class="meta-badge badge-smb">SMB</span>
+      <span class="meta-badge badge-anon">ANONYMOUS ACCESS</span>
+      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#smb-enum">03 · Enumeración SMB</a></li>
+        <li><a href="#workshares">04 · Acceso a WorkShares</a></li>
+        <li><a href="#navegacion">05 · Navegación y Descarga</a></li>
+        <li><a href="#flag">06 · Flag</a></li>
+        <li><a href="#referencia">07 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">08 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-cyan">Windows</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-vfacil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.1.12</span></div>
+      <div class="info-row"><span class="info-label">Protocolo</span><span class="info-val val-yellow">SMB (445/TCP)</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puerto 445 SMB abierto</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>xsltproc</span> → reporte HTML</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>smbclient -L</span> → 4 shares listadas</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>WorkShares</span> → acceso sin contraseña</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>James.P/flag.txt</span> → descargada</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div class="ap-text"><span style="color:var(--green)">FLAG</span> → 5f61c10dffbc77a704d76016a22f1664</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Dancing</strong> es una máquina de dificultad <span class="hl">muy fácil</span>
+          de la plataforma <span class="hl-cyan">HackTheBox</span>, diseñada específicamente para
+          introducir el protocolo <strong>SMB (Server Message Block)</strong> y enseñar cómo
+          enumerarlo y explotarlo cuando está mal configurado. La máquina corre sobre
+          <strong>Windows</strong> y expone el servicio SMB en el puerto <span class="hl-cyan">445/TCP</span>.
+        </p>
+        <p>
+          El vector de ataque es directo: el servidor SMB tiene habilitado el acceso
+          <span class="hl-red">anónimo</span> (también llamado <strong>null session</strong>)
+          en la share <span class="hl">WorkShares</span>. Esto permite conectarse sin
+          proporcionar usuario ni contraseña, navegar por los directorios de los empleados
+          Amy.J y James.P, y descargar archivos sensibles. La flag se encuentra en
+          <code style="color:var(--cyan)">James.P\flag.txt</code>.
+        </p>
+        <p>
+          Esta máquina pone en práctica dos áreas fundamentales: <strong>Vulnerability Assessment</strong>
+          (identificar la configuración débil de SMB) y <strong>Authentication</strong>
+          (explotar credenciales por defecto / acceso anónimo), dos de los vectores más
+          comunes en entornos corporativos Windows reales.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reconocimiento</td><td>Nmap -p- -sSCV + xsltproc</td><td>Puerto 445 SMB; OS Windows; SMBv3.1.1</td></tr>
+          <tr><td>Enumeración SMB</td><td>smbclient -L (null session)</td><td>4 shares: ADMIN$, C$, IPC$, WorkShares</td></tr>
+          <tr><td>Acceso anónimo</td><td>smbclient sin contraseña</td><td>Acceso a WorkShares como guest</td></tr>
+          <tr><td>Enumeración shares</td><td>dir / cd Amy.J / cd James.P</td><td>worknotes.txt y flag.txt descubiertos</td></tr>
+          <tr><td>Exfiltración</td><td>get Worknotes.txt / get flag.txt</td><td>Archivos descargados localmente</td></tr>
+          <tr><td>Flag</td><td>cat flag.txt</td><td>5f61c10dffbc77a704d76016a22f1664</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP Y EXPORTACIÓN XML</span>
+      </div>
+      <div class="prose">
+        <p>
+          Lanzamos un escaneo exhaustivo sobre todos los puertos TCP del objetivo.
+          Nmap combina detección de versiones, scripts NSE por defecto y exportación XML
+          en un solo comando. El escaneo revela <strong>11 puertos abiertos</strong>,
+          la mayoría relacionados con servicios Windows típicos.
+        </p>
+        <p>
+          Los puertos más relevantes son:
+        </p>
+        <p>
+          <span class="hl">Puerto 135 — MSRPC</span>: Microsoft Remote Procedure Call.
+          Servicio base de Windows para comunicación entre procesos en red. No lo explotaremos
+          directamente, pero su presencia confirma que estamos ante un sistema Windows.
+        </p>
+        <p>
+          <span class="hl">Puerto 139 — NetBIOS-SSN</span>: NetBIOS Session Service.
+          Protocolo legado de Microsoft para compartir archivos e impresoras en redes locales,
+          predecesor del SMB moderno. Corre sobre TCP/IP en el puerto 139 (NBT — NetBIOS over TCP/IP).
+        </p>
+        <p>
+          <span class="hl">Puerto 445 — microsoft-ds</span>: Este es el puerto clave.
+          <strong>Microsoft Directory Services / SMB directo sobre TCP</strong>. Es el puerto
+          principal de SMB en Windows moderno (desde Windows 2000), sin necesidad de NetBIOS.
+          Aquí es donde conectaremos con smbclient.
+        </p>
+        <p>
+          <span class="hl">Puertos 5985 y 47001</span>: Microsoft HTTPAPI / WinRM. Puerto 5985
+          es WinRM (Windows Remote Management) sobre HTTP, que podría usarse para administración
+          remota vía PowerShell si tuviésemos credenciales.
+        </p>
+        <p>
+          <span class="hl">Puertos 49664-49669</span>: MSRPC dinámicos. Windows asigna puertos
+          altos dinámicamente para servicios RPC adicionales.
+        </p>
+        <p>
+          Los scripts NSE de Nmap también revelan información crítica a través de
+          <code style="color:var(--cyan)">smb2-security-mode</code>:
+          <strong>SMB 3.1.1 con message signing habilitado pero no requerido</strong>.
+          Esto es importante: significa que no se exigen firmas digitales en las comunicaciones SMB,
+          abriendo la puerta a ataques como NTLM relay. En nuestro caso, el problema es más básico:
+          acceso anónimo habilitado.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.1.12 -oX dancing.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.1.12</span> <span class="flag">-oX</span> <span class="arg">dancing.xml</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DESGLOSE DEL COMANDO NMAP</p>
+        <p>
+          <strong>sudo</strong> → Privilegios de root necesarios para el SYN scan (-sS) que opera a nivel de raw sockets.<br>
+          <strong>-p-</strong> → Escanea los 65,535 puertos TCP. Sin esta flag Nmap solo revisa los 1000 más comunes, y podría omitir servicios en puertos no estándar como el 47001 de WinRM.<br>
+          <strong>-sS</strong> → SYN Scan (Half-Open): envía paquetes SYN, si recibe SYN-ACK el puerto está abierto, responde con RST sin completar el handshake. Más rápido y menos detectable que un connect scan.<br>
+          <strong>-sC</strong> → Scripts NSE por defecto: ejecuta scripts de enumeración automática como smb2-security-mode, smb2-time, clock-skew, que nos dan info del OS y configuración de SMB.<br>
+          <strong>-sV</strong> → Detección de versiones: identifica el software exacto en cada puerto (Microsoft Windows RPC, Microsoft HTTPAPI 2.0, etc.).<br>
+          <strong>-n</strong> → Sin resolución DNS: acelera el escaneo evitando queries DNS innecesarios.<br>
+          <strong>-Pn</strong> → Sin ping previo: no verifica si el host está activo con ICMP antes de escanear. Útil cuando el firewall bloquea ICMP (muy común en Windows).<br>
+          <strong>--min-rate=5000</strong> → Mínimo 5000 paquetes/segundo. Agresivo pero rápido, apropiado en CTF donde no hay riesgo de saturar la red.<br>
+          <strong>--open</strong> → Muestra solo puertos en estado OPEN, filtra los closed y filtered.<br>
+          <strong>-oX dancing.xml</strong> → Exporta en formato XML estructurado para transformarlo en HTML con xsltproc.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-06-04 03:22 -0400</div>
+        <div>Nmap scan report for 10.129.1.12</div>
+        <div>Host is up (0.12s latency).</div>
+        <div>Not shown: 65524 closed tcp ports (reset)</div>
+        <div>&nbsp;</div>
+        <div>PORT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STATE  SERVICE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VERSION</div>
+        <div><span class="o-white">135/tcp&nbsp;&nbsp;&nbsp; open&nbsp;&nbsp; msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</span></div>
+        <div><span class="o-white">139/tcp&nbsp;&nbsp;&nbsp; open&nbsp;&nbsp; netbios-ssn&nbsp;&nbsp; Microsoft Windows netbios-ssn</span></div>
+        <div><span class="o-cyan">445/tcp&nbsp;&nbsp;&nbsp; open&nbsp;&nbsp; microsoft-ds?</span></div>
+        <div><span class="o-white">5985/tcp&nbsp;&nbsp; open&nbsp;&nbsp; http&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)</span></div>
+        <div>|_http-server-header: Microsoft-HTTPAPI/2.0</div>
+        <div>|_http-title: Not Found</div>
+        <div><span class="o-white">47001/tcp&nbsp; open&nbsp;&nbsp; http&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)</span></div>
+        <div>|_http-title: Not Found</div>
+        <div>|_http-server-header: Microsoft-HTTPAPI/2.0</div>
+        <div><span class="o-white">49664/tcp&nbsp; open&nbsp;&nbsp; msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</span></div>
+        <div><span class="o-white">49665/tcp&nbsp; open&nbsp;&nbsp; msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</span></div>
+        <div><span class="o-white">49666/tcp&nbsp; open&nbsp;&nbsp; msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</span></div>
+        <div><span class="o-white">49667/tcp&nbsp; open&nbsp;&nbsp; msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</span></div>
+        <div><span class="o-white">49668/tcp&nbsp; open&nbsp;&nbsp; msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</span></div>
+        <div><span class="o-white">49669/tcp&nbsp; open&nbsp;&nbsp; msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</span></div>
+        <div>&nbsp;</div>
+        <div>Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows</div>
+        <div>&nbsp;</div>
+        <div>Host script results:</div>
+        <div>| clock-skew: <span class="o-yellow">3h59m59s</span></div>
+        <div>| smb2-time:</div>
+        <div>|&nbsp;&nbsp;&nbsp; date: 2026-06-04T11:24:12</div>
+        <div>|_&nbsp; start_date: N/A</div>
+        <div>| smb2-security-mode:</div>
+        <div>|&nbsp;&nbsp; 3.1.1:</div>
+        <div>|_&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-yellow">Message signing enabled but not required</span></div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 82.81 seconds</div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// CLOCK SKEW: 3h59m59s — ¿QUÉ SIGNIFICA?</p>
+        <p>El script NSE <strong>clock-skew</strong> mide la diferencia horaria entre el reloj del servidor objetivo y el de nuestra máquina. Un desfase de casi 4 horas indica que el servidor Windows tiene su hora configurada en una zona horaria diferente (probablemente UTC, mientras Kali está en UTC-4). Esto es importante en escenarios reales: ciertos ataques Kerberos (como Pass-the-Ticket) requieren que el desfase horario sea menor a 5 minutos. En HTB, la máquina usa UTC y nuestra VM usa UTC-4, lo que explica exactamente los ~4 horas de diferencia.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">CONVERSIÓN DEL REPORTE NMAP A HTML CON XSLTPROC</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el XML generado por Nmap en el paso anterior, aplicamos la hoja de estilos XSLT
+          oficial que viene incluida en Kali en <code style="color:var(--cyan)">/usr/share/nmap/nmap.xsl</code>.
+          La herramienta <strong>xsltproc</strong> transforma el XML estructurado en una tabla HTML
+          navegable y visualmente clara. El resultado <code style="color:var(--cyan)">dancing.html</code>
+          puede abrirse directamente en el navegador y muestra toda la información del escaneo
+          (puertos, servicios, versiones, scripts NSE) en formato tabular con filtros.
+        </p>
+        <p>
+          Documentar los escaneos en HTML es una práctica esencial en pentesting profesional:
+          facilita incluir evidencias en informes de auditoría y permite al cliente revisar
+          los resultados sin necesidad de interpretar texto crudo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl dancing.xml > dancing.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">dancing.xml</span> &gt; <span class="arg">dancing.html</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DESGLOSE DEL COMANDO</p>
+        <p>
+          <strong>xsltproc</strong> → Procesador XSLT de línea de comandos, parte del paquete libxslt. Transforma documentos XML usando hojas de estilo XSL.<br>
+          <strong>/usr/share/nmap/nmap.xsl</strong> → Hoja de estilos XSLT oficial de Nmap. Define la transformación del XML de escaneo en una tabla HTML formateada con colores por estado de puerto.<br>
+          <strong>dancing.xml</strong> → El archivo XML de entrada generado por nmap -oX en el paso anterior.<br>
+          <strong>&gt; dancing.html</strong> → Redirige el output estándar al archivo dancing.html. Sin esta redirección, el HTML se imprimiría en terminal.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SMB ENUM -->
+    <div class="section" id="smb-enum">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Enumeración SMB — Listado de Shares</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">LISTADO DE SHARES SMB CON SMBCLIENT -L (NULL SESSION)</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el puerto 445 identificado, el siguiente paso es enumerar qué
+          <strong>shares (carpetas compartidas)</strong> están disponibles en el servidor SMB.
+          Usamos <span class="hl-cyan">smbclient -L</span>, que envía una petición de listado
+          sin autenticación (null session). El flag <code style="color:var(--cyan)">-L</code>
+          significa <em>list shares</em>: smbclient no intenta conectarse a una share específica,
+          solo solicita el catálogo de recursos compartidos.
+        </p>
+        <p>
+          Al ejecutar el comando, el sistema solicita una contraseña para el usuario
+          <code style="color:var(--cyan)">WORKGROUP\kali</code>. Simplemente presionamos
+          <strong>Enter</strong> sin escribir nada, estableciendo una <span class="hl-red">null session</span>
+          (sesión nula). Si el servidor lo permite, responderá con la lista de shares aunque
+          no estemos autenticados.
+        </p>
+        <p>
+          El resultado muestra cuatro shares:
+        </p>
+        <p>
+          <span class="hl">ADMIN$</span> — Share administrativa oculta (el $ indica que está
+          oculta en el listado de red de Windows). Apunta a
+          <code style="color:var(--cyan)">C:\Windows</code> y se usa para administración remota.
+          Normalmente requiere privilegios de administrador.
+        </p>
+        <p>
+          <span class="hl">C$</span> — Share administrativa oculta del disco C:.
+          Acceso directo a la raíz del sistema de archivos. Requiere administrador.
+        </p>
+        <p>
+          <span class="hl">IPC$</span> — Inter-Process Communication share. No contiene archivos
+          sino que permite comunicación entre procesos remotos. Se usa para enumerar usuarios,
+          grupos y políticas del dominio. Fue el mecanismo que permitió listar las shares sin
+          credenciales (la null session funciona a través de IPC$).
+        </p>
+        <p>
+          <span class="hl">WorkShares</span> — Share de disco personalizada (no tiene $,
+          por lo tanto es visible). Nombre sugerente: podría contener archivos de trabajo de los
+          empleados. <strong>Este será nuestro objetivo.</strong>
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="smbclient -L 10.129.1.12">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SMBCLIENT</span>
+        <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="flag">-L</span> <span class="arg">10.129.1.12</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Password for [WORKGROUP\kali]: <span class="o-green">[Enter — null session]</span></div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sharename&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Comment</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;---------&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ----&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -------</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-white">ADMIN$</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Disk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Remote Admin</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-white">C$</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Disk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Default share</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-white">IPC$</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IPC&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Remote IPC</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">WorkShares</span>&nbsp;&nbsp;&nbsp;&nbsp; Disk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+        <div>Reconnecting with SMB1 for workgroup listing.</div>
+        <div>do_connect: Connection to 10.129.1.12 failed (Error NT_STATUS_RESOURCE_NAME_NOT_FOUND)</div>
+        <div>Unable to connect with SMB1 -- no workgroup available</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DESGLOSE DE SMBCLIENT -L</p>
+        <p>
+          <strong>smbclient</strong> → Cliente SMB de línea de comandos incluido en el paquete Samba. Funciona de forma similar a un cliente FTP: permite listar shares, navegar directorios, subir y bajar archivos via SMB.<br>
+          <strong>-L</strong> → List: solicita la lista de recursos compartidos del servidor. No intenta conectarse a ninguna share específica, solo enumera las disponibles.<br>
+          <strong>10.129.1.12</strong> → IP del servidor SMB objetivo. También puede usarse el hostname si está configurado en /etc/hosts.<br>
+          <strong>[Enter en el password]</strong> → Establece una null session: autenticación sin credenciales. El protocolo SMB/CIFS permite este modo cuando el servidor no lo prohíbe explícitamente. Es el equivalente al login anónimo en FTP.<br><br>
+          <strong>¿Por qué falla el workgroup listing?</strong> El error <code>NT_STATUS_RESOURCE_NAME_NOT_FOUND</code> al reconectar con SMB1 es normal: el servidor tiene SMBv1 desactivado (buena práctica de seguridad, ya que SMBv1 es vulnerable a EternalBlue/WannaCry). El listado de shares SMB2 ya fue exitoso antes de ese error.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- WORKSHARES -->
+    <div class="section" id="workshares">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Acceso Anónimo a WorkShares</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">CONEXIÓN A WORKSHARES SIN CONTRASEÑA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Intentamos conectarnos directamente a la share <code style="color:var(--cyan)">WorkShares</code>
+          usando smbclient con una null session. La sintaxis requiere doble backslash para indicar
+          el servidor y luego el nombre de la share, todo escapado con barras adicionales para
+          que bash no interprete los backslashes como caracteres de escape.
+        </p>
+        <p>
+          Al solicitar la contraseña, nuevamente presionamos <strong>Enter</strong> sin escribir nada.
+          Si la share tiene acceso anónimo configurado, el servidor responderá con
+          <code style="color:var(--cyan)">smb: \&gt;</code>, indicando que estamos dentro con una
+          sesión de <strong>guest</strong>. La share WorkShares no requiere credenciales: esta es
+          la <span class="hl-red">misconfiguration</span> que da nombre a la categoría
+          <em>Weak Authentication / Anonymous/Guest Access</em> en la descripción de la máquina.
+        </p>
+        <p>
+          En entornos corporativos reales, este tipo de configuración se da cuando un administrador
+          crea una carpeta compartida para facilitar el intercambio de archivos entre empleados
+          sin restricciones, sin dimensionar el riesgo de exposición. Cualquier persona en la red
+          (o con VPN al dominio) podría acceder a esos archivos sin autenticarse.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="smbclient \\\\10.129.1.12\\WorkShares">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SMBCLIENT</span>
+        <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="arg">\\\\10.129.1.12\\WorkShares</span> <span class="comment"> # sin contraseña → Enter</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Password for [WORKGROUP\kali]: <span class="o-green">[Enter]</span></div>
+        <div>Try "help" to get a list of possible commands.</div>
+        <div><span class="o-cyan">smb: \&gt;</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ \\\\10.129.1.12\\WorkShares?</p>
+        <p>
+          En bash, el backslash <strong>\</strong> es el carácter de escape. Para incluir un backslash literal en un argumento de shell, necesitamos escaparlo: <strong>\\</strong> produce un solo \. La ruta SMB correcta es <code>\\10.129.1.12\WorkShares</code> (notación UNC), pero como bash interpreta cada \, necesitamos escribir cuatro barras para obtener dos: <strong>\\\\10.129.1.12\\WorkShares</strong> → <code>\\10.129.1.12\WorkShares</code> en la petición real.<br><br>
+          <strong>UNC (Universal Naming Convention)</strong> es el formato estándar de Windows para rutas de red: <code>\\servidor\recurso</code>. Es el mismo formato que se usa en el Explorador de Windows al navegar a recursos de red.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NAVEGACIÓN -->
+    <div class="section" id="navegacion">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Navegación por la Share — dir, cd, get</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">LISTADO DEL DIRECTORIO RAÍZ — AMY.J Y JAMES.P</span>
+      </div>
+      <div class="prose">
+        <p>
+          Una vez dentro, la interfaz de smbclient funciona de manera similar a un cliente FTP
+          interactivo. El comando <code style="color:var(--cyan)">dir</code> lista el contenido
+          del directorio actual. En la raíz de WorkShares encontramos dos subdirectorios:
+          <span class="hl">Amy.J</span> y <span class="hl">James.P</span>, correspondientes
+          aparentemente a los directorios personales de trabajo de dos empleados.
+        </p>
+        <p>
+          Navegamos primero a <code style="color:var(--cyan)">Amy.J</code> con el comando
+          <code style="color:var(--cyan)">cd</code> (change directory, igual que en la shell de Linux)
+          y encontramos un archivo: <code style="color:var(--cyan)">worknotes.txt</code> de 94 bytes.
+          Lo descargamos con <code style="color:var(--cyan)">get</code>.
+        </p>
+        <p>
+          Luego navegamos a <code style="color:var(--cyan)">James.P</code> y encontramos
+          <code style="color:var(--cyan)">flag.txt</code> de 32 bytes — el tamaño exacto de un
+          hash MD5 en texto plano (32 caracteres hexadecimales). Lo descargamos con
+          <code style="color:var(--cyan)">get</code> también.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="dir">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SMB DIR</span>
+        <div><span class="prompt">smb: \&gt; </span><span class="cmd">dir</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>&nbsp; .&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0  Mon Mar 29 04:22:01 2021</div>
+        <div>&nbsp; ..&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0  Mon Mar 29 04:22:01 2021</div>
+        <div>&nbsp; <span class="o-cyan">Amy.J</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0  Mon Mar 29 05:08:24 2021</div>
+        <div>&nbsp; <span class="o-cyan">James.P</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0  Thu Jun  3 04:38:03 2021</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5114111 blocks of size 4096. 1733587 blocks available</div>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd Amy.J">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CD</span>
+        <div><span class="prompt">smb: \&gt; </span><span class="cmd">cd <span class="arg">Amy.J</span></span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="dir">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DIR</span>
+        <div><span class="prompt">smb: \Amy.J\&gt; </span><span class="cmd">dir</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>&nbsp; .&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0  Mon Mar 29 05:08:24 2021</div>
+        <div>&nbsp; ..&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0  Mon Mar 29 05:08:24 2021</div>
+        <div>&nbsp; <span class="o-yellow">worknotes.txt</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; A&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;94  Fri Mar 26 07:00:37 2021</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5114111 blocks of size 4096. 1733571 blocks available</div>
+      </div>
+
+      <div class="cmd-block" data-cmd="get worknotes.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">GET</span>
+        <div><span class="prompt">smb: \Amy.J\&gt; </span><span class="cmd">get <span class="arg">worknotes.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>getting file \Amy.J\Worknotes.txt of size 94 as Worknotes.txt (0.2 KiloBytes/sec) (average 0.2 KiloBytes/sec)</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">DIRECTORIO JAMES.P — DESCARGA DE FLAG.TXT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Volvemos al directorio raíz con <code style="color:var(--cyan)">cd ..</code> y
+          navegamos a <code style="color:var(--cyan)">James.P</code>. El listado muestra
+          <code style="color:var(--cyan)">flag.txt</code> de 32 bytes. En HackTheBox,
+          las flags suelen ser hashes MD5 (32 caracteres hex), por lo que el tamaño encaja
+          perfectamente. Lo descargamos con <code style="color:var(--cyan)">get</code>.
+        </p>
+        <p>
+          Una vez descargado, el archivo queda en el directorio desde donde ejecutamos smbclient
+          en nuestra máquina local (en nuestro caso <code style="color:var(--cyan)">~/Desktop/dancing/</code>).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd James.P">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CD</span>
+        <div><span class="prompt">smb: \&gt; </span><span class="cmd">cd <span class="arg">James.P</span></span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="dir">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DIR</span>
+        <div><span class="prompt">smb: \James.P\&gt; </span><span class="cmd">dir</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>&nbsp; .&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0  Thu Jun  3 04:38:03 2021</div>
+        <div>&nbsp; ..&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0  Thu Jun  3 04:38:03 2021</div>
+        <div>&nbsp; <span class="o-green">flag.txt</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; A&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;32  Mon Mar 29 05:26:57 2021</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5114111 blocks of size 4096. 1733554 blocks available</div>
+      </div>
+
+      <div class="cmd-block" data-cmd="get flag.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">GET</span>
+        <div><span class="prompt">smb: \James.P\&gt; </span><span class="cmd">get <span class="arg">flag.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>getting file \James.P\flag.txt of size 32 as flag.txt (0.1 KiloBytes/sec) (average 0.1 KiloBytes/sec)</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// COMANDOS INTERNOS DE SMBCLIENT</p>
+        <p>
+          <strong>dir</strong> → Lista el contenido del directorio actual en la share SMB. Equivalente a <code>ls</code> en Linux o <code>dir</code> en CMD de Windows.<br>
+          <strong>cd [directorio]</strong> → Cambia el directorio actual dentro de la share. <code>cd ..</code> sube un nivel.<br>
+          <strong>get [archivo]</strong> → Descarga un archivo de la share SMB al directorio local actual de nuestra máquina (donde ejecutamos smbclient). No requiere ruta completa si estamos en el directorio correcto.<br>
+          <strong>put [archivo]</strong> → (no usado aquí) Sube un archivo local a la share SMB.<br>
+          <strong>mget [patrón]</strong> → Descarga múltiples archivos (ej: <code>mget *.txt</code>).<br>
+          <strong>exit / quit</strong> → Cierra la sesión SMB.<br>
+          <strong>help</strong> → Muestra todos los comandos disponibles.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FLAG -->
+    <div class="section" id="flag">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Flag — Archivos Descargados</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">LECTURA DE WORKNOTES.TXT — INTEL INTERNO</span>
+      </div>
+      <div class="prose">
+        <p>
+          De vuelta en nuestra terminal local de Kali, leemos los archivos descargados.
+          <code style="color:var(--cyan)">Worknotes.txt</code> del directorio de Amy.J
+          revela notas de trabajo internas del sistema Dancing. En un pentest real, este tipo
+          de archivos puede contener información sensible sobre la infraestructura: servicios
+          corriendo, tareas pendientes, credenciales temporales, o configuraciones que apuntan
+          a otros vectores de ataque.
+        </p>
+        <p>
+          El contenido revela tres ítems de la lista de tareas pendientes del equipo IT:
+          levantar un servidor Apache en una máquina Linux, asegurar el servidor FTP, y
+          configurar WinRM en Dancing. Información que en un engagement real nos indicaría
+          vectores adicionales a explorar (FTP abierto en otra máquina, WinRM sin configurar).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat Worknotes.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">Worknotes.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>- start apache server on the linux machine</div>
+        <div>- secure the ftp server</div>
+        <div>- setup winrm on dancing</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">LECTURA DE FLAG.TXT — OBJETIVO COMPLETADO</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat flag.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FLAG</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">flag.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">5f61c10dffbc77a704d76016a22f1664</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">FLAG</div><div class="cred-val">5f61c10dffbc77a704d76016a22f1664</div></div>
+        <div class="cred-item"><div class="cred-label">UBICACIÓN</div><div class="cred-val">WorkShares\James.P\flag.txt</div></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// LECCIÓN DE SEGURIDAD — IMPACTO REAL DEL SMB ANÓNIMO</p>
+        <p>En un entorno corporativo real, esta misconfiguration permitiría a cualquier empleado (o atacante con acceso a la red interna) acceder a los archivos de trabajo de todos los usuarios en la share sin ningún tipo de autenticación. El daño potencial incluye: robo de información confidencial, credenciales en archivos de notas, datos de clientes, propiedad intelectual, y documentos estratégicos. La remediación es simple: requerir autenticación en todas las shares SMB, deshabilitar acceso de guest/anónimo, y aplicar el principio de mínimo privilegio — cada usuario solo accede a sus propios archivos. En Active Directory esto se gestiona con Group Policy Objects (GPO) y ACLs de NTFS.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open [IP] -oX scan.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de todos los puertos TCP con detección de versiones y scripts NSE. Exporta a XML para posterior procesamiento con xsltproc.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → Todos los 65535 puertos</li>
+            <li><span>-sS</span> → SYN scan (half-open, requiere root)</li>
+            <li><span>-sC</span> → Scripts NSE por defecto (smb2-security-mode, etc.)</li>
+            <li><span>-sV</span> → Detección de versiones de servicios</li>
+            <li><span>-Pn</span> → No ping previo (útil en Windows que bloquea ICMP)</li>
+            <li><span>--min-rate=5000</span> → Mínimo 5000 paquetes/segundo</li>
+            <li><span>-oX</span> → Output en formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl scan.xml > scan.html</div>
+          <div class="cmd-ref-desc">Transforma el XML de Nmap en un reporte HTML navegable usando la hoja de estilos XSLT oficial. Ideal para documentar evidencias en pentests.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> → Stylesheet oficial en /usr/share/nmap/</li>
+            <li><span>&gt;</span> → Redirige el HTML resultante a un archivo</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">smbclient -L</div>
+          <div class="cmd-ref-syntax">smbclient -L [IP]</div>
+          <div class="cmd-ref-desc">Lista todas las shares SMB disponibles en el servidor. Null session (Enter en password) permite enumeración anónima si el servidor lo permite vía IPC$.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-L</span> → List shares del servidor</li>
+            <li><span>-N</span> → No password (alternativa al Enter vacío)</li>
+            <li><span>-U usuario</span> → Especificar usuario</li>
+            <li><span>-p puerto</span> → Puerto alternativo (default: 445)</span></li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">smbclient (conexión)</div>
+          <div class="cmd-ref-syntax">smbclient \\\\[IP]\\[Share]</div>
+          <div class="cmd-ref-desc">Conecta a una share SMB específica. Abre una sesión interactiva tipo FTP para navegar y transferir archivos.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>\\\\IP\\Share</span> → Notación UNC doble-escapada para bash</li>
+            <li><span>dir</span> → Lista directorio actual</li>
+            <li><span>cd [dir]</span> → Navega a subdirectorio</li>
+            <li><span>get [archivo]</span> → Descarga archivo a local</li>
+            <li><span>put [archivo]</span> → Sube archivo al servidor</li>
+            <li><span>mget *.txt</span> → Descarga múltiples archivos</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Glosario Técnico</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SMB — Server Message Block</div>
+          <div class="glos-def">Protocolo de red de Microsoft para compartir archivos, impresoras y otros recursos entre nodos de una red. Originalmente desarrollado por IBM en 1983 y adoptado por Microsoft, operaba sobre NetBIOS (puertos 137-139). A partir de Windows 2000, Microsoft reimplementó SMB para funcionar directamente sobre TCP/IP en el <strong>puerto 445</strong>, eliminando la dependencia de NetBIOS. Las versiones principales son: <strong>SMBv1</strong> (antiguo, vulnerable a EternalBlue/WannaCry, debe estar desactivado), <strong>SMBv2</strong> (Windows Vista/Server 2008, mejoras de rendimiento), <strong>SMBv3</strong> (Windows 8/Server 2012, encriptación end-to-end). La implementación open-source de SMB para Linux/Unix se llama <strong>Samba</strong>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Null Session (Sesión Nula SMB)</div>
+          <div class="glos-def">Una <strong>null session</strong> es una conexión anónima al servicio SMB que no proporciona credenciales de usuario ni contraseña. Históricamente permitida por defecto en Windows NT/2000/XP para facilitar la enumeración de red en dominios Windows. Una null session establece una conexión a través de la share <strong>IPC$</strong> (Inter-Process Communication) que permite listar shares, enumerar usuarios, grupos, políticas y en algunos casos acceder a recursos no protegidos. <strong>Windows XP SP2 y posteriores</strong> lo deshabilitaron por defecto, pero muchas instalaciones corporativas heredadas lo mantienen activo, y como vemos en Dancing, algunos servidores permiten acceso de guest a shares específicas sin autenticación.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SMB Shares — Tipos y Características</div>
+          <div class="glos-def">Una <strong>share SMB</strong> es un recurso de red expuesto a través del protocolo SMB. Tipos principales:<br><br>
+          <strong>Shares administrativas ocultas</strong> (terminan en $): creadas automáticamente por Windows, no visibles en el Explorador de red normal pero listables con smbclient -L. Ejemplos: <strong>ADMIN$</strong> → C:\Windows (administración remota), <strong>C$</strong> → C:\ (raíz del disco), <strong>D$</strong> → D:\ (si existe), <strong>IPC$</strong> → comunicación entre procesos (no tiene archivos).<br><br>
+          <strong>Shares personalizadas</strong> (sin $): creadas por administradores para compartir recursos. Como <strong>WorkShares</strong> en Dancing. Sus permisos dependen completamente de la configuración del administrador. Pueden tener <strong>ACLs NTFS</strong> (control de acceso a nivel de archivo) y <strong>Share Permissions</strong> (control de acceso a nivel de share), siendo los permisos efectivos la intersección de ambos.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">smbclient — Cliente SMB de Samba</div>
+          <div class="glos-def"><strong>smbclient</strong> es una herramienta de línea de comandos incluida en el paquete <strong>Samba</strong> que permite interactuar con servidores SMB/CIFS desde Linux. Funciona como un cliente FTP interactivo: una vez conectado a una share, ofrece comandos para navegar (<code>dir</code>, <code>cd</code>), transferir archivos (<code>get</code>, <code>put</code>, <code>mget</code>, <code>mput</code>), ver información (<code>ls</code>, <code>stat</code>) y más. Es la herramienta más básica para interactuar con SMB desde Kali, aunque para enumeración más avanzada se usan <strong>enum4linux</strong>, <strong>crackmapexec</strong>, <strong>rpcclient</strong> o <strong>impacket</strong>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">UNC — Universal Naming Convention</div>
+          <div class="glos-def">Estándar de Microsoft para especificar la ubicación de recursos en una red. El formato es <strong>\\servidor\recurso\ruta\archivo</strong>. Ejemplos: <code>\\192.168.1.10\WorkShares</code> (share raíz), <code>\\servidor\C$\Windows\System32</code> (share administrativa). En bash, los backslashes deben escaparse: cada \ se escribe como \\, por lo tanto <code>\\servidor\share</code> se convierte en <code>\\\\servidor\\share</code> en la línea de comandos de bash. Alternativa: usar comillas simples para evitar el escape: <code>'\\servidor\share'</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">NetBIOS y su Relación con SMB</div>
+          <div class="glos-def"><strong>NetBIOS (Network Basic Input/Output System)</strong> fue desarrollado por IBM en 1983 como una API de red para aplicaciones. Microsoft lo implementó sobre TCP/IP (NBT — NetBIOS over TCP/IP) en los puertos <strong>137/UDP</strong> (resolución de nombres), <strong>138/UDP</strong> (datagramas) y <strong>139/TCP</strong> (sesiones). El puerto <strong>139</strong> fue históricamente el puerto SMB sobre NetBIOS. Windows 2000 introdujo SMB directo sobre TCP en el <strong>puerto 445</strong>, independiente de NetBIOS. En el escaneo de Dancing vemos <strong>ambos puertos abiertos</strong>: 139 (legado) y 445 (moderno), lo cual es común en Windows Server para compatibilidad retroactiva con clientes antiguos.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SMB Message Signing — Seguridad de Integridad</div>
+          <div class="glos-def">El <strong>SMB message signing</strong> (firma de mensajes SMB) es un mecanismo de seguridad que añade una firma digital criptográfica a cada paquete SMB, garantizando la integridad y autenticidad del mensaje. Cuando está <strong>habilitado y requerido</strong>, todos los paquetes deben estar firmados o la conexión se rechaza, previniendo ataques de <strong>NTLM relay</strong>. En Dancing, Nmap detectó <code>Message signing enabled but not required</code> — está habilitado (el servidor puede usarlo) pero no es obligatorio (los clientes pueden conectarse sin firmar). Esta configuración es <strong>vulnerable a SMB relay attacks</strong>: un atacante puede interceptar una autenticación NTLM y reenviarla a otro servidor sin conocer la contraseña real.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Weak Authentication y Anonymous/Guest Access</div>
+          <div class="glos-def">Las categorías de vulnerabilidad de Dancing son <strong>Weak Authentication</strong> y <strong>Anonymous/Guest Access</strong>, ambas parte del OWASP Top 10 A07 (Identification and Authentication Failures). <strong>Anonymous Access</strong>: el servidor permite conexiones sin credenciales, como las null sessions en SMB o el login anónimo en FTP. <strong>Guest Access</strong>: el servidor tiene una cuenta "guest" sin contraseña que puede acceder a ciertos recursos. <strong>Default Credentials</strong>: usar las credenciales por defecto del fabricante sin cambiarlas. En entornos Windows corporativos, estas configuraciones se previenen con <strong>Group Policy</strong>: <code>Network access: Do not allow anonymous enumeration of SAM accounts and shares</code> debe estar habilitado.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">MSRPC y WinRM — Servicios Windows Adicionales</div>
+          <div class="glos-def"><strong>MSRPC (Microsoft Remote Procedure Call)</strong>: protocolo de Windows que permite a programas solicitar servicios de otros programas en la red. Corre en el puerto 135 (endpoint mapper) y en puertos dinámicos altos (49664-49669 en Dancing). Es la base de muchos servicios Windows: DCOM, WMI, Active Directory. <strong>WinRM (Windows Remote Management)</strong>: implementación de Microsoft del protocolo WS-Management para administración remota de sistemas. Puerto 5985 (HTTP) y 5986 (HTTPS). Permite ejecutar comandos PowerShell remotamente con <code>Enter-PSSession</code> o herramientas como <strong>evil-winrm</strong>. La nota en Worknotes.txt de Amy.J decía "setup winrm on dancing", sugiriendo que WinRM no estaba completamente configurado aún.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // TOC ACTIVE
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObs.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const scrolled = document.documentElement.scrollTop;
+    const height   = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = height > 0 ? (scrolled / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = pct + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY CMD
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK'; btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+    }).catch(() => showToast('Error al copiar'));
+  }
+</script>
+</body>
+</html>
