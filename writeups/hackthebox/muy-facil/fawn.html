@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fawn — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Fawn de HackTheBox — Dificultad: Muy Fácil. nmap → puerto 21 FTP vsftpd 3.0.3 → anonymous login → get flag.txt → flag.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.06) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-muy-facil { color: var(--cyan);   border-color: rgba(0,229,255,0.4);  background: rgba(0,229,255,0.05); }
+    .badge-htb       { color: var(--green);  border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .badge-linux     { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-ftp       { color: var(--cyan);   border-color: rgba(0,229,255,0.4);  background: rgba(0,229,255,0.05); }
+    .badge-creds     { color: var(--orange); border-color: rgba(255,140,0,0.4);  background: rgba(255,140,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-muy-facil { color: var(--cyan); }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: inherit; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-ora   { color: var(--orange); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-ftp { color: var(--cyan); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+
+    /* INFO BOXES */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .vuln-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .vuln-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .vuln-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .vuln-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+
+    /* FOOTER */
+    footer {
+      padding: 2rem 4rem; border-top: 1px solid var(--dim);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">WRITEUPS</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">WRITEUPS</a> /
+      <a href="#">HACKTHEBOX</a> /
+      <a href="#">MUY FÁCIL</a> /
+      <span>FAWN</span>
+    </p>
+    <h1 class="writeup-title">FA<span>WN</span></h1>
+    <p class="writeup-subtitle">// FTP Anonymous Access → flag.txt</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-ftp">FTP</span>
+      <span class="meta-badge badge-creds">ANONYMOUS ACCESS</span>
+      <span class="meta-date">// Junio 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#ftp">02 · FTP · Acceso Anónimo</a></li>
+        <li><a href="#flag">03 · Flag</a></li>
+        <li><a href="#cmdref">04 · Referencia Comandos</a></li>
+        <li><a href="#glosario">05 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Fawn</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP</span><span class="info-val val-cyan">10.129.1.14</span></div>
+      <div class="info-row"><span class="info-label">PUERTO</span><span class="info-val val-cyan">21/tcp</span></div>
+      <div class="info-row"><span class="info-label">TECNOLOGÍA</span><span class="info-val val-cyan">FTP · vsftpd 3.0.3</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>21/tcp FTP</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">ftp login → <span>anonymous</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">ls → <span>flag.txt</span> visible</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">get flag.txt → <span>flag</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+
+    <!-- ===================== 01 RECON ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO COMPLETO CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Lanzamos el escaneo inicial con <span class="hl">nmap</span> contra la IP objetivo
+          <span class="hl-yel">10.129.1.14</span>. De los 65,535 puertos TCP escaneados,
+          solo hay uno abierto: el <span class="hl-cyan">puerto 21</span>, correspondiente
+          al protocolo <strong>FTP</strong> con el servicio <strong>vsftpd 3.0.3</strong>.
+        </p>
+        <p>
+          Los scripts NSE de nmap revelan información clave directamente: el servidor
+          permite <span class="hl-red">anonymous FTP login</span> y lista un archivo
+          <span class="hl-cyan">flag.txt</span> de 32 bytes. La superficie de ataque no
+          puede ser más clara.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.1.14 -oX fawn.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.1.14</span> <span class="flag">-oX</span> <span class="arg">fawn.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Not shown: 65534 closed tcp ports (reset)</div>
+        <div>PORT   STATE SERVICE VERSION</div>
+        <div><span class="o-green">21/tcp open  ftp</span>  <span class="o-cyan">vsftpd 3.0.3</span></div>
+        <div>| ftp-syst:</div>
+        <div>|   STAT:</div>
+        <div>| FTP server status:</div>
+        <div>|      Connected to ::ffff:10.10.16.7</div>
+        <div>|      <span class="o-yellow">Logged in as ftp</span></div>
+        <div>|      TYPE: ASCII</div>
+        <div>|      No session bandwidth limit</div>
+        <div>|      Session timeout in seconds is 300</div>
+        <div>|      Control connection is plain text</div>
+        <div>|      Data connections will be plain text</div>
+        <div>|      At session startup, client count was 4</div>
+        <div>|      vsFTPd 3.0.3 - secure, fast, stable</div>
+        <div>|_End of status</div>
+        <div>| <span class="o-red">ftp-anon: Anonymous FTP login allowed (FTP code 230)</span></div>
+        <div>|<span class="o-cyan">_-rw-r--r--   1 0   0   32 Jun 04  2021 flag.txt</span></div>
+        <div>Service Info: OS: Unix</div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// ANONYMOUS FTP LOGIN — ACCESO SIN CREDENCIALES</p>
+        <p>
+          <strong>Anonymous FTP</strong> es una configuración en la que el servidor acepta
+          conexiones usando el usuario <strong>anonymous</strong> (o <strong>ftp</strong>)
+          con cualquier contraseña. Diseñado originalmente para distribución pública de archivos,
+          su presencia en un servidor mal administrado expone directorios completos a cualquier
+          persona con acceso a la red. Nmap lo detecta automáticamente con el script
+          <strong>ftp-anon</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">REPORTE HTML CON XSLTPROC</span>
+      </div>
+      <div class="prose">
+        <p>
+          Transformamos el XML generado por nmap en un reporte HTML con
+          <span class="hl-cyan">xsltproc</span> para revisar los resultados visualmente.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl fawn.xml > fawn.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl fawn.xml</span> <span class="flag">></span> <span class="arg">fawn.html</span></span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 02 FTP ===================== -->
+    <div class="section" id="ftp">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">FTP · Acceso Anónimo</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">CONEXIÓN FTP CON USUARIO ANONYMOUS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el puerto 21 abierto y anonymous login confirmado por nmap, conectamos al
+          servidor FTP con el cliente <span class="hl">ftp</span>. Cuando el servidor
+          solicita <strong>Name</strong>, ingresamos <span class="hl-cyan">anonymous</span>.
+          En el campo <strong>Password</strong> se puede ingresar cualquier valor — por
+          convención se usa una dirección de email o simplemente se presiona Enter.
+        </p>
+        <p>
+          El servidor responde con <span class="hl-green">230 Login successful</span>,
+          confirmando acceso completo al sistema de archivos expuesto.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ftp 10.129.1.14">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FTP</span>
+        <div><span class="prompt">$ </span><span class="cmd">ftp <span class="arg">10.129.1.14</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Connected to 10.129.1.14.</div>
+        <div>220 (vsFTPd 3.0.3)</div>
+        <div>Name (10.129.1.14:kali): <span class="o-yellow">anonymous</span></div>
+        <div>331 Please specify the password.</div>
+        <div>Password:</div>
+        <div><span class="o-green">230 Login successful.</span></div>
+        <div>Remote system type is UNIX.</div>
+        <div>Using binary mode to transfer files.</div>
+        <div><span class="o-cyan">ftp&gt;</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">anonymous</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CONTRASEÑA</div>
+          <div class="cred-val">(cualquiera)</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">SERVICIO</div>
+          <div class="cred-val">FTP · 21/tcp</div>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ANONYMOUS/GUEST ACCESS</p>
+        <p>
+          Permitir <strong>anonymous FTP</strong> en un servidor que expone archivos sensibles
+          es una misconfiguration crítica. No requiere credenciales válidas ni fuerza bruta —
+          cualquier cliente FTP puede conectarse y descargar archivos. En entornos de producción,
+          el acceso anónimo debe estar deshabilitado o restringido a directorios públicos
+          sin información sensible.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 FLAG ===================== -->
+    <div class="section" id="flag">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Flag</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">DESCARGA Y LECTURA DE FLAG.TXT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ya dentro de la sesión FTP, listamos el directorio con <span class="hl-cyan">ls</span>
+          y confirmamos la presencia de <span class="hl-cyan">flag.txt</span>. Descargamos el
+          archivo a nuestra máquina local con el comando <span class="hl">get</span> y cerramos
+          la sesión con <span class="hl-cyan">exit</span>. Finalmente leemos el contenido con
+          <span class="hl">cat</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="get flag.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FTP · GET</span>
+        <div><span class="prompt-ftp">ftp&gt; </span><span class="cmd">ls</span></div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">229 Entering Extended Passive Mode (|||||||)</div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">150 Here comes the directory listing.</div>
+        <div><span style="color:var(--cyan);">-rw-r--r--    1 0        0              32 Jun 04  2021 flag.txt</span></div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">226 Directory send OK.</div>
+        <div>&nbsp;</div>
+        <div><span class="prompt-ftp">ftp&gt; </span><span class="cmd">get <span class="arg">flag.txt</span></span></div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">local: flag.txt remote: flag.txt</div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">229 Entering Extended Passive Mode (|||||||)</div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">150 Opening BINARY mode data connection for flag.txt (32 bytes).</div>
+        <div><span class="o-green">226 Transfer complete.</span></div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">32 bytes received in 00:00 (0.06 KiB/s)</div>
+        <div>&nbsp;</div>
+        <div><span class="prompt-ftp">ftp&gt; </span><span class="cmd">exit</span></div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">221 Goodbye.</div>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat flag.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FLAG</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">flag.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">035db21c881520061c53e0536e44f815</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// FLAG</p>
+        <p>
+          <strong>035db21c881520061c53e0536e44f815</strong> — Acceso vía FTP anónimo.
+          Máquina completada en 4 pasos: nmap → ftp anonymous → get flag.txt → cat flag.txt.
+        </p>
+      </div>
+
+      <hr class="divider">
+
+      <table class="vuln-table">
+        <thead>
+          <tr>
+            <th>VULNERABILIDAD</th>
+            <th>COMPONENTE</th>
+            <th>IMPACTO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Anonymous/Guest Access</td>
+            <td>FTP · vsftpd 3.0.3</td>
+            <td>Acceso a archivos sin credenciales</td>
+          </tr>
+          <tr>
+            <td>Weak Authentication</td>
+            <td>FTP · usuario anonymous</td>
+            <td>Sin secreto compartido requerido</td>
+          </tr>
+          <tr>
+            <td>Protocolo Inseguro</td>
+            <td>FTP · texto plano</td>
+            <td>Transferencia de datos sin cifrado</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===================== 04 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de todos los puertos TCP con detección de versiones, scripts NSE y exportación a XML.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> — escanea los 65,535 puertos TCP</li>
+            <li><span>-sS</span> — SYN scan sin completar handshake</li>
+            <li><span>-sC</span> — scripts NSE por defecto</li>
+            <li><span>-sV</span> — detección de versión de servicios</li>
+            <li><span>-n</span> — desactiva resolución DNS</li>
+            <li><span>-Pn</span> — omite host discovery previo</li>
+            <li><span>--min-rate</span> — paquetes mínimos por segundo</li>
+            <li><span>--open</span> — muestra solo puertos abiertos</li>
+            <li><span>-oX</span> — exporta resultado a XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ftp</div>
+          <div class="cmd-ref-syntax">ftp &lt;IP&gt;</div>
+          <div class="cmd-ref-desc">Cliente FTP interactivo para conectar, navegar y transferir archivos desde servidores FTP. Acepta usuario anonymous para servidores con acceso público.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>ls</span> — lista archivos del directorio remoto</li>
+            <li><span>get &lt;file&gt;</span> — descarga archivo al directorio local</li>
+            <li><span>put &lt;file&gt;</span> — sube archivo al servidor</li>
+            <li><span>cd &lt;dir&gt;</span> — cambia directorio remoto</li>
+            <li><span>binary</span> — activa modo transferencia binaria</li>
+            <li><span>exit / bye</span> — cierra la sesión FTP</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl out.xml > out.html</div>
+          <div class="cmd-ref-desc">Transforma el XML exportado por nmap en un reporte HTML navegable usando la hoja de estilos XSL incluida con nmap.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>--output &lt;file&gt;</span> — archivo de salida alternativo</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">cat</div>
+          <div class="cmd-ref-syntax">cat &lt;archivo&gt;</div>
+          <div class="cmd-ref-desc">Muestra el contenido de un archivo en la terminal. Comando básico de lectura post-descarga para verificar flags y archivos de texto.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-n</span> — numera las líneas de salida</li>
+            <li><span>-A</span> — muestra caracteres especiales y fin de línea</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 05 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">FTP — File Transfer Protocol</div>
+          <div class="glos-def">
+            <strong>FTP</strong> (RFC 959) es un protocolo de la capa de aplicación diseñado
+            en 1971 para transferencia de archivos entre sistemas. Opera sobre TCP en dos puertos:
+            <strong>21</strong> para el canal de control (comandos) y un puerto dinámico para
+            el canal de datos. Su debilidad fundamental es que transmite todo en
+            <strong>texto plano</strong>, incluyendo credenciales y datos. Ha sido reemplazado
+            por <strong>SFTP</strong> (SSH File Transfer Protocol) y <strong>FTPS</strong>
+            (FTP over TLS) en entornos seguros, pero sigue activo en sistemas legacy y
+            máquinas de laboratorio como HackTheBox.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Anonymous FTP — Acceso Anónimo</div>
+          <div class="glos-def">
+            El <strong>acceso anónimo FTP</strong> permite conectarse usando el usuario
+            <strong>anonymous</strong> o <strong>ftp</strong> con cualquier contraseña
+            (convencionalmente una dirección de email). Fue diseñado para distribución
+            pública de software y documentación, pero su configuración incorrecta en
+            servidores con datos sensibles representa una vulnerabilidad de
+            <strong>autenticación débil (CWE-1390)</strong>. El script NSE
+            <code>ftp-anon</code> de nmap lo detecta automáticamente durante el escaneo.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">vsftpd — Very Secure FTP Daemon</div>
+          <div class="glos-def">
+            <strong>vsftpd</strong> es uno de los servidores FTP más utilizados en sistemas
+            Unix/Linux, conocido por su énfasis en seguridad, estabilidad y rendimiento.
+            La versión <strong>3.0.3</strong> es estable y no tiene vulnerabilidades críticas
+            conocidas por sí misma — la explotación en Fawn no es un bug del software sino
+            una <strong>misconfiguration</strong>: el administrador habilitó el acceso anónimo
+            en un servidor que expone archivos sensibles.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">VPN — Virtual Private Network en HTB</div>
+          <div class="glos-def">
+            HackTheBox utiliza una <strong>VPN (Red Privada Virtual)</strong> basada en
+            <strong>OpenVPN</strong> para aislar las máquinas objetivo en redes privadas
+            accesibles solo para jugadores conectados. Al descargar el archivo
+            <code>.ovpn</code> y conectar con
+            <code>sudo openvpn &lt;archivo.ovpn&gt;</code>, el sistema operativo crea
+            una interfaz de red virtual (<code>tun0</code>) que enruta el tráfico cifrado
+            hacia los servidores de HTB. Sin esta conexión, las IPs del rango
+            <code>10.129.x.x</code> no son alcanzables.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
