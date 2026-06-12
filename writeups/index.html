@@ -237,8 +237,8 @@
     <h1 class="hero-title">WRITE<span>UPS</span></h1>
     <p class="hero-sub">Documentación técnica de máquinas resueltas — DockerLabs · TryHackMe · HackTheBox</p>
     <div class="hero-stats">
-      <div class="stat"><span class="stat-num" id="totalCount">15</span><span class="stat-label">TOTAL</span></div>
-      <div class="stat"><span class="stat-num" id="dockerCount">5</span><span class="stat-label">DOCKERLABS</span></div>
+      <div class="stat"><span class="stat-num" id="totalCount">16</span><span class="stat-label">TOTAL</span></div>
+      <div class="stat"><span class="stat-num" id="dockerCount">6</span><span class="stat-label">DOCKERLABS</span></div>
       <div class="stat"><span class="stat-num">9</span><span class="stat-label">HACKTHEBOX</span></div>
       <div class="stat"><span class="stat-num">—</span><span class="stat-label">TRYHACKME</span></div>
     </div>
@@ -263,30 +263,9 @@
       <span class="platform-label">// 01</span>
       <h2 class="platform-title">DOCKERLABS</h2>
       <div class="platform-line"></div>
-      <span class="platform-count" id="docker-visible-count">5 writeups</span>
+      <span class="platform-count" id="docker-visible-count">6 writeups</span>
     </div>
     <div class="cards-grid" id="dockerlabs-grid">
-
-      <!-- DATABASE -->
-      <a href="dockerlabs/medio/database.html" class="writeup-card reveal" data-diff="medio" data-platform="dockerlabs">
-        <div class="card-top">
-          <span class="card-platform">DOCKERLABS</span>
-          <span class="card-diff diff-medio">MEDIO</span>
-        </div>
-        <h3 class="card-name">Database</h3>
-        <p class="card-desc">SQLi + enumeración SMB + Java reverse shell + escalada mediante SUID env.</p>
-        <div class="card-tags">
-          <span class="card-tag">SQLi</span>
-          <span class="card-tag">SMB</span>
-          <span class="card-tag">Java Shell</span>
-          <span class="card-tag">SUID</span>
-          <span class="card-tag">PrivEsc</span>
-        </div>
-        <div class="card-footer">
-          <span class="card-date">Abril 2026</span>
-          <span class="card-arrow">LEER →</span>
-        </div>
-      </a>
 
       <!-- OBSESSION -->
       <a href="dockerlabs/muy-facil/obsession.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="dockerlabs">
@@ -351,6 +330,26 @@
         </div>
       </a>
 
+      <!-- BREAKMYSSH -->
+      <a href="dockerlabs/muy-facil/breakmyssh.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="dockerlabs">
+        <div class="card-top">
+          <span class="card-platform">DOCKERLABS</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">BreakMySSH</h3>
+        <p class="card-desc">nmap detecta puerto 22 OpenSSH 7.7 → Metasploit auxiliary/scanner/ssh/ssh_login → fuerza bruta SSH → acceso root.</p>
+        <div class="card-tags">
+          <span class="card-tag">nmap</span>
+          <span class="card-tag">SSH</span>
+          <span class="card-tag">Metasploit</span>
+          <span class="card-tag">Fuerza Bruta</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Junio 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
       <!-- MIRAME -->
       <a href="dockerlabs/facil/mirame.html" class="writeup-card reveal" data-diff="facil" data-platform="dockerlabs">
         <div class="card-top">
@@ -369,6 +368,27 @@
         </div>
         <div class="card-footer">
           <span class="card-date">Mayo 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- DATABASE -->
+      <a href="dockerlabs/medio/database.html" class="writeup-card reveal" data-diff="medio" data-platform="dockerlabs">
+        <div class="card-top">
+          <span class="card-platform">DOCKERLABS</span>
+          <span class="card-diff diff-medio">MEDIO</span>
+        </div>
+        <h3 class="card-name">Database</h3>
+        <p class="card-desc">SQLi + enumeración SMB + Java reverse shell + escalada mediante SUID env.</p>
+        <div class="card-tags">
+          <span class="card-tag">SQLi</span>
+          <span class="card-tag">SMB</span>
+          <span class="card-tag">Java Shell</span>
+          <span class="card-tag">SUID</span>
+          <span class="card-tag">PrivEsc</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Abril 2026</span>
           <span class="card-arrow">LEER →</span>
         </div>
       </a>
