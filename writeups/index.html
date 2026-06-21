@@ -25,12 +25,11 @@
       --font-disp: 'Orbitron', sans-serif;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
     body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-main);
-      overflow-x: hidden;
       cursor: none;
     }
     body::before {
@@ -956,9 +955,18 @@
           card.classList.add('hidden');
         }
       });
-      // Update docker count
-      const visible = document.querySelectorAll('#dockerlabs-grid .writeup-card:not(.hidden)').length;
-      document.getElementById('docker-visible-count').textContent = visible + (visible === 1 ? ' writeup' : ' writeups');
+      // Update visible counts for every platform section
+      const counters = [
+        { grid: 'dockerlabs-grid',       label: 'docker-visible-count' },
+        { grid: 'hackthebox-grid',       label: 'htb-visible-count' },
+        { grid: 'google-xss-game-grid',  label: 'ggxss-visible-count' }
+      ];
+      counters.forEach(({ grid, label }) => {
+        const el = document.getElementById(label);
+        if (!el) return;
+        const visible = document.querySelectorAll(`#${grid} .writeup-card:not(.hidden)`).length;
+        el.textContent = visible + (visible === 1 ? ' writeup' : ' writeups');
+      });
     });
   });
 </script>
