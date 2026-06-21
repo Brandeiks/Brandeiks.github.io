@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>XSS Game — Google Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup del Google XSS Game (xss-game.appspot.com) — 6 niveles de Cross-Site Scripting: reflejado, almacenado, DOM-based y bypass de protocolos.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00ff88;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--green); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-vfacil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-cve     { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-shell   { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .badge-nmap    { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-vfacil { color: #00ffcc; }
+
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    .writeup-content { min-width: 0; order: 1; }
+
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .cve-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .cve-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .cve-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .cve-box p strong { color: var(--red); }
+
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/web/">web</a> /
+      <span>xss-game</span>
+    </p>
+    <h1 class="writeup-title"><span>XSS Game</span></h1>
+    <p class="writeup-subtitle">Google xss-game.appspot.com — 6 niveles de Cross-Site Scripting: Reflected, Stored, DOM-based y bypass de protocolo</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-vfacil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">GOOGLE</span>
+      <span class="meta-badge badge-linux">XSS</span>
+      <span class="meta-badge badge-cve">WEB</span>
+      <span class="meta-badge badge-shell">JAVASCRIPT</span>
+      <span class="meta-badge badge-nmap">6/6 NIVELES</span>
+      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#nivel1">02 · Nivel 1 — Hello XSS</a></li>
+        <li><a href="#nivel2">03 · Nivel 2 — Persistence</a></li>
+        <li><a href="#nivel3">04 · Nivel 3 — Sinking Feeling</a></li>
+        <li><a href="#nivel4">05 · Nivel 4 — Context Matters</a></li>
+        <li><a href="#nivel5">06 · Nivel 5 — Breaking Protocol</a></li>
+        <li><a href="#nivel6">07 · Nivel 6 — Follow the Rabbit</a></li>
+        <li><a href="#resumen-tabla">08 · Tabla de Payloads</a></li>
+        <li><a href="#glosario">09 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">Google XSS Game</span></div>
+      <div class="info-row"><span class="info-label">Tipo</span><span class="info-val val-yellow">Web · XSS</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-vfacil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">Objetivo</span><span class="info-val" style="color:var(--text)">alert() en cada nivel</span></div>
+      <div class="info-row"><span class="info-label">Niveles</span><span class="info-val val-cyan">6/6</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Completado</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE NIVELES</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 1</span> → XSS reflejado básico</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 2</span> → XSS almacenado (persistente)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 3</span> → DOM-based via innerHTML</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 4</span> → Inyección en contexto JS</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 5</span> → Esquema javascript: en URL</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">Nivel 6</span> → Bypass de filtro con data:</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          El <strong>XSS Game</strong> es un laboratorio educativo creado y mantenido por
+          <span class="hl">Google</span>, alojado en <span class="hl-cyan">xss-game.appspot.com</span>,
+          diseñado específicamente para enseñar de forma práctica los distintos tipos de
+          <strong>Cross-Site Scripting (XSS)</strong>. Cada uno de los 6 niveles presenta una
+          mini-aplicación web vulnerable distinta, y el objetivo siempre es el mismo: lograr que el
+          navegador ejecute un <span class="hl">alert()</span> de JavaScript inyectado por el jugador.
+        </p>
+        <p>
+          Lo interesante de este laboratorio es que cada nivel introduce una <strong>variante
+          distinta</strong> del mismo problema de fondo — datos no confiables que terminan
+          ejecutándose como código. Se recorre el espectro completo de XSS:
+          <span class="hl-cyan">reflejado</span>, <span class="hl-cyan">almacenado</span>,
+          <span class="hl-cyan">basado en DOM</span> y <span class="hl-cyan">bypass de filtros y
+          protocolos</span> (javascript: y data:).
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Nivel</th><th>Nombre</th><th>Tipo de XSS</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Hello, world of XSS</td><td>Reflejado — sin escapado de HTML</td></tr>
+          <tr><td>2</td><td>Persistence is key</td><td>Almacenado — bypass de filtro de &lt;script&gt;</td></tr>
+          <tr><td>3</td><td>That sinking feeling</td><td>DOM-based — sink oculto (src de imagen)</td></tr>
+          <tr><td>4</td><td>Context matters</td><td>Inyección en contexto de código JavaScript</td></tr>
+          <tr><td>5</td><td>Breaking protocol</td><td>Esquema javascript: sin validar</td></tr>
+          <tr><td>6</td><td>Follow the white rabbit</td><td>Carga dinámica de script — bypass con data:</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NIVEL 1 -->
+    <div class="section" id="nivel1">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Nivel 1 — Hello, world of XSS</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">XSS REFLEJADO BÁSICO</span>
+      </div>
+      <div class="prose">
+        <p>
+          El primer nivel es la introducción clásica al XSS reflejado: el campo de búsqueda de la
+          aplicación <strong>FourOrFour</strong> toma el valor escrito por el usuario y lo inserta
+          directamente en el HTML de la página de resultados, <span class="hl">sin ningún tipo de
+          escapado</span> (sin convertir <code>&lt;</code> en <code>&amp;lt;</code>, por ejemplo).
+        </p>
+        <p>
+          Como el navegador no distingue entre "HTML legítimo de la página" y "HTML que llegó desde
+          el input del usuario", al escribir una etiqueta <span class="hl-cyan">&lt;script&gt;</span>
+          el parser la interpreta exactamente igual que si hubiera estado en el código fuente
+          original, y ejecuta el JavaScript contenido en ella.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="<script>alert(1)</script>">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="prompt">$ </span><span class="cmd">&lt;script&gt;alert(1)&lt;/script&gt;</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// POR QUÉ FUNCIONA</p>
+        <p>El servidor responde con algo como <strong>&lt;p&gt;Resultados para: [INPUT]&lt;/p&gt;</strong>. Si <code>INPUT</code> no se sanitiza, el atacante simplemente cierra el contexto que necesite y abre una etiqueta ejecutable. Es la causa raíz de XSS más común en aplicaciones que generan HTML manualmente.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NIVEL 2 -->
+    <div class="section" id="nivel2">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Nivel 2 — Persistence is key</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">XSS ALMACENADO + BYPASS DE FILTRO</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>Madchattr</strong> es un mini muro de publicaciones tipo chat: lo que se escribe se
+          guarda en el servidor y se vuelve a mostrar cada vez que la página se recarga. Eso lo
+          convierte en un escenario de <span class="hl">XSS almacenado (stored)</span> — el payload
+          no necesita ser reenviado por el atacante cada vez, queda persistido.
+        </p>
+        <p>
+          La aplicación sí filtra la etiqueta <span class="hl-cyan">&lt;script&gt;</span> de forma
+          literal, pero sigue insertando el resto del input dentro de un atributo HTML existente sin
+          escapar comillas. Cerrando el atributo con <code>"</code> y la etiqueta con <code>></code>,
+          se puede abrir un elemento totalmente distinto — en este caso un
+          <span class="hl-cyan">&lt;svg&gt;</span> — que no está en la lista negra del filtro pero
+          sí soporta el manejador de evento <span class="hl">onload</span>, el cual el navegador
+          ejecuta automáticamente al renderizar el SVG.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd='"><svg onload=alert(1)>'>
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="prompt">$ </span><span class="cmd">"&gt;&lt;svg <span class="flag">onload</span>=<span class="arg">alert(1)</span>&gt;</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// LECCIÓN CLAVE</p>
+        <p>Las <strong>blacklists de etiquetas</strong> (bloquear solo &lt;script&gt;) son insuficientes: HTML tiene decenas de elementos y eventos (onload, onerror, onmouseover...) capaces de ejecutar JavaScript sin necesitar &lt;script&gt; en absoluto.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NIVEL 3 -->
+    <div class="section" id="nivel3">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Nivel 3 — That sinking feeling</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">DOM-BASED XSS — SINK OCULTO</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>cloudiddly</strong> muestra una galería de imágenes donde el número de imagen se lee
+          del <span class="hl">fragmento de la URL</span> (la parte después de <code>#</code>), que
+          nunca se envía al servidor — todo el procesamiento ocurre en JavaScript dentro del
+          navegador. Esto es un <span class="hl">DOM-based XSS</span>: la vulnerabilidad vive
+          enteramente en el código cliente.
+        </p>
+        <p>
+          Internamente, el script construye la ruta de la imagen con algo equivalente a
+          <code>img.src = 'image' + num + '.jpg'</code>. Como <code>num</code> proviene directamente
+          del hash sin validar, se puede inyectar una comilla simple para cerrar el atributo
+          <span class="hl-cyan">src</span> y añadir un nuevo atributo de evento. Al apuntar a una
+          ruta de imagen que no existe, se dispara <span class="hl">onerror</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="https://xss-game.appspot.com/level3/frame#2' onerror='alert(&quot;XSS&quot;)'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD (URL)</span>
+        <div><span class="prompt">$ </span><span class="cmd">https://xss-game.appspot.com/level3/frame<span class="flag">#</span><span class="arg">2' onerror='alert("XSS")'</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// SINK OCULTO</p>
+        <p>El nivel se llama "that sinking feeling" porque el <strong>sink</strong> (el punto donde el dato controlado por el atacante termina ejecutándose) está escondido detrás de una API de alto nivel — aquí, la asignación a <code>.src</code> de una imagen — y no es obvio a primera vista que sea peligroso.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NIVEL 4 -->
+    <div class="section" id="nivel4">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Nivel 4 — Context matters</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">INYECCIÓN EN CONTEXTO DE CÓDIGO JS</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>timemer</strong> toma el valor del campo de temporizador y lo inserta dentro de una
+          llamada a función JavaScript ya existente en la página, de forma equivalente a
+          <code>startTimer('VALOR')</code>. Aquí el contexto de inyección ya no es HTML, sino
+          <span class="hl">código JavaScript en sí mismo</span> — y por eso el escapado necesario es
+          completamente distinto al de los niveles anteriores.
+        </p>
+        <p>
+          Para escapar de la cadena de texto y de la llamada a función, basta con cerrar la comilla
+          simple y el paréntesis de la llamada original (<code>');</code>), lo que termina la
+          instrucción <code>startTimer(...)</code> de forma válida. A partir de ahí, cualquier código
+          que se escriba se ejecuta como una sentencia JavaScript completamente nueva e
+          independiente.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="3'); alert('1">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="prompt">$ </span><span class="cmd">3<span class="flag">');</span> <span class="arg">alert('1</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// POR QUÉ "CONTEXT MATTERS"</p>
+        <p>El payload correcto depende enteramente de <strong>dónde</strong> cae el input dentro del documento: dentro de texto HTML, dentro de un atributo, dentro de una cadena JS, dentro de una URL, dentro de CSS... cada contexto exige una técnica de escape diferente.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NIVEL 5 -->
+    <div class="section" id="nivel5">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Nivel 5 — Breaking protocol</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">ESQUEMA javascript: SIN VALIDAR</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>Groovy Reader</strong> redirige al usuario a una página de registro usando un
+          parámetro <span class="hl-cyan">next</span> en la URL, que se inyecta directamente como el
+          valor del atributo <span class="hl">href</span> de un enlace "Sign up". El nivel demuestra
+          que el XSS no siempre requiere inyectar nuevas etiquetas: a veces basta con controlar el
+          <strong>destino</strong> de un enlace o redirección ya existente.
+        </p>
+        <p>
+          Si la aplicación no valida que el valor de <code>next</code> sea una URL http(s) legítima,
+          el navegador acepta igualmente el esquema <span class="hl">javascript:</span> como destino
+          válido de un enlace. Al hacer clic, en lugar de navegar a otra página, el navegador ejecuta
+          el código que sigue al esquema como JavaScript.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="https://xss-game.appspot.com/level5/frame/signup?next=javascript:alert('XSS')">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD (URL)</span>
+        <div><span class="prompt">$ </span><span class="cmd">https://xss-game.appspot.com/level5/frame/signup?<span class="flag">next=</span><span class="arg">javascript:alert('XSS')</span></span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// VALIDACIÓN DE PROTOCOLO</p>
+        <p>Cualquier campo que termine usado como <strong>href</strong>, <strong>src</strong> o redirección debe validarse contra una lista blanca de esquemas (<code>http:</code>, <code>https:</code>, <code>mailto:</code>...), nunca solo contra una lista negra de palabras prohibidas.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NIVEL 6 -->
+    <div class="section" id="nivel6">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Nivel 6 — Follow the white rabbit</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">CARGA DINÁMICA DE SCRIPT — BYPASS CON data:</span>
+      </div>
+      <div class="prose">
+        <p>
+          El nivel final, <strong>Glove Gadgets</strong>, carga dinámicamente un script externo
+          usando una ruta derivada del <span class="hl">fragmento de la URL</span>
+          (<code>location.hash</code>), por ejemplo para cargar "gadgets" adicionales. Es el nivel
+          más avanzado porque combina DOM-based XSS con un mecanismo de carga de scripts realista
+          —parecido a cómo cargan plugins muchas aplicaciones complejas.
+        </p>
+        <p>
+          La aplicación intenta bloquear esquemas peligrosos filtrando explícitamente
+          <code>http://</code> y <code>https://</code>, asumiendo que así evita cargar scripts de
+          dominios externos no confiables. Sin embargo, <span class="hl">no filtra el esquema
+          data:</span>, que permite embeber contenido (incluyendo código JavaScript) directamente
+          dentro de la propia URL, sin necesidad de ningún servidor externo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="https://xss-game.appspot.com/level6/frame#data:text/plain,alert()">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD (URL)</span>
+        <div><span class="prompt">$ </span><span class="cmd">https://xss-game.appspot.com/level6/frame<span class="flag">#</span><span class="arg">data:text/plain,alert()</span></span></div>
+      </div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// LISTA NEGRA INCOMPLETA</p>
+        <p>Este nivel resume la lección de todo el laboratorio: <strong>filtrar por palabras prohibidas (blacklist) casi siempre es insuficiente</strong>. Existen múltiples esquemas de URL (<code>data:</code>, <code>javascript:</code>, <code>vbscript:</code> en navegadores antiguos) y vectores de HTML capaces de lograr el mismo resultado por caminos distintos.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- TABLA RESUMEN -->
+    <div class="section" id="resumen-tabla">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Tabla de Payloads</h2>
+      <div class="section-line"></div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Nivel</th><th>Payload</th><th>Vector</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>&lt;script&gt;alert(1)&lt;/script&gt;</td><td>Inyección directa de etiqueta</td></tr>
+          <tr><td>2</td><td>"&gt;&lt;svg onload=alert(1)&gt;</td><td>Escape de atributo + evento SVG</td></tr>
+          <tr><td>3</td><td>https://xss-game.appspot.com/level3/frame#2' onerror='alert("XSS")'</td><td>Sink oculto en src de imagen</td></tr>
+          <tr><td>4</td><td>3'); alert('1</td><td>Escape de contexto JS (string + función)</td></tr>
+          <tr><td>5</td><td>https://xss-game.appspot.com/level5/frame/signup?next=javascript:alert('XSS')</td><td>Esquema javascript: en href</td></tr>
+          <tr><td>6</td><td>https://xss-game.appspot.com/level6/frame#data:text/plain,alert()</td><td>Esquema data: no filtrado</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+        <div class="glos-card">
+          <div class="glos-term">XSS — Cross-Site Scripting</div>
+          <div class="glos-def">Vulnerabilidad que permite a un atacante inyectar <strong>código JavaScript</strong> en una página web vista por otros usuarios, ejecutándose con los mismos privilegios y acceso que el sitio legítimo (cookies, sesión, DOM). Está en el Top 10 de OWASP desde hace más de una década.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">XSS Reflejado (Reflected)</div>
+          <div class="glos-def">El payload viaja en la propia petición (normalmente en parámetros de la URL) y el servidor lo refleja inmediatamente en la respuesta sin almacenarlo. Requiere que la víctima haga clic en un enlace especialmente diseñado.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">XSS Almacenado (Stored)</div>
+          <div class="glos-def">El payload se guarda de forma persistente en el servidor (base de datos, archivo, comentario, post) y se ejecuta cada vez que cualquier usuario visualiza ese contenido — más peligroso porque no requiere interacción específica con un enlace.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">DOM-based XSS</div>
+          <div class="glos-def">La vulnerabilidad ocurre completamente en el navegador: JavaScript del lado cliente toma datos no confiables (como <code>location.hash</code> o <code>document.URL</code>) y los escribe de forma insegura en el DOM, sin que el servidor llegue a ver el payload.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Sink (Sumidero)</div>
+          <div class="glos-def">Punto en el código donde un dato controlado por el atacante termina siendo interpretado como código o marcado activo — por ejemplo <code>innerHTML</code>, <code>eval()</code>, <code>document.write()</code>, o la asignación a <code>.src</code>/<code>.href</code>.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Escapado (Output Encoding)</div>
+          <div class="glos-def">Técnica de convertir caracteres con significado especial en el contexto de salida (HTML, atributo, JS, URL, CSS) en su representación segura — por ejemplo <code>&lt;</code> → <code>&amp;lt;</code> — para que el navegador los trate como texto literal y no como código.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Blacklist vs. Whitelist</div>
+          <div class="glos-def">Una <strong>blacklist</strong> bloquea patrones específicos conocidos como peligrosos (ej. la palabra <code>&lt;script&gt;</code>), pero es fácil de evadir con vectores alternativos. Una <strong>whitelist</strong> solo permite explícitamente lo que se sabe seguro — enfoque mucho más robusto contra XSS.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">CSP — Content Security Policy</div>
+          <div class="glos-def">Cabecera HTTP que permite a un sitio restringir desde qué orígenes puede cargarse JavaScript, prohibir <code>eval()</code> e inline scripts, mitigando el impacto de XSS incluso si una vulnerabilidad de inyección logra colarse en el código.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · Google XSS Game</p>
+  <p>Built with <span>chrome devtools</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Payload copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
