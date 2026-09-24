@@ -27,6 +27,8 @@ import sys
 import urllib.request
 
 # ------------------------------------------------------------------ ajustes
+# El canal de YouTube y la ruta de salida. Para cambiar de canal basta con
+# sustituir CANAL_ID por el del canal nuevo (esta en el feed y en la URL).
 CANAL_ID = "UCgipGAOra-KHwucH6Pjb3aw"
 CANAL_URL = "https://www.youtube.com/@AbogadoCibernetico"
 FEED = "https://www.youtube.com/feeds/videos.xml?channel_id=" + CANAL_ID
