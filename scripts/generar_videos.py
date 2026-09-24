@@ -26,6 +26,15 @@ import re
 import sys
 import urllib.request
 
+# La consola de Windows usa cp1252 y no puede escribir los acentos de los
+# titulos: el script terminaba con UnicodeEncodeError justo al imprimirlos,
+# despues de haber escrito el HTML. Forzamos UTF-8 en la salida.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, ValueError):
+    pass
+
 # ------------------------------------------------------------------ ajustes
 # El canal de YouTube y la ruta de salida. Para cambiar de canal basta con
 # sustituir CANAL_ID por el del canal nuevo (esta en el feed y en la URL).
@@ -98,6 +107,22 @@ CSS = """
       border-radius: 50%; pointer-events: none; z-index: 9999;
       transform: translate(-50%,-50%); opacity: 0; transition: opacity .3s, width .3s, height .3s;
     }
+    /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: center; row-gap: 0.35rem; padding: 0.6rem 0.5rem; }
+      .nav-logo { font-size: 0.78rem; letter-spacing: 1px; }
+      .nav-back { font-size: 0.52rem; margin-left: 0.4rem; letter-spacing: 0.5px; }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.5rem 0.35rem; }
+      .nav-logo { font-size: 0.68rem; letter-spacing: 0px; }
+      .nav-back { font-size: 0.40rem; margin-left: 0.2rem; letter-spacing: 0; }
+    }
     @media (max-width: 768px) { .cursor, .cursor-ring { display: none; } }
 
     /* nav */
@@ -116,7 +141,8 @@ CSS = """
       text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
       margin-left: 1.4rem;
     }
-    .nav-back:hover { color: var(--green); }
+    .nav-back::before { content: '\u2190 '; color: inherit; }
+    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
 
     /* hero */
     .hero {
@@ -238,8 +264,6 @@ CSS = """
 
     @media (max-width: 768px) {
       nav { padding: 0.8rem 1rem; }
-      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
-      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
       .hero { padding: 6rem 1rem 2rem; }
       .main { padding: 1.5rem 1rem 3rem; }
       .cards-grid { grid-template-columns: 1fr; }
@@ -397,11 +421,13 @@ def generar(videos, actualizado):
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 
-<nav>
+  <nav>
     <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../index.html" class="nav-back">INICIO</a>
     <a href="index.html" class="nav-back">VÍDEOS</a>
     <a href="../writeups/index.html" class="nav-back">WRITEUPS</a>
     <a href="../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
   </nav>
 
 <!-- HERO -->
