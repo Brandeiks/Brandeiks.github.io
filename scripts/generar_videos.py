@@ -143,6 +143,7 @@ CSS = """
     }
     .nav-back::before { content: '\u2190 '; color: inherit; }
     .nav-back:hover, .nav-back:hover::before { color: var(--green); }
+    .nav-back:visited, .nav-logo:visited { color: inherit; }
 
     /* hero */
     .hero {
