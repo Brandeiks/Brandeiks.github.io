@@ -499,6 +499,29 @@ def main():
 
     open(SALIDA, "w", encoding="utf-8").write(pagina)
     print("\nPagina actualizada: %s (%.1f KB)" % (SALIDA, os.path.getsize(SALIDA) / 1024))
+
+    # registro de estado: sirve para ver de un vistazo cuando se actualizo por
+    # ultima vez y que videos hay. Ademas, al cambiar este archivo el flujo de
+    # trabajo tambien se dispara por su trigger de push.
+    estado = os.path.join(RAIZ, "videos", "estado.json")
+    with open(estado, "w", encoding="utf-8") as f:
+        json.dump({
+            "actualizado": datetime.datetime.now(datetime.timezone.utc)
+                             .strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "canal": "Abogado Cibernetico",
+            "canal_id": CANAL_ID,
+            "total_videos": len(videos),
+            "videos": [
+                {
+                    "titulo": v["titulo"],
+                    "fecha": v["fecha"].strftime("%Y-%m-%d") if v["fecha"] else None,
+                    "tipo": clasificar(v["titulo"]),
+                    "url": v["url"],
+                }
+                for v in videos
+            ],
+        }, f, ensure_ascii=False, indent=2)
+    print("Estado guardado en: %s" % estado)
     return 0
 
 

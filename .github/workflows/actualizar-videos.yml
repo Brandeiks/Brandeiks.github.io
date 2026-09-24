@@ -76,12 +76,13 @@ jobs:
       - name: Ver si ha cambiado algo
         id: cambios
         run: |
-          if git diff --quiet -- videos/index.html; then
+          if git diff --quiet -- videos/index.html videos/estado.json; then
             echo "hay_cambios=false" >> "$GITHUB_OUTPUT"
             echo "Sin novedades: la pagina ya estaba al dia."
           else
             echo "hay_cambios=true" >> "$GITHUB_OUTPUT"
             echo "Hay videos nuevos o cambios; se publicara."
+            git diff --stat -- videos/index.html videos/estado.json
           fi
 
       - name: Publicar los cambios
@@ -89,7 +90,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add videos/index.html
+          git add videos/index.html videos/estado.json
           printf 'chore(videos): actualizar la lista desde el feed de YouTube\n\nGenerado automaticamente por .github/workflows/actualizar-videos.yml\n' > /tmp/mensaje.txt
           git commit -F /tmp/mensaje.txt
           git push
