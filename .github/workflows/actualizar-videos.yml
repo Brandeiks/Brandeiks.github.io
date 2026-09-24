@@ -1,0 +1,95 @@
+name: Actualizar vídeos de YouTube
+
+# Mantiene la seccion /videos/ al dia sin intervencion manual.
+#
+# Lee el feed RSS publico del canal "Abogado Cibernetico", regenera la pagina y
+# la publica. Se ejecuta:
+#   - todas las noches (06:00 UTC = 01:00 en Peru)
+#   - a mano, desde la pestana Actions del repositorio
+#   - cuando cambia el propio generador
+#
+# NOTA: el flujo NO se dispara con los push, solo con el horario. Asi el commit
+# que hace este mismo flujo no puede volver a dispararlo (bucle infinito).
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/generar_videos.py'
+      - '.github/workflows/actualizar-videos.yml'
+
+# Necesita permiso de escritura para poder hacer commit del cambio
+permissions:
+  contents: write
+
+# Si se solapan dos ejecuciones, se cancela la anterior
+concurrency:
+  group: actualizar-videos
+  cancel-in-progress: true
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+        with:
+          # historial completo: con el clon superficial que hace checkout por
+          # defecto, hacer push despues puede corromper el historial del repo
+          fetch-depth: 0
+
+      - name: Generar la pagina de videos desde el feed
+        run: python3 scripts/generar_videos.py
+
+      - name: Comprobar que la pagina no ha quedado rota
+        # Red de seguridad: si el generador produjera una pagina vacia o sin
+        # videos, se aborta y NO se publica nada.
+        run: |
+          ARCHIVO="videos/index.html"
+          if [ ! -f "$ARCHIVO" ]; then
+            echo "::error::No se ha generado $ARCHIVO"
+            exit 1
+          fi
+          TAM=$(wc -c < "$ARCHIVO")
+          echo "Tamano de la pagina: $TAM bytes"
+          if [ "$TAM" -lt 5000 ]; then
+            echo "::error::La pagina es demasiado pequena ($TAM bytes); se aborta para no publicar algo roto."
+            exit 1
+          fi
+          VIDEO_CARDS=$(grep -c 'video-card' "$ARCHIVO" || true)
+          echo "Tarjetas de video encontradas: $VIDEO_CARDS"
+          if [ "$VIDEO_CARDS" -lt 1 ]; then
+            echo "::error::La pagina no contiene ningun video; se aborta."
+            exit 1
+          fi
+          for TEXTO in BRANDEIKS_SEC youtube.com hero-title; do
+            if ! grep -q "$TEXTO" "$ARCHIVO"; then
+              echo "::error::Falta el elemento esperado: $TEXTO"
+              exit 1
+            fi
+          done
+          echo "Verificacion correcta."
+
+      - name: Ver si ha cambiado algo
+        id: cambios
+        run: |
+          if git diff --quiet -- videos/index.html; then
+            echo "hay_cambios=false" >> "$GITHUB_OUTPUT"
+            echo "Sin novedades: la pagina ya estaba al dia."
+          else
+            echo "hay_cambios=true" >> "$GITHUB_OUTPUT"
+            echo "Hay videos nuevos o cambios; se publicara."
+          fi
+
+      - name: Publicar los cambios
+        if: steps.cambios.outputs.hay_cambios == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add videos/index.html
+          printf 'chore(videos): actualizar la lista desde el feed de YouTube\n\nGenerado automaticamente por .github/workflows/actualizar-videos.yml\n' > /tmp/mensaje.txt
+          git commit -F /tmp/mensaje.txt
+          git push

@@ -1,14 +1,47 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Vídeos | Brandeiks</title>
-<meta name="description" content="Vídeos de ciberseguridad y ciberderecho del canal Abogado Cibernético — Brandon Zevallos Pastrana.">
-<meta name="author" content="Brandon Zevallos Pastrana">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
-<style>
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Genera videos/index.html con los videos del canal de YouTube
+"Abogado Cibernetico", usando el mismo diseno del resto del sitio.
 
+Los datos salen del feed RSS publico del canal (no hace falta clave de API):
+    https://www.youtube.com/feeds/videos.xml?channel_id=UCgipGAOra-KHwucH6Pjb3aw
+
+El feed de YouTube NO envia cabeceras CORS, asi que el navegador no puede
+leerlo directamente: por eso la lista se escribe EN EL HTML (estatica). Asi la
+pagina se ve siempre, sin depender de servicios de terceros ni de JavaScript.
+
+Uso:
+    python3 scripts/generar_videos.py
+
+Este script lo ejecuta automaticamente el flujo de trabajo
+.github/workflows/actualizar-videos.yml todas las noches.
+"""
+
+import datetime
+import html
+import json
+import os
+import re
+import sys
+import urllib.request
+
+# ------------------------------------------------------------------ ajustes
+CANAL_ID = "UCgipGAOra-KHwucH6Pjb3aw"
+CANAL_URL = "https://www.youtube.com/@AbogadoCibernetico"
+FEED = "https://www.youtube.com/feeds/videos.xml?channel_id=" + CANAL_ID
+
+# raiz del repositorio = carpeta padre de scripts/
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SALIDA = os.path.join(RAIZ, "videos", "index.html")
+
+MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+         "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+# ------------------------------------------------------------------ estilo
+# Se reutiliza el CSS de la pagina de writeups y se anaden las reglas de las
+# tarjetas de video. Incrustado aqui para que el script no dependa de nada.
+CSS = """
     :root {
       --bg:        #050a0e;
       --bg2:       #080f14;
@@ -200,7 +233,145 @@
       .hero-stats { gap: 1.5rem; }
       .filters-bar { top: 49px; }
     }
+"""
 
+# ------------------------------------------------------------------ lectura del feed
+def leer_feed():
+    peticion = urllib.request.Request(FEED, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(peticion, timeout=45) as r:
+        return r.read().decode("utf-8")
+
+
+def parsear(xml):
+    videos = []
+    for m in re.finditer(r"<entry>([\s\S]*?)</entry>", xml):
+        e = m.group(1)
+        vid = re.search(r"<yt:videoId>([^<]+)</yt:videoId>", e)
+        tit = re.search(r"<title>([^<]+)</title>", e)
+        pub = re.search(r"<published>([^<]+)</published>", e)
+        if not (vid and tit):
+            continue
+        fecha = None
+        if pub:
+            try:
+                fecha = datetime.datetime.strptime(pub.group(1)[:10], "%Y-%m-%d")
+            except ValueError:
+                pass
+        videos.append({
+            "id": vid.group(1),
+            "titulo": html.unescape(tit.group(1)),
+            "fecha": fecha,
+            "url": "https://www.youtube.com/watch?v=" + vid.group(1),
+            "miniatura": "https://i.ytimg.com/vi/%s/hqdefault.jpg" % vid.group(1),
+        })
+    videos.sort(key=lambda v: v["fecha"] or datetime.datetime.min, reverse=True)
+    return videos
+
+
+# ------------------------------------------------------------------ clasificacion
+# El canal mezcla derecho y ciberseguridad. "abogado" NO clasifica como derecho
+# por si solo: un video de ciberseguridad hecho por un abogado no es juridico.
+CLASES = [
+    ("PRESENTACIÓN", ["whoami", "presentación", "presentacion", "bienvenid",
+                      "futuro del canal", "mi canal"]),
+    ("DERECHO", ["ley ", "ley n", "artículo", "articulo", "código", "codigo",
+                 "penal", "delito", "jurídic", "juridic", "normativ",
+                 "constituci", "tribunal", "sentencia", "ciberderecho",
+                 "protección de datos", "proteccion de datos"]),
+    ("TUTORIAL", ["tutorial", "cómo ", "como ", "guía", "guia", "instalar",
+                  "configurar", "wallpaper", "paso a paso", "personalizar"]),
+    ("CIBERSEGURIDAD", ["kali", "linux", "hack", "nmap", "burp", "metasploit",
+                        "pentest", "ctf", "vulnerab", "ciber", "seguridad",
+                        "malware", "phishing", "osint", "forense", "wifi"]),
+]
+
+
+def clasificar(titulo):
+    t = " " + titulo.lower() + " "
+    for nombre, claves in CLASES:
+        if any(k in t for k in claves):
+            return nombre
+    return "OTROS"
+
+
+def etiquetas(titulo):
+    halladas = []
+    for clave, etq in [("kali", "Kali Linux"), ("linux", "Linux"), ("ley", "Ley"),
+                       ("artículo", "Artículo"), ("articulo", "Artículo"),
+                       ("ciber", "Ciberseguridad"), ("wallpaper", "Wallpaper"),
+                       ("whoami", "Presentación"), ("abogado", "Derecho")]:
+        if clave in titulo.lower() and etq not in halladas:
+            halladas.append(etq)
+    return halladas[:4] or ["Vídeo"]
+
+
+# ------------------------------------------------------------------ plantilla
+def tarjeta(v, i):
+    clase = clasificar(v["titulo"])
+    fecha = ("%s %d" % (MESES[v["fecha"].month - 1].capitalize(), v["fecha"].year)
+             if v["fecha"] else "")
+    etqs = "".join('<span class="card-tag">%s</span>' % html.escape(x)
+                   for x in etiquetas(v["titulo"]))
+    titulo = v["titulo"] if len(v["titulo"]) <= 70 else v["titulo"][:67] + "…"
+    return """      <a href="{url}" target="_blank" rel="noopener noreferrer"
+         class="writeup-card video-card reveal" data-clase="{clase}" data-i="{i}" style="padding:0">
+        <div class="video-thumb">
+          <img src="{mini}" alt="{alt}" loading="lazy" />
+          <span class="video-play">▶</span>
+        </div>
+        <div style="padding:1.3rem 1.5rem 1.5rem">
+          <div class="card-top">
+            <span class="card-platform">YOUTUBE · {clase}</span>
+            <span class="card-date">{fecha}</span>
+          </div>
+          <h3 class="card-name">{titulo}</h3>
+          <div class="card-tags">{etqs}</div>
+          <div class="card-footer">
+            <span class="card-date">VER EN YOUTUBE</span>
+            <span class="card-arrow">ABRIR →</span>
+          </div>
+        </div>
+      </a>""".format(url=v["url"], clase=clase, i=i, mini=v["miniatura"],
+                     alt=html.escape(v["titulo"]), fecha=fecha,
+                     titulo=html.escape(titulo), etqs=etqs)
+
+
+def generar(videos, actualizado):
+    total = len(videos)
+    anio = datetime.date.today().year
+    este_anio = sum(1 for v in videos if v["fecha"] and v["fecha"].year == anio)
+    por_clase = {}
+    for v in videos:
+        c = clasificar(v["titulo"])
+        por_clase[c] = por_clase.get(c, 0) + 1
+
+    stats = [("TOTAL", total), (str(anio), este_anio)]
+    for c, n in sorted(por_clase.items(), key=lambda x: -x[1])[:3]:
+        stats.append((c, n))
+    stats_html = "\n".join(
+        '      <div class="stat"><span class="stat-num">%s</span>'
+        '<span class="stat-label">%s</span></div>' % (n, html.escape(k))
+        for k, n in stats)
+
+    botones = ['<button class="filter-btn active" data-clase="all">TODOS</button>']
+    for c in ["CIBERSEGURIDAD", "DERECHO", "TUTORIAL", "PRESENTACIÓN", "OTROS"]:
+        if por_clase.get(c):
+            botones.append('<button class="filter-btn" data-clase="%s">%s</button>'
+                           % (c.lower(), c))
+    filtros = "\n  ".join(botones)
+    tarjetas = "\n".join(tarjeta(v, i) for i, v in enumerate(videos))
+
+    return """<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vídeos | Brandeiks</title>
+<meta name="description" content="Vídeos de ciberseguridad y ciberderecho del canal Abogado Cibernético — Brandon Zevallos Pastrana.">
+<meta name="author" content="Brandon Zevallos Pastrana">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+<style>
+%s
 </style>
 </head>
 <body>
@@ -224,106 +395,23 @@
     <h1 class="hero-title">VÍDE<span>OS</span></h1>
     <p class="hero-sub">Ciberseguridad y ciberderecho explicados en vídeo — laboratorios, herramientas de Kali Linux y normativa peruana.</p>
     <div class="hero-stats">
-      <div class="stat"><span class="stat-num">4</span><span class="stat-label">TOTAL</span></div>
-      <div class="stat"><span class="stat-num">3</span><span class="stat-label">2026</span></div>
-      <div class="stat"><span class="stat-num">1</span><span class="stat-label">PRESENTACIÓN</span></div>
-      <div class="stat"><span class="stat-num">1</span><span class="stat-label">DERECHO</span></div>
-      <div class="stat"><span class="stat-num">1</span><span class="stat-label">CIBERSEGURIDAD</span></div>
+%s
     </div>
   </div>
 </div>
 
 <!-- FILTROS -->
 <div class="filters-bar">
-  <button class="filter-btn active" data-clase="all">TODOS</button>
-  <button class="filter-btn" data-clase="ciberseguridad">CIBERSEGURIDAD</button>
-  <button class="filter-btn" data-clase="derecho">DERECHO</button>
-  <button class="filter-btn" data-clase="tutorial">TUTORIAL</button>
-  <button class="filter-btn" data-clase="presentación">PRESENTACIÓN</button>
+  %s
 </div>
 
 <main class="main">
   <div class="cards-grid">
-      <a href="https://www.youtube.com/watch?v=gK5p9E9hzd4" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="PRESENTACIÓN" data-i="0" style="padding:0">
-        <div class="video-thumb">
-          <img src="https://i.ytimg.com/vi/gK5p9E9hzd4/hqdefault.jpg" alt="$ whoami — Mi presentación oficial y futuro del canal" loading="lazy" />
-          <span class="video-play">▶</span>
-        </div>
-        <div style="padding:1.3rem 1.5rem 1.5rem">
-          <div class="card-top">
-            <span class="card-platform">YOUTUBE · PRESENTACIÓN</span>
-            <span class="card-date">Agosto 2026</span>
-          </div>
-          <h3 class="card-name">$ whoami — Mi presentación oficial y futuro del canal</h3>
-          <div class="card-tags"><span class="card-tag">Presentación</span></div>
-          <div class="card-footer">
-            <span class="card-date">VER EN YOUTUBE</span>
-            <span class="card-arrow">ABRIR →</span>
-          </div>
-        </div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=uy449tLSinU" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="DERECHO" data-i="1" style="padding:0">
-        <div class="video-thumb">
-          <img src="https://i.ytimg.com/vi/uy449tLSinU/hqdefault.jpg" alt="LEY 30999  - ARTICULO 1 🇵🇪" loading="lazy" />
-          <span class="video-play">▶</span>
-        </div>
-        <div style="padding:1.3rem 1.5rem 1.5rem">
-          <div class="card-top">
-            <span class="card-platform">YOUTUBE · DERECHO</span>
-            <span class="card-date">Febrero 2026</span>
-          </div>
-          <h3 class="card-name">LEY 30999  - ARTICULO 1 🇵🇪</h3>
-          <div class="card-tags"><span class="card-tag">Ley</span><span class="card-tag">Artículo</span></div>
-          <div class="card-footer">
-            <span class="card-date">VER EN YOUTUBE</span>
-            <span class="card-arrow">ABRIR →</span>
-          </div>
-        </div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=7YSDp4Y9g6s" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="CIBERSEGURIDAD" data-i="2" style="padding:0">
-        <div class="video-thumb">
-          <img src="https://i.ytimg.com/vi/7YSDp4Y9g6s/hqdefault.jpg" alt="ABOGADO CIBERNETICO #ciberseguridad #derecho" loading="lazy" />
-          <span class="video-play">▶</span>
-        </div>
-        <div style="padding:1.3rem 1.5rem 1.5rem">
-          <div class="card-top">
-            <span class="card-platform">YOUTUBE · CIBERSEGURIDAD</span>
-            <span class="card-date">Febrero 2026</span>
-          </div>
-          <h3 class="card-name">ABOGADO CIBERNETICO #ciberseguridad #derecho</h3>
-          <div class="card-tags"><span class="card-tag">Ciberseguridad</span><span class="card-tag">Derecho</span></div>
-          <div class="card-footer">
-            <span class="card-date">VER EN YOUTUBE</span>
-            <span class="card-arrow">ABRIR →</span>
-          </div>
-        </div>
-      </a>
-      <a href="https://www.youtube.com/watch?v=WjlQOw_xWSU" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="TUTORIAL" data-i="3" style="padding:0">
-        <div class="video-thumb">
-          <img src="https://i.ytimg.com/vi/WjlQOw_xWSU/hqdefault.jpg" alt="WALLPAPERS en kali Linux" loading="lazy" />
-          <span class="video-play">▶</span>
-        </div>
-        <div style="padding:1.3rem 1.5rem 1.5rem">
-          <div class="card-top">
-            <span class="card-platform">YOUTUBE · TUTORIAL</span>
-            <span class="card-date">Octubre 2025</span>
-          </div>
-          <h3 class="card-name">WALLPAPERS en kali Linux</h3>
-          <div class="card-tags"><span class="card-tag">Kali Linux</span><span class="card-tag">Linux</span><span class="card-tag">Wallpaper</span></div>
-          <div class="card-footer">
-            <span class="card-date">VER EN YOUTUBE</span>
-            <span class="card-arrow">ABRIR →</span>
-          </div>
-        </div>
-      </a>
+%s
   </div>
 
   <div style="text-align:center;margin-top:3rem">
-    <a href="https://www.youtube.com/@AbogadoCibernetico" target="_blank" rel="noopener noreferrer" class="filter-btn"
+    <a href="%s" target="_blank" rel="noopener noreferrer" class="filter-btn"
        style="text-decoration:none;display:inline-block;padding:.7rem 1.6rem">
       VER EL CANAL COMPLETO EN YOUTUBE →
     </a>
@@ -331,12 +419,12 @@
 
   <p style="text-align:center;margin-top:1.5rem;font-family:var(--font-mono);
             font-size:.62rem;color:var(--text-dim);letter-spacing:1px">
-    Lista actualizada automáticamente · últimos cambios: 24/09/2026
+    Lista actualizada automáticamente · últimos cambios: %s
   </p>
 </main>
 
 <footer>
-    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Vídeos de ciberseguridad y ciberderecho</p>
+    <p>© %d <span>Brandon Zevallos Pastrana</span> — Vídeos de ciberseguridad y ciberderecho</p>
     <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
   </footer>
 
@@ -372,3 +460,47 @@
 </script>
 </body>
 </html>
+""" % (CSS, stats_html, filtros, tarjetas, CANAL_URL, actualizado,
+       datetime.date.today().year)
+
+
+# ------------------------------------------------------------------ principal
+def main():
+    print("Leyendo el feed del canal…")
+    try:
+        xml = leer_feed()
+    except Exception as e:
+        print("ERROR: no se pudo leer el feed:", e)
+        return 1
+
+    videos = parsear(xml)
+    if not videos:
+        print("ERROR: el feed no devolvio ningun video; no se toca la pagina.")
+        return 1
+
+    print("Videos encontrados: %d" % len(videos))
+    for v in videos:
+        f = v["fecha"].strftime("%Y-%m-%d") if v["fecha"] else "?"
+        print("   %s  [%-15s] %s" % (f, clasificar(v["titulo"]), v["titulo"][:58]))
+
+    actualizado = datetime.date.today().strftime("%d/%m/%Y")
+    pagina = generar(videos, actualizado)
+
+    os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
+
+    # solo se escribe si ha cambiado algo (asi el workflow no crea commits vacios)
+    anterior = ""
+    if os.path.exists(SALIDA):
+        anterior = open(SALIDA, encoding="utf-8").read()
+
+    if anterior == pagina:
+        print("\nSin cambios: la pagina ya estaba actualizada.")
+        return 0
+
+    open(SALIDA, "w", encoding="utf-8").write(pagina)
+    print("\nPagina actualizada: %s (%.1f KB)" % (SALIDA, os.path.getsize(SALIDA) / 1024))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
