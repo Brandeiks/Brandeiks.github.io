@@ -100,7 +100,7 @@
     .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
     .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
     .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
-    .badge-vfacil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-muy-facil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
     .badge-htb     { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
     .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
     .badge-cve     { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
@@ -259,6 +259,9 @@
       body, a, button { cursor: auto; }
       .cursor, .cursor-ring { display: none; }
     }
+  
+    /* insignias normalizadas */
+    .badge-tech{color:var(--text);background:rgba(200,216,224,.06);border-color:var(--text);}
   </style>
 </head>
 <body>
@@ -269,31 +272,32 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="../../index.html" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
+    <div class="breadcrumb">
       <a href="../../index.html">brandeiks</a> /
-      <a href="../">writeups</a> /
-      <a href="../../writeups/index.html#google-xss-game-section">google-xss-game</a> /
+      <a href="../../writeups/index.html">análisis</a> /
+      <a href="../../writeups/index.html">google-xss-game</a> /
       <span>xss-game</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>XSS Game</span></h1>
-    <p class="writeup-subtitle">Google xss-game.appspot.com — 6 niveles de Cross-Site Scripting: Reflected, Stored, DOM-based y bypass de protocolo</p>
+    <p class="writeup-subtitle">Google xss-game.appspot.com — 6 niveles de Cross-Site Scripting: Reflejado, Almacenado, Basado en DOM y bypass de protocolo</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-vfacil">● FÁCIL</span>
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
       <span class="meta-badge badge-htb">GOOGLE</span>
-      <span class="meta-badge badge-linux">XSS</span>
+      <span class="meta-badge badge-tech">XSS</span>
       <span class="meta-badge badge-cve">WEB</span>
       <span class="meta-badge badge-shell">JAVASCRIPT</span>
       <span class="meta-badge badge-nmap">6/6 NIVELES</span>
-      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -333,7 +337,7 @@
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 2</span> → XSS almacenado (persistente)</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 3</span> → DOM-based via innerHTML</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 3</span> → Basado en DOM via innerHTML</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nivel 4</span> → Inyección en contexto JS</div></div>
         <div class="ap-line"></div>
@@ -378,7 +382,7 @@
         <tbody>
           <tr><td>1</td><td>Hello, world of XSS</td><td>Reflejado — sin escapado de HTML</td></tr>
           <tr><td>2</td><td>Persistence is key</td><td>Almacenado — bypass de filtro de &lt;script&gt;</td></tr>
-          <tr><td>3</td><td>That sinking feeling</td><td>DOM-based — sink oculto (src de imagen)</td></tr>
+          <tr><td>3</td><td>That sinking feeling</td><td>Basado en DOM — sink oculto (src de imagen)</td></tr>
           <tr><td>4</td><td>Context matters</td><td>Inyección en contexto de código JavaScript</td></tr>
           <tr><td>5</td><td>Breaking protocol</td><td>Esquema javascript: sin validar</td></tr>
           <tr><td>6</td><td>Follow the white rabbit</td><td>Carga dinámica de script — bypass con data:</td></tr>
@@ -414,7 +418,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="<script>alert(1)</script>">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="prompt">$ </span><span class="cmd">&lt;script&gt;alert(1)&lt;/script&gt;</span></div>
       </div>
@@ -456,7 +460,7 @@
       </div>
 
       <div class="cmd-block" data-cmd='"><svg onload=alert(1)>'>
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="prompt">$ </span><span class="cmd">"&gt;&lt;svg <span class="flag">onload</span>=<span class="arg">alert(1)</span>&gt;</span></div>
       </div>
@@ -484,7 +488,7 @@
           <strong>cloudiddly</strong> muestra una galería de imágenes donde el número de imagen se lee
           del <span class="hl">fragmento de la URL</span> (la parte después de <code>#</code>), que
           nunca se envía al servidor — todo el procesamiento ocurre en JavaScript dentro del
-          navegador. Esto es un <span class="hl">DOM-based XSS</span>: la vulnerabilidad vive
+          navegador. Esto es un <span class="hl">Basado en DOM XSS</span>: la vulnerabilidad vive
           enteramente en el código cliente.
         </p>
         <p>
@@ -497,7 +501,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="https://xss-game.appspot.com/level3/frame#2' onerror='alert(&quot;XSS&quot;)'">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD (URL)</span>
         <div><span class="prompt">$ </span><span class="cmd">https://xss-game.appspot.com/level3/frame<span class="flag">#</span><span class="arg">2' onerror='alert("XSS")'</span></span></div>
       </div>
@@ -538,7 +542,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="3'); alert('1">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="prompt">$ </span><span class="cmd">3<span class="flag">');</span> <span class="arg">alert('1</span></span></div>
       </div>
@@ -578,7 +582,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="https://xss-game.appspot.com/level5/frame/signup?next=javascript:alert('XSS')">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD (URL)</span>
         <div><span class="prompt">$ </span><span class="cmd">https://xss-game.appspot.com/level5/frame/signup?<span class="flag">next=</span><span class="arg">javascript:alert('XSS')</span></span></div>
       </div>
@@ -606,7 +610,7 @@
           El nivel final, <strong>Glove Gadgets</strong>, carga dinámicamente un script externo
           usando una ruta derivada del <span class="hl">fragmento de la URL</span>
           (<code>location.hash</code>), por ejemplo para cargar "gadgets" adicionales. Es el nivel
-          más avanzado porque combina DOM-based XSS con un mecanismo de carga de scripts realista
+          más avanzado porque combina Basado en DOM XSS con un mecanismo de carga de scripts realista
           —parecido a cómo cargan plugins muchas aplicaciones complejas.
         </p>
         <p>
@@ -619,7 +623,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="https://xss-game.appspot.com/level6/frame#data:text/plain,alert()">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD (URL)</span>
         <div><span class="prompt">$ </span><span class="cmd">https://xss-game.appspot.com/level6/frame<span class="flag">#</span><span class="arg">data:text/plain,alert()</span></span></div>
       </div>
@@ -667,15 +671,15 @@
           <div class="glos-def">Vulnerabilidad que permite a un atacante inyectar <strong>código JavaScript</strong> en una página web vista por otros usuarios, ejecutándose con los mismos privilegios y acceso que el sitio legítimo (cookies, sesión, DOM). Está en el Top 10 de OWASP desde hace más de una década.</div>
         </div>
         <div class="glos-card">
-          <div class="glos-term">XSS Reflejado (Reflected)</div>
+          <div class="glos-term">XSS Reflejado (Reflejado)</div>
           <div class="glos-def">El payload viaja en la propia petición (normalmente en parámetros de la URL) y el servidor lo refleja inmediatamente en la respuesta sin almacenarlo. Requiere que la víctima haga clic en un enlace especialmente diseñado.</div>
         </div>
         <div class="glos-card">
-          <div class="glos-term">XSS Almacenado (Stored)</div>
+          <div class="glos-term">XSS Almacenado (Almacenado)</div>
           <div class="glos-def">El payload se guarda de forma persistente en el servidor (base de datos, archivo, comentario, post) y se ejecuta cada vez que cualquier usuario visualiza ese contenido — más peligroso porque no requiere interacción específica con un enlace.</div>
         </div>
         <div class="glos-card">
-          <div class="glos-term">DOM-based XSS</div>
+          <div class="glos-term">Basado en DOM XSS</div>
           <div class="glos-def">La vulnerabilidad ocurre completamente en el navegador: JavaScript del lado cliente toma datos no confiables (como <code>location.hash</code> o <code>document.URL</code>) y los escribe de forma insegura en el DOM, sin que el servidor llegue a ver el payload.</div>
         </div>
         <div class="glos-card">
@@ -702,9 +706,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · Google XSS Game</p>
-  <p>Built with <span>chrome devtools</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Xss Game · Google XSS Game</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   const sections = document.querySelectorAll('.section[id]');

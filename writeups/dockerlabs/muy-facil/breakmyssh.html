@@ -136,7 +136,7 @@
     .val-red    { color: var(--red); }
     .val-muy-facil { color: var(--cyan); }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -309,30 +309,31 @@
 
 <!-- NAV -->
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">dockerlabs</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
       <span>breakmyssh</span>
-    </p>
+    </div>
     <h1 class="writeup-title">BREAK<span>MYSSH</span></h1>
-    <p class="writeup-subtitle">// nmap → SSH 22 → Metasploit ssh_login → Fuerza Bruta → Root</p>
+    <p class="writeup-subtitle">// nmap → SSH 22 → Metasploit ssh_login → Fuerza bruta → Root</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-muy-facil">MUY FÁCIL</span>
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
       <span class="meta-badge badge-docker">DOCKERLABS</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-ssh">SSH</span>
       <span class="meta-badge badge-msf">METASPLOIT</span>
-      <span class="meta-date">// Junio 2026</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -347,7 +348,7 @@
       <ul class="toc-list">
         <li><a href="#recon">01 · Reconocimiento</a></li>
         <li><a href="#metasploit">02 · Metasploit · ssh_login</a></li>
-        <li><a href="#bruteforce">03 · Fuerza Bruta SSH</a></li>
+        <li><a href="#bruteforce">03 · Fuerza bruta SSH</a></li>
         <li><a href="#acceso">04 · Acceso a la Máquina</a></li>
         <li><a href="#cmdref">05 · Referencia Comandos</a></li>
         <li><a href="#glosario">06 · Glosario</a></li>
@@ -366,7 +367,7 @@
     </div>
 
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>22/tcp OpenSSH 7.7</span></div></div>
         <div class="ap-line"></div>
@@ -410,7 +411,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX breakmyssh.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">172.17.0.2</span> <span class="flag">-oX</span> <span class="arg">breakmyssh.xml</span></span></div>
       </div>
@@ -459,7 +460,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl breakmyssh.xml > breakmyssh.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl breakmyssh.xml</span> <span class="flag">></span> <span class="arg">breakmyssh.html</span></span></div>
       </div>
@@ -498,7 +499,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="msfconsole">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">METASPLOIT</span>
         <div><span class="prompt">$ </span><span class="cmd">msfconsole</span></div>
       </div>
@@ -530,7 +531,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="search ssh log">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SEARCH</span>
         <div><span class="prompt-msf">msf6 &gt; </span><span class="cmd">search <span class="arg">ssh log</span></span></div>
       </div>
@@ -543,7 +544,7 @@
         <div>&nbsp;&nbsp; -&nbsp;&nbsp; ----&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;----&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;----&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-----&nbsp; -----------</div>
         <div>&nbsp;&nbsp; 27&nbsp; auxiliary/scanner/ssh/ssh_key&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1995-07-01&nbsp; excellent&nbsp; Yes&nbsp;&nbsp;&nbsp; SSH Key Persistence</div>
         <div><span class="o-green">&nbsp;&nbsp; 28&nbsp; auxiliary/scanner/ssh/ssh_login&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;excellent&nbsp; No&nbsp;&nbsp;&nbsp;&nbsp; SSH Login Check Scanner</span></div>
-        <div>&nbsp;&nbsp; 29&nbsp; auxiliary/scanner/ssh/ssh_enumusers&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;normal&nbsp;&nbsp;&nbsp;&nbsp; No&nbsp;&nbsp;&nbsp;&nbsp; SSH Username Enumeration</div>
+        <div>&nbsp;&nbsp; 29&nbsp; auxiliary/scanner/ssh/ssh_enumusers&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;normal&nbsp;&nbsp;&nbsp;&nbsp; No&nbsp;&nbsp;&nbsp;&nbsp; SSH Username Enumeración</div>
         <div>&nbsp;&nbsp; 30&nbsp; &nbsp; action: Malformed Packet&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Use a malformed packet</div>
         <div>&nbsp;&nbsp; 31&nbsp; &nbsp; action: Timing Attack&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Use a timing attack</div>
       </div>
@@ -565,7 +566,7 @@
     <!-- ===================== 03 FUERZA BRUTA ===================== -->
     <div class="section" id="bruteforce">
       <p class="section-label">// 03</p>
-      <h2 class="section-title">Fuerza Bruta SSH</h2>
+      <h2 class="section-title">Fuerza bruta SSH</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -584,7 +585,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="use 28">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">USE</span>
         <div><span class="prompt-msf">msf6 &gt; </span><span class="cmd">use <span class="arg">28</span></span></div>
       </div>
@@ -594,7 +595,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="show options">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">OPTIONS</span>
         <div><span class="prompt-msf">msf6 auxiliary(scanner/ssh/ssh_login) &gt; </span><span class="cmd">show options</span></div>
       </div>
@@ -632,7 +633,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="set RHOSTS 172.17.0.2">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SET</span>
         <div><span class="prompt-msf">msf6 auxiliary(scanner/ssh/ssh_login) &gt; </span><span class="cmd">set <span class="arg">RHOSTS</span> <span class="flag">172.17.0.2</span></span></div>
       </div>
@@ -686,7 +687,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="exploit">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">EXPLOIT</span>
         <div><span class="prompt-msf">msf6 auxiliary(scanner/ssh/ssh_login) &gt; </span><span class="cmd">exploit</span></div>
       </div>
@@ -733,7 +734,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh root@172.17.0.2">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">root</span><span class="flag">@</span><span class="arg">172.17.0.2</span></span></div>
       </div>
@@ -866,7 +867,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Fuerza Bruta — Brute Force Attack</div>
+          <div class="glos-term">Fuerza bruta — Fuerza bruta Attack</div>
           <div class="glos-def">
             Un ataque de <strong>fuerza bruta</strong> consiste en probar
             sistemáticamente todas las combinaciones posibles de credenciales
@@ -941,9 +942,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Breakmyssh · DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

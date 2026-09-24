@@ -140,7 +140,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -315,21 +315,22 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>lame</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>Lame</span></h1>
     <p class="writeup-subtitle">HackTheBox — Linux · Nmap → vsftpd 2.3.4 (backdoor no funciona) → Samba 3.0.20 → CVE-2007-2447 → Metasploit → Root</p>
     <div class="writeup-meta">
@@ -339,7 +340,7 @@
       <span class="meta-badge badge-smb">SMB · SAMBA</span>
       <span class="meta-badge badge-cve">CVE-2007-2447</span>
       <span class="meta-badge badge-msf">METASPLOIT</span>
-      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -368,12 +369,12 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-blue">Linux</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.10.10.3</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.10.10.3</span></div>
       <div class="info-row"><span class="info-label">Puertos</span><span class="info-val val-yellow">21 / 22 / 139 / 445</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>ping -c3</span> → TTL 63 → Linux</div></div>
         <div class="ap-line"></div>
@@ -458,7 +459,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo openvpn lab_Masker10.ovpn">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VPN</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo openvpn <span class="arg">lab_Masker10.ovpn</span></span></div>
       </div>
@@ -493,7 +494,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping -c3 10.10.10.3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="flag">-c3</span> <span class="arg">10.10.10.3</span></span></div>
       </div>
@@ -520,7 +521,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nmap -Pn 10.10.10.3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-Pn</span> <span class="arg">10.10.10.3</span></span></div>
       </div>
@@ -553,7 +554,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nmap -p21,22,139,445 -sCV -Pn 10.10.10.3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP DEEP</span>
         <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-p21,22,139,445</span> <span class="flag">-sCV</span> <span class="flag">-Pn</span> <span class="arg">10.10.10.3</span></span></div>
       </div>
@@ -614,13 +615,13 @@
       </div>
 
       <div class="cmd-block" data-cmd="msfconsole">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="prompt">$ </span><span class="cmd">msfconsole</span></div>
       </div>
 
       <div class="cmd-block" data-cmd="search vsftpd 2.3.4">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="msf-prompt">msf6 &gt; </span><span class="cmd">search <span class="arg">vsftpd 2.3.4</span></span></div>
         <div><span class="msf-prompt">msf6 &gt; </span><span class="cmd">use <span class="arg">0</span></span></div>
@@ -666,7 +667,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="smbmap -H 10.10.10.3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SMBMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">smbmap <span class="flag">-H</span> <span class="arg">10.10.10.3</span></span></div>
       </div>
@@ -699,7 +700,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="smbclient -N \\\\10.10.10.3\\tmp">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SMBCLIENT</span>
         <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="flag">-N</span> <span class="arg">\\\\10.10.10.3\\tmp</span></span></div>
       </div>
@@ -750,7 +751,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="search Samba 3.0.20">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="msf-prompt">msf6 &gt; </span><span class="cmd">search <span class="arg">Samba 3.0.20</span></span></div>
       </div>
@@ -779,7 +780,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="use 0">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MSF</span>
         <div><span class="msf-prompt">msf6 &gt; </span><span class="cmd">use <span class="arg">0</span></span></div>
         <div><span class="msf-prompt">msf6 exploit(multi/samba/usermap_script) &gt; </span><span class="cmd">set RHOSTS <span class="arg">10.10.10.3</span></span></div>
@@ -821,11 +822,11 @@
 
       <div class="step-marker">
         <div class="step-num">1</div>
-        <span class="step-title">ROOT FLAG</span>
+        <span class="step-title">BANDERA DE ROOT</span>
       </div>
 
       <div class="cmd-block" data-cmd="cd /root && cat root.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SHELL</span>
         <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">/root</span></span></div>
         <div><span class="prompt">$ </span><span class="cmd">ls</span></div>
@@ -835,11 +836,11 @@
 
       <div class="step-marker">
         <div class="step-num">2</div>
-        <span class="step-title">USER FLAG</span>
+        <span class="step-title">BANDERA DE USUARIO</span>
       </div>
 
       <div class="cmd-block" data-cmd="cd /home/makis && cat user.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SHELL</span>
         <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">/home</span></span></div>
         <div><span class="prompt">$ </span><span class="cmd">ls</span></div>
@@ -850,11 +851,11 @@
 
       <div class="flags-grid">
         <div class="flag-card">
-          <div class="flag-label">// USER FLAG — /home/makis/user.txt</div>
+          <div class="flag-label">// BANDERA DE USUARIO — /home/makis/user.txt</div>
           <div class="flag-user">f21153c45bce4606d7c3c9c5263ce60a</div>
         </div>
         <div class="flag-root-card">
-          <div class="flag-label">// ROOT FLAG — /root/root.txt</div>
+          <div class="flag-label">// BANDERA DE ROOT — /root/root.txt</div>
           <div class="flag-root">86e620165496bd3a51c91192394b7ff6</div>
         </div>
       </div>
@@ -976,9 +977,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Lame · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

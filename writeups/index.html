@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Writeups | Brandeiks</title>
+  <title>Análisis | Brandeiks</title>
   <meta name="description" content="Writeups de máquinas CTF y retos web — DockerLabs, TryHackMe, HackTheBox, Google XSS Game por Brandon Zevallos Pastrana.">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
@@ -223,17 +223,17 @@
 
 <!-- NAV -->
 <nav>
-  <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="../index.html" class="nav-back">PORTFOLIO</a>
-  <a href="../diccionario/index.html" class="nav-back">DICCIONARIO</a>
-</nav>
+    <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="hero-content">
-    <p class="hero-label">// CTF · WRITEUPS</p>
+    <p class="hero-label">// CTF · ANÁLISIS</p>
     <h1 class="hero-title">WRITE<span>UPS</span></h1>
     <p class="hero-sub">Documentación técnica de máquinas resueltas — DockerLabs · TryHackMe · HackTheBox · Google XSS Game</p>
     <div class="hero-stats">
@@ -264,7 +264,7 @@
       <span class="platform-label">// 01</span>
       <h2 class="platform-title">DOCKERLABS</h2>
       <div class="platform-line"></div>
-      <span class="platform-count" id="docker-visible-count">9 writeups</span>
+      <span class="platform-count" id="docker-visible-count">9 análisis</span>
     </div>
     <div class="cards-grid" id="dockerlabs-grid">
 
@@ -343,7 +343,7 @@
           <span class="card-tag">nmap</span>
           <span class="card-tag">SSH</span>
           <span class="card-tag">Metasploit</span>
-          <span class="card-tag">Fuerza Bruta</span>
+          <span class="card-tag">Fuerza bruta</span>
         </div>
         <div class="card-footer">
           <span class="card-date">Junio 2026</span>
@@ -380,10 +380,10 @@
           <span class="card-diff diff-facil">FÁCIL</span>
         </div>
         <h3 class="card-name">Injection</h3>
-        <p class="card-desc">SQL Injection bypass en login → credenciales dylan → SSH → SUID env con GTFObins → root.</p>
+        <p class="card-desc">Bypass de inyección SQL en login → credenciales dylan → SSH → SUID env con GTFObins → root.</p>
         <div class="card-tags">
-          <span class="card-tag">SQL Injection</span>
-          <span class="card-tag">SQLi Bypass</span>
+          <span class="card-tag">Inyección SQL</span>
+          <span class="card-tag">Bypass de SQLi</span>
           <span class="card-tag">SSH</span>
           <span class="card-tag">SUID</span>
           <span class="card-tag">GTFObins</span>
@@ -407,7 +407,7 @@
           <span class="card-tag">SSTI</span>
           <span class="card-tag">Jinja2</span>
           <span class="card-tag">RCE</span>
-          <span class="card-tag">Reverse Shell</span>
+          <span class="card-tag">Reverse shell</span>
           <span class="card-tag">sudo</span>
           <span class="card-tag">GTFObins</span>
           <span class="card-tag">PrivEsc</span>
@@ -425,9 +425,9 @@
           <span class="card-diff diff-facil">FÁCIL</span>
         </div>
         <h3 class="card-name">Upload</h3>
-        <p class="card-desc">Panel de subida sin restricciones → PHP Reverse Shell (PentestMonkey) → shell como www-data → sudo /usr/bin/env NOPASSWD → GTFObins → root.</p>
+        <p class="card-desc">Panel de subida sin restricciones → Reverse shell en PHP (PentestMonkey) → shell como www-data → sudo /usr/bin/env NOPASSWD → GTFObins → root.</p>
         <div class="card-tags">
-          <span class="card-tag">File Upload</span>
+          <span class="card-tag">Subida de archivos</span>
           <span class="card-tag">RCE</span>
           <span class="card-tag">PHP Shell</span>
           <span class="card-tag">Gobuster</span>
@@ -477,7 +477,7 @@
       <span class="platform-label">// 02</span>
       <h2 class="platform-title">HACKTHEBOX</h2>
       <div class="platform-line"></div>
-      <span class="platform-count" id="htb-visible-count">12 writeups</span>
+      <span class="platform-count" id="htb-visible-count">12 análisis</span>
     </div>
     <div class="cards-grid" id="hackthebox-grid">
 
@@ -492,7 +492,7 @@
         <div class="card-tags">
           <span class="card-tag">nmap</span>
           <span class="card-tag">Telnet</span>
-          <span class="card-tag">Default Creds</span>
+          <span class="card-tag">Credenciales por defecto</span>
         </div>
         <div class="card-footer">
           <span class="card-date">Junio 2026</span>
@@ -511,8 +511,8 @@
         <div class="card-tags">
           <span class="card-tag">nmap</span>
           <span class="card-tag">FTP</span>
-          <span class="card-tag">Anonymous Access</span>
-          <span class="card-tag">Default Creds</span>
+          <span class="card-tag">Acceso anónimo</span>
+          <span class="card-tag">Credenciales por defecto</span>
         </div>
         <div class="card-footer">
           <span class="card-date">Junio 2026</span>
@@ -531,7 +531,7 @@
         <div class="card-tags">
           <span class="card-tag">nmap</span>
           <span class="card-tag">Redis</span>
-          <span class="card-tag">No Auth</span>
+          <span class="card-tag">Sin autenticación</span>
           <span class="card-tag">redis-cli</span>
         </div>
         <div class="card-footer">
@@ -547,7 +547,7 @@
           <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
         </div>
         <h3 class="card-name">Overlay</h3>
-        <p class="card-desc">WebShell RCE como www-data → reverse shell con Netcat → escalada a root explotando CVE-2021-3493 (OverlayFS LPE).</p>
+        <p class="card-desc">WebShell RCE como www-data → reverse shell con Netcat → escalada a root explotando CVE-2021-3493 (LPE con OverlayFS).</p>
         <div class="card-tags">
           <span class="card-tag">WebShell</span>
           <span class="card-tag">RCE</span>
@@ -573,7 +573,7 @@
           <span class="card-tag">nmap</span>
           <span class="card-tag">SMB</span>
           <span class="card-tag">smbclient</span>
-          <span class="card-tag">Anonymous Access</span>
+          <span class="card-tag">Acceso anónimo</span>
         </div>
         <div class="card-footer">
           <span class="card-date">Junio 2026</span>
@@ -588,14 +588,14 @@
           <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
         </div>
         <h3 class="card-name">Spark</h3>
-        <p class="card-desc">nmap descubre Apache Spark 3.0.3 en :8080 → CVE-2022-33891 OS Command Injection → PoC python3 poc.py --check confirma RCE vía sleep 10 → nc -lvnp 443 + --revshell → root.</p>
+        <p class="card-desc">nmap descubre Apache Spark 3.0.3 en :8080 → CVE-2022-33891 OS Inyección de comandos → PoC python3 poc.py --check confirma RCE vía sleep 10 → nc -lvnp 443 + --revshell → root.</p>
         <div class="card-tags">
           <span class="card-tag">nmap</span>
           <span class="card-tag">Apache Spark</span>
           <span class="card-tag">CVE-2022-33891</span>
-          <span class="card-tag">Command Injection</span>
+          <span class="card-tag">Inyección de comandos</span>
           <span class="card-tag">RCE</span>
-          <span class="card-tag">Reverse Shell</span>
+          <span class="card-tag">Reverse shell</span>
         </div>
         <div class="card-footer">
           <span class="card-date">Mayo 2026</span>
@@ -612,7 +612,7 @@
         <h3 class="card-name">Unholy Union</h3>
         <p class="card-desc">Challenge Web — campo de búsqueda concatena la entrada sin sanitizar → UNION SELECT calibra columnas → dump de information_schema (BD, tablas, columnas) → SELECT flag FROM flag.</p>
         <div class="card-tags">
-          <span class="card-tag">SQL Injection</span>
+          <span class="card-tag">Inyección SQL</span>
           <span class="card-tag">UNION-Based</span>
           <span class="card-tag">information_schema</span>
           <span class="card-tag">MariaDB</span>
@@ -633,9 +633,9 @@
         <h3 class="card-name">Base</h3>
         <p class="card-desc">Directory listing expone swap de Vim → bypass de autenticación por PHP Type Juggling → subida de archivo PHP para RCE → credenciales en texto plano → SSH → escalada con sudo find.</p>
         <div class="card-tags">
-          <span class="card-tag">Dir Listing</span>
+          <span class="card-tag">Listado de directorios</span>
           <span class="card-tag">PHP Type Juggling</span>
-          <span class="card-tag">File Upload</span>
+          <span class="card-tag">Subida de archivos</span>
           <span class="card-tag">RCE</span>
           <span class="card-tag">Burp Suite</span>
           <span class="card-tag">sudo</span>
@@ -654,12 +654,12 @@
           <span class="card-diff diff-facil">FÁCIL</span>
         </div>
         <h3 class="card-name">Bank</h3>
-        <p class="card-desc">DNS local (/etc/hosts) → wfuzz enumera /balance-transfer → archivo con ERR ENCRYPT FAILED expone credenciales → File Upload bypass extensión .htb → RCE → SUID /var/htb/bin/emergency → root.</p>
+        <p class="card-desc">DNS local (/etc/hosts) → wfuzz enumera /balance-transfer → archivo con ERR ENCRYPT FAILED expone credenciales → Subida de archivos bypass extensión .htb → RCE → SUID /var/htb/bin/emergency → root.</p>
         <div class="card-tags">
           <span class="card-tag">DNS · /etc/hosts</span>
           <span class="card-tag">wfuzz</span>
           <span class="card-tag">Clear Text Creds</span>
-          <span class="card-tag">File Upload</span>
+          <span class="card-tag">Subida de archivos</span>
           <span class="card-tag">Burp Suite</span>
           <span class="card-tag">RCE</span>
           <span class="card-tag">SUID</span>
@@ -704,7 +704,7 @@
         <div class="card-tags">
           <span class="card-tag">IDOR</span>
           <span class="card-tag">wfuzz</span>
-          <span class="card-tag">Command Injection</span>
+          <span class="card-tag">Inyección de comandos</span>
           <span class="card-tag">SQLite</span>
           <span class="card-tag">SSH Tunneling</span>
           <span class="card-tag">CVE-2023-46818</span>
@@ -723,10 +723,10 @@
           <span class="card-diff diff-facil">FÁCIL</span>
         </div>
         <h3 class="card-name">Conversor</h3>
-        <p class="card-desc">Source code disclosure en /static/source_code.tar.gz → XSLT Injection → reverse shell www-data → hashes SQLite en CrackStation → SSH fismathack → CVE-2024-48990 needrestart Perl Injection → root.</p>
+        <p class="card-desc">Source code disclosure en /static/source_code.tar.gz → Inyección XSLT → reverse shell www-data → hashes SQLite en CrackStation → SSH fismathack → CVE-2024-48990 needrestart Perl Injection → root.</p>
         <div class="card-tags">
           <span class="card-tag">Information Disclosure</span>
-          <span class="card-tag">XSLT Injection</span>
+          <span class="card-tag">Inyección XSLT</span>
           <span class="card-tag">RCE</span>
           <span class="card-tag">SQLite</span>
           <span class="card-tag">SSH</span>
@@ -750,7 +750,7 @@
         <div class="card-tags">
           <span class="card-tag">Information Disclosure</span>
           <span class="card-tag">IoT · Pi-Hole</span>
-          <span class="card-tag">Default Creds</span>
+          <span class="card-tag">Credenciales por defecto</span>
           <span class="card-tag">SSH</span>
           <span class="card-tag">sudo</span>
           <span class="card-tag">Forensics</span>
@@ -795,9 +795,9 @@
         <div class="card-tags">
           <span class="card-tag">SQLi</span>
           <span class="card-tag">sqlmap</span>
-          <span class="card-tag">Hash Cracking</span>
+          <span class="card-tag">Cracking de hashes</span>
           <span class="card-tag">SSTI · Jinja2</span>
-          <span class="card-tag">Docker Escape</span>
+          <span class="card-tag">Escape de Docker</span>
           <span class="card-tag">SUID</span>
           <span class="card-tag">PrivEsc</span>
         </div>
@@ -836,13 +836,13 @@
           <span class="card-diff diff-facil">FÁCIL</span>
         </div>
         <h3 class="card-name">Soccer</h3>
-        <p class="card-desc">Tiny File Manager expone RCE (CVE-2021-45010) → acceso inicial como www-data → Blind SQLi vía WebSockets en panel de chat → credenciales de usuario → doas + dstat mal configurado → root.</p>
+        <p class="card-desc">Tiny File Manager expone RCE (CVE-2021-45010) → acceso inicial como www-data → SQLi ciega vía WebSockets en panel de chat → credenciales de usuario → doas + dstat mal configurado → root.</p>
         <div class="card-tags">
           <span class="card-tag">Tiny File Manager</span>
           <span class="card-tag">CVE-2021-45010</span>
           <span class="card-tag">RCE</span>
           <span class="card-tag">WebSockets</span>
-          <span class="card-tag">Blind SQLi</span>
+          <span class="card-tag">SQLi ciega</span>
           <span class="card-tag">doas</span>
           <span class="card-tag">dstat</span>
         </div>
@@ -867,7 +867,7 @@
       <span class="platform-label">// 03</span>
       <h2 class="platform-title">GOOGLE XSS GAME</h2>
       <div class="platform-line"></div>
-      <span class="platform-count" id="ggxss-visible-count">1 writeup</span>
+      <span class="platform-count" id="ggxss-visible-count">1 análisis</span>
     </div>
     <div class="cards-grid" id="google-xss-game-grid">
 
@@ -878,11 +878,11 @@
           <span class="card-diff diff-facil">FÁCIL</span>
         </div>
         <h3 class="card-name">XSS Game</h3>
-        <p class="card-desc">Laboratorio oficial de Google (xss-game.appspot.com) — 6 niveles que recorren XSS reflejado, almacenado, DOM-based y bypass de filtros con esquemas javascript: y data:, hasta lograr alert() en cada reto.</p>
+        <p class="card-desc">Laboratorio oficial de Google (xss-game.appspot.com) — 6 niveles que recorren XSS reflejado, almacenado, Basado en DOM y bypass de filtros con esquemas javascript: y data:, hasta lograr alert() en cada reto.</p>
         <div class="card-tags">
           <span class="card-tag">XSS Reflejado</span>
           <span class="card-tag">XSS Almacenado</span>
-          <span class="card-tag">DOM-based</span>
+          <span class="card-tag">Basado en DOM</span>
           <span class="card-tag">javascript:</span>
           <span class="card-tag">data:</span>
           <span class="card-tag">Bypass de Filtros</span>
@@ -902,7 +902,7 @@
       <span class="platform-label">// 04</span>
       <h2 class="platform-title">TRYHACKME</h2>
       <div class="platform-line"></div>
-      <span class="platform-count">0 writeups</span>
+      <span class="platform-count">0 análisis</span>
     </div>
     <div class="empty-state reveal">
       <p>// PRÓXIMAMENTE — WRITEUPS EN DESARROLLO</p>
@@ -913,9 +913,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeups personales</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis técnicos de laboratorios y CTF</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // CURSOR

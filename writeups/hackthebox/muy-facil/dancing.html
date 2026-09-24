@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dancing — HTB Writeup | Brandeiks</title>
-  <meta name="description" content="Writeup de la máquina Dancing de HackTheBox — Dificultad: Muy Fácil. SMB Anonymous Access → WorkShares → flag.txt.">
+  <meta name="description" content="Writeup de la máquina Dancing de HackTheBox — Dificultad: Muy Fácil. SMB Acceso Anónimo → WorkShares → flag.txt.">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
@@ -50,9 +50,9 @@
     .writeup-subtitle{font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);margin-top:.8rem;letter-spacing:1px;}
     .writeup-meta{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-top:1.8rem;}
     .meta-badge{font-family:var(--font-mono);font-size:.68rem;letter-spacing:2px;padding:.3rem .8rem;border:1px solid;}
-    .badge-vfacil{color:#00ffcc;border-color:rgba(0,255,204,.4);background:rgba(0,255,204,.05);}
+    .badge-muy-facil{color:#00ffcc;border-color:rgba(0,255,204,.4);background:rgba(0,255,204,.05);}
     .badge-htb{color:var(--green);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);}
-    .badge-win{color:var(--cyan);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);}
+    .badge-windows{color:var(--cyan);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);}
     .badge-smb{color:var(--yellow);border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.05);}
     .badge-anon{color:var(--orange);border-color:rgba(255,140,0,.4);background:rgba(255,140,0,.05);}
     .meta-date{font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
@@ -153,30 +153,31 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>dancing</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>Dancing</span></h1>
-    <p class="writeup-subtitle">HackTheBox — Windows · SMB Null Session → WorkShares Anonymous Access → flag.txt</p>
+    <p class="writeup-subtitle">HackTheBox — Windows · SMB Sesión nula → acceso anónimo a WorkShares → flag.txt</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-vfacil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
-      <span class="meta-badge badge-win">WINDOWS</span>
+      <span class="meta-badge badge-windows">WINDOWS</span>
       <span class="meta-badge badge-smb">SMB</span>
-      <span class="meta-badge badge-anon">ANONYMOUS ACCESS</span>
-      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+      <span class="meta-badge badge-anon">ACCESO ANÓNIMO</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -204,12 +205,12 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-cyan">Windows</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-vfacil">Muy Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.1.12</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.129.1.12</span></div>
       <div class="info-row"><span class="info-label">Protocolo</span><span class="info-val val-yellow">SMB (445/TCP)</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap</span> → puerto 445 SMB abierto</div></div>
         <div class="ap-line"></div>
@@ -331,7 +332,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.1.12 -oX dancing.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.1.12</span> <span class="flag">-oX</span> <span class="arg">dancing.xml</span></span></div>
       </div>
@@ -415,7 +416,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl dancing.xml > dancing.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">dancing.xml</span> &gt; <span class="arg">dancing.html</span></span></div>
       </div>
@@ -486,7 +487,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="smbclient -L 10.129.1.12">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SMBCLIENT</span>
         <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="flag">-L</span> <span class="arg">10.129.1.12</span></span></div>
       </div>
@@ -553,7 +554,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="smbclient \\\\10.129.1.12\\WorkShares">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SMBCLIENT</span>
         <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="arg">\\\\10.129.1.12\\WorkShares</span> <span class="comment"> # sin contraseña → Enter</span></span></div>
       </div>
@@ -608,7 +609,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="dir">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SMB DIR</span>
         <div><span class="prompt">smb: \&gt; </span><span class="cmd">dir</span></div>
       </div>
@@ -623,13 +624,13 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd Amy.J">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CD</span>
         <div><span class="prompt">smb: \&gt; </span><span class="cmd">cd <span class="arg">Amy.J</span></span></div>
       </div>
 
       <div class="cmd-block" data-cmd="dir">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DIR</span>
         <div><span class="prompt">smb: \Amy.J\&gt; </span><span class="cmd">dir</span></div>
       </div>
@@ -643,7 +644,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="get worknotes.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">GET</span>
         <div><span class="prompt">smb: \Amy.J\&gt; </span><span class="cmd">get <span class="arg">worknotes.txt</span></span></div>
       </div>
@@ -671,13 +672,13 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd James.P">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CD</span>
         <div><span class="prompt">smb: \&gt; </span><span class="cmd">cd <span class="arg">James.P</span></span></div>
       </div>
 
       <div class="cmd-block" data-cmd="dir">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DIR</span>
         <div><span class="prompt">smb: \James.P\&gt; </span><span class="cmd">dir</span></div>
       </div>
@@ -691,7 +692,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="get flag.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">GET</span>
         <div><span class="prompt">smb: \James.P\&gt; </span><span class="cmd">get <span class="arg">flag.txt</span></span></div>
       </div>
@@ -744,7 +745,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cat Worknotes.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CAT</span>
         <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">Worknotes.txt</span></span></div>
       </div>
@@ -761,7 +762,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cat flag.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FLAG</span>
         <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">flag.txt</span></span></div>
       </div>
@@ -861,7 +862,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Null Session (Sesión Nula SMB)</div>
+          <div class="glos-term">Sesión nula (Sesión Nula SMB)</div>
           <div class="glos-def">Una <strong>null session</strong> es una conexión anónima al servicio SMB que no proporciona credenciales de usuario ni contraseña. Históricamente permitida por defecto en Windows NT/2000/XP para facilitar la enumeración de red en dominios Windows. Una null session establece una conexión a través de la share <strong>IPC$</strong> (Inter-Process Communication) que permite listar shares, enumerar usuarios, grupos, políticas y en algunos casos acceder a recursos no protegidos. <strong>Windows XP SP2 y posteriores</strong> lo deshabilitaron por defecto, pero muchas instalaciones corporativas heredadas lo mantienen activo, y como vemos en Dancing, algunos servidores permiten acceso de guest a shares específicas sin autenticación.</div>
         </div>
 
@@ -894,7 +895,7 @@
 
         <div class="glos-card">
           <div class="glos-term">Weak Authentication y Anonymous/Guest Access</div>
-          <div class="glos-def">Las categorías de vulnerabilidad de Dancing son <strong>Weak Authentication</strong> y <strong>Anonymous/Guest Access</strong>, ambas parte del OWASP Top 10 A07 (Identification and Authentication Failures). <strong>Anonymous Access</strong>: el servidor permite conexiones sin credenciales, como las null sessions en SMB o el login anónimo en FTP. <strong>Guest Access</strong>: el servidor tiene una cuenta "guest" sin contraseña que puede acceder a ciertos recursos. <strong>Default Credentials</strong>: usar las credenciales por defecto del fabricante sin cambiarlas. En entornos Windows corporativos, estas configuraciones se previenen con <strong>Group Policy</strong>: <code>Network access: Do not allow anonymous enumeration of SAM accounts and shares</code> debe estar habilitado.</div>
+          <div class="glos-def">Las categorías de vulnerabilidad de Dancing son <strong>Weak Authentication</strong> y <strong>Anonymous/Guest Access</strong>, ambas parte del OWASP Top 10 A07 (Identification and Authentication Failures). <strong>Acceso Anónimo</strong>: el servidor permite conexiones sin credenciales, como las null sessions en SMB o el login anónimo en FTP. <strong>Guest Access</strong>: el servidor tiene una cuenta "guest" sin contraseña que puede acceder a ciertos recursos. <strong>Credenciales por defecto</strong>: usar las credenciales por defecto del fabricante sin cambiarlas. En entornos Windows corporativos, estas configuraciones se previenen con <strong>Group Policy</strong>: <code>Network access: Do not allow anonymous enumeration of SAM accounts and shares</code> debe estar habilitado.</div>
         </div>
 
         <div class="glos-card">
@@ -909,9 +910,9 @@
 </div>
 
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Dancing · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // TOC ACTIVE

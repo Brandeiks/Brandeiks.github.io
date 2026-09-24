@@ -106,7 +106,7 @@
     .writeup-subtitle { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); margin-top: 0.8rem; letter-spacing: 1px; }
     .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
     .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
-    .badge-vfacil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
+    .badge-muy-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
     .badge-docker   { color: var(--cyan);   border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
     .badge-linux    { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
     .badge-nmap     { color: var(--orange); border-color: rgba(255,140,0,0.4); background: rgba(255,140,0,0.05); }
@@ -142,7 +142,7 @@
     .val-red    { color: var(--red); }
     .val-vfacil { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -309,30 +309,32 @@
 
 <!-- NAV -->
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">dockerlabs</a> / <span>tproot</span>
-    </p>
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
+      <span>tproot</span>
+    </div>
     <h1 class="writeup-title"><span>Tproot</span></h1>
-    <p class="writeup-subtitle">DockerLabs — Linux · Nmap → vsftpd 2.3.4 Backdoor (CVE-2011-2523) → Root directo</p>
+    <p class="writeup-subtitle">DockerLabs — Linux · Nmap → vsftpd 2.3.4 Backdoor (CVE-2011-2523) → root directo</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-vfacil">MUY FÁCIL</span>
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
       <span class="meta-badge badge-docker">DOCKERLABS</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-nmap">NMAP</span>
       <span class="meta-badge badge-vsftpd">VSFTPD 2.3.4</span>
       <span class="meta-badge badge-backdoor">BACKDOOR RCE</span>
-      <span class="meta-date">// Mayo 2026</span>
+      <span class="meta-date">📅 Mayo 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -468,7 +470,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh tproot.tar">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DEPLOY</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">tproot.tar</span></span></div>
       </div>
@@ -498,7 +500,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping 172.17.0.2 -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">172.17.0.2</span> <span class="flag">-c 3</span></span></div>
       </div>
@@ -542,7 +544,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX tproot.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap
           <span class="flag">-p-</span>
@@ -602,7 +604,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc tproot.xml -o tproot_report.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">tproot.xml</span> <span class="flag">-o</span> <span class="arg">tproot_report.html</span></span></div>
       </div>
@@ -639,7 +641,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="searchsploit vsftpd 2.3.4">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SEARCHSPLOIT</span>
         <div><span class="prompt">$ </span><span class="cmd">searchsploit <span class="arg">vsftpd 2.3.4</span></span></div>
       </div>
@@ -670,7 +672,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="searchsploit -m 49757.py">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">MIRROR EXPLOIT</span>
         <div><span class="prompt">$ </span><span class="cmd">searchsploit <span class="flag">-m</span> <span class="arg">49757.py</span></span></div>
       </div>
@@ -710,7 +712,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="python3 49757.py 172.17.0.2">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">EXPLOIT</span>
         <div><span class="prompt">$ </span><span class="cmd">python3 <span class="arg">49757.py</span> <span class="arg">172.17.0.2</span></span></div>
       </div>
@@ -765,7 +767,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd / && ls && cd root && ls && cat root.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">POST-EXPL</span>
         <div><span class="prompt">root@dockerlabs:/tmp# </span><span class="cmd">ls</span></div>
         <div style="padding-top:0.3rem"><span class="prompt">root@dockerlabs:/tmp# </span><span class="cmd">cd <span class="arg">..</span></span></div>
@@ -982,9 +984,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Tproot · DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

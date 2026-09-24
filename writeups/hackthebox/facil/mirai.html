@@ -141,7 +141,7 @@
     .val-purple { color: var(--purple); }
     .val-facil  { color: #00ffcc; }
 
-    /* ATTACK PATH */
+    /* RUTA DE ATAQUE */
     .attack-path { display: flex; flex-direction: column; gap: 0; }
     .ap-item { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.5rem 0; }
     .ap-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
@@ -319,32 +319,33 @@
 
 <!-- NAV -->
 <nav>
-  <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
-  <a href="https://brandeiks.github.io/writeups/" class="nav-back">volver al portafolio</a>
-</nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <a href="../../../writeups/index.html" class="nav-back">ANÁLISIS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  </nav>
 
 <!-- HERO -->
 <div class="writeup-hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="writeup-hero-content">
-    <p class="breadcrumb">
-      <a href="https://brandeiks.github.io/">brandeiks</a> /
-      <a href="https://brandeiks.github.io/writeups/">writeups</a> /
-      <a href="https://brandeiks.github.io/writeups/">hackthebox</a> /
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">análisis</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
       <span>mirai</span>
-    </p>
+    </div>
     <h1 class="writeup-title">MIR<span>AI</span></h1>
-    <p class="writeup-subtitle">// IoT Default Credentials → Sudo Exploitation → Forensics USB Recovery</p>
+    <p class="writeup-subtitle">// IoT · Credenciales por defecto → Explotación de sudo → Recuperación forense por USB</p>
     <div class="writeup-meta">
-      <span class="meta-badge badge-facil">FÁCIL</span>
+      <span class="meta-badge badge-facil">● FÁCIL</span>
       <span class="meta-badge badge-htb">HACKTHEBOX</span>
       <span class="meta-badge badge-linux">LINUX</span>
       <span class="meta-badge badge-iot">IoT · Pi-Hole</span>
-      <span class="meta-badge badge-creds">DEFAULT CREDS</span>
+      <span class="meta-badge badge-creds">CREDENCIALES POR DEFECTO</span>
       <span class="meta-badge badge-ssh">SSH</span>
-      <span class="meta-badge badge-forensics">FORENSICS</span>
-      <span class="meta-date">// Junio 2026</span>
+      <span class="meta-badge badge-forensics">FORENSE</span>
+      <span class="meta-date">📅 Junio 2026 · Por Brandeiks</span>
     </div>
   </div>
 </div>
@@ -360,11 +361,11 @@
         <li><a href="#recon">01 · Reconocimiento</a></li>
         <li><a href="#whatweb">02 · WhatWeb</a></li>
         <li><a href="#pihole">03 · Pi-Hole</a></li>
-        <li><a href="#ssh">04 · SSH · Default Creds</a></li>
-        <li><a href="#userflag">05 · User Flag</a></li>
+        <li><a href="#ssh">04 · SSH · Credenciales por defecto</a></li>
+        <li><a href="#userflag">05 · Bandera de usuario</a></li>
         <li><a href="#privesc">06 · PrivEsc · Sudo</a></li>
-        <li><a href="#forensics">07 · Forensics · USB</a></li>
-        <li><a href="#rootflag">08 · Root Flag</a></li>
+        <li><a href="#forensics">07 · Forense · USB</a></li>
+        <li><a href="#rootflag">08 · Bandera de root</a></li>
         <li><a href="#cmdref">09 · Referencia Comandos</a></li>
         <li><a href="#glosario">10 · Glosario</a></li>
       </ul>
@@ -381,7 +382,7 @@
     </div>
 
     <div class="sidebar-box">
-      <p class="sidebar-title">// ATTACK PATH</p>
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
       <div class="attack-path">
         <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>22, 53, 80, 32400</span></div></div>
         <div class="ap-line"></div>
@@ -430,7 +431,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.2.104 -oX mirai.xml">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NMAP</span>
         <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p-</span> <span class="flag">-sSCV</span> <span class="flag">-n</span> <span class="flag">-Pn</span> <span class="flag">--min-rate=5000</span> <span class="flag">--open</span> <span class="arg">10.129.2.104</span> <span class="flag">-oX</span> <span class="arg">mirai.xml</span></span></div>
       </div>
@@ -474,7 +475,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl mirai.xml > mirai.html">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">XSLTPROC</span>
         <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl mirai.xml</span> <span class="flag">></span> <span class="arg">mirai.html</span></span></div>
       </div>
@@ -506,7 +507,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="whatweb 10.129.2.104">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">WHATWEB</span>
         <div><span class="prompt">$ </span><span class="cmd">whatweb <span class="arg">10.129.2.104</span></span></div>
       </div>
@@ -596,7 +597,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="ssh pi@10.129.2.104">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SSH</span>
         <div><span class="prompt">$ </span><span class="cmd">ssh <span class="arg">pi@10.129.2.104</span></span></div>
         <div><span class="comment"># password: raspberry</span></div>
@@ -628,7 +629,7 @@
     <!-- ===================== 05 USER FLAG ===================== -->
     <div class="section" id="userflag">
       <p class="section-label">// 05</p>
-      <h2 class="section-title">User Flag</h2>
+      <h2 class="section-title">Bandera de usuario</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -643,8 +644,8 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd Desktop && cat user.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
-        <span class="cmd-label">USER FLAG</span>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BANDERA DE USUARIO</span>
         <div><span class="prompt">pi@raspberrypi:~ $ </span><span class="cmd">cd Desktop && cat user.txt</span></div>
       </div>
 
@@ -656,7 +657,7 @@
     <!-- ===================== 06 PRIVESC ===================== -->
     <div class="section" id="privesc">
       <p class="section-label">// 06</p>
-      <h2 class="section-title">Escalada de Privilegios</h2>
+      <h2 class="section-title">Escalada de privilegios</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -672,7 +673,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo -l">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">SUDO</span>
         <div><span class="prompt">pi@raspberrypi:~ $ </span><span class="cmd">sudo <span class="flag">-l</span></span></div>
       </div>
@@ -703,7 +704,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="sudo su">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ROOT</span>
         <div><span class="prompt">pi@raspberrypi:~ $ </span><span class="cmd">sudo su</span></div>
       </div>
@@ -714,10 +715,10 @@
       </div>
     </div>
 
-    <!-- ===================== 07 FORENSICS ===================== -->
+    <!-- ===================== 07 FORENSE ===================== -->
     <div class="section" id="forensics">
       <p class="section-label">// 07</p>
-      <h2 class="section-title">Forensics — USB Recovery</h2>
+      <h2 class="section-title">Forense — USB Recovery</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -734,7 +735,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd /root && cat root.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">ROOT.TXT</span>
         <div><span class="prompt-root">root@raspberrypi:~ # </span><span class="cmd">cat root.txt</span></div>
       </div>
@@ -758,7 +759,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cd /media/usbstick && ls -la">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">USB</span>
         <div><span class="prompt-root">root@raspberrypi:~ # </span><span class="cmd">cd /media/usbstick && ls <span class="flag">-la</span></span></div>
       </div>
@@ -772,7 +773,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="cat damnit.txt">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">NOTA</span>
         <div><span class="prompt-root">root@raspberrypi:/media/usbstick # </span><span class="cmd">cat damnit.txt</span></div>
       </div>
@@ -799,7 +800,7 @@
     <!-- ===================== 08 ROOT FLAG ===================== -->
     <div class="section" id="rootflag">
       <p class="section-label">// 08</p>
-      <h2 class="section-title">Root Flag — Data Recovery</h2>
+      <h2 class="section-title">Bandera de root — Data Recovery</h2>
       <div class="section-line"></div>
 
       <div class="step-marker">
@@ -815,7 +816,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="df -lh">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">DF</span>
         <div><span class="prompt-root">root@raspberrypi:/media/usbstick/lost+found # </span><span class="cmd">df <span class="flag">-lh</span></span></div>
       </div>
@@ -846,7 +847,7 @@
       </div>
 
       <div class="cmd-block" data-cmd="strings /dev/sdb">
-        <button class="copy-btn" onclick="copyCmd(this)">COPY</button>
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
         <span class="cmd-label">STRINGS</span>
         <div><span class="prompt-root">root@raspberrypi:/media/usbstick/lost+found # </span><span class="cmd">strings <span class="arg">/dev/sdb</span></span></div>
       </div>
@@ -870,7 +871,7 @@
       </div>
 
       <div class="info-box">
-        <p class="info-box-title">// ROOT FLAG RECUPERADA</p>
+        <p class="info-box-title">// BANDERA DE ROOT RECUPERADA</p>
         <p>
           <strong>3d3e483143ff12ec505d026fa13e020b</strong> — La flag de root estaba en los bloques
           raw del dispositivo USB, invisible desde el sistema de archivos pero perfectamente
@@ -896,7 +897,7 @@
             <td>Revela tecnología y plataforma hardware</td>
           </tr>
           <tr>
-            <td>Default Credentials</td>
+            <td>Credenciales por defecto</td>
             <td>SSH pi:raspberry</td>
             <td>Acceso inicial al sistema completo</td>
           </tr>
@@ -1017,7 +1018,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Default Credentials — Credenciales por Defecto</div>
+          <div class="glos-term">Credenciales por defecto — Credenciales por defecto</div>
           <div class="glos-def">
             Las <strong>credenciales por defecto</strong> son combinaciones de usuario y contraseña
             preconfiguradas por el fabricante en dispositivos o software. Son un vector de
@@ -1058,7 +1059,7 @@
         </div>
 
         <div class="glos-card">
-          <div class="glos-term">Sudo NOPASSWD — Escalada de Privilegios sin Contraseña</div>
+          <div class="glos-term">Sudo NOPASSWD — Escalada de privilegios sin Contraseña</div>
           <div class="glos-def">
             La directiva <strong>NOPASSWD</strong> en el archivo <code>/etc/sudoers</code>
             permite a un usuario ejecutar comandos con privilegios elevados sin necesidad de
@@ -1094,9 +1095,9 @@
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup personal · HackTheBox</p>
-  <p>Built with <span>kali linux</span> &amp; <span>❤</span></p>
-</footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Análisis de Mirai · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
 
 <script>
   // ACTIVE TOC
