@@ -6,9 +6,7 @@
 <title>Vídeos | Brandeiks</title>
 <meta name="description" content="Vídeos de ciberseguridad y ciberderecho del canal Abogado Cibernético — Brandon Zevallos Pastrana.">
 <meta name="author" content="Brandon Zevallos Pastrana">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
-<style>
-
+<link rel="icon" type="image/svg+xml" href="
     :root {
       --bg:        #050a0e;
       --bg2:       #080f14;
@@ -200,7 +198,11 @@
       .hero-stats { gap: 1.5rem; }
       .filters-bar { top: 49px; }
     }
-
+">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+<style>
+data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E
 </style>
 </head>
 <body>
@@ -245,7 +247,7 @@
 <main class="main">
   <div class="cards-grid">
       <a href="https://www.youtube.com/watch?v=gK5p9E9hzd4" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="PRESENTACIÓN" data-i="0" style="padding:0">
+         class="writeup-card video-card reveal" data-clase="presentación" data-i="0" style="padding:0">
         <div class="video-thumb">
           <img src="https://i.ytimg.com/vi/gK5p9E9hzd4/hqdefault.jpg" alt="$ whoami — Mi presentación oficial y futuro del canal" loading="lazy" />
           <span class="video-play">▶</span>
@@ -264,7 +266,7 @@
         </div>
       </a>
       <a href="https://www.youtube.com/watch?v=uy449tLSinU" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="DERECHO" data-i="1" style="padding:0">
+         class="writeup-card video-card reveal" data-clase="derecho" data-i="1" style="padding:0">
         <div class="video-thumb">
           <img src="https://i.ytimg.com/vi/uy449tLSinU/hqdefault.jpg" alt="LEY 30999  - ARTICULO 1 🇵🇪" loading="lazy" />
           <span class="video-play">▶</span>
@@ -283,7 +285,7 @@
         </div>
       </a>
       <a href="https://www.youtube.com/watch?v=7YSDp4Y9g6s" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="CIBERSEGURIDAD" data-i="2" style="padding:0">
+         class="writeup-card video-card reveal" data-clase="ciberseguridad" data-i="2" style="padding:0">
         <div class="video-thumb">
           <img src="https://i.ytimg.com/vi/7YSDp4Y9g6s/hqdefault.jpg" alt="ABOGADO CIBERNETICO #ciberseguridad #derecho" loading="lazy" />
           <span class="video-play">▶</span>
@@ -302,7 +304,7 @@
         </div>
       </a>
       <a href="https://www.youtube.com/watch?v=WjlQOw_xWSU" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="TUTORIAL" data-i="3" style="padding:0">
+         class="writeup-card video-card reveal" data-clase="tutorial" data-i="3" style="padding:0">
         <div class="video-thumb">
           <img src="https://i.ytimg.com/vi/WjlQOw_xWSU/hqdefault.jpg" alt="WALLPAPERS en kali Linux" loading="lazy" />
           <span class="video-play">▶</span>
@@ -321,6 +323,11 @@
         </div>
       </a>
   </div>
+
+  <p id="sinResultados" style="display:none;text-align:center;margin-top:2rem;
+            font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);letter-spacing:2px">
+    NO HAY VÍDEOS EN ESTA CATEGORÍA TODAVÍA
+  </p>
 
   <div style="text-align:center;margin-top:3rem">
     <a href="https://www.youtube.com/@AbogadoCibernetico" target="_blank" rel="noopener noreferrer" class="filter-btn"
@@ -364,10 +371,16 @@
   botones.forEach(b => b.addEventListener('click', () => {
     botones.forEach(x => x.classList.remove('active'));
     b.classList.add('active');
-    const c = b.dataset.clase;
+    // se compara en minusculas para que no importe como este escrito el atributo
+    const c = (b.dataset.clase || '').toLowerCase();
+    let visibles = 0;
     document.querySelectorAll('.video-card').forEach(card => {
-      card.style.display = (c === 'all' || card.dataset.clase === c) ? 'block' : 'none';
+      const coincide = (c === 'all' || (card.dataset.clase || '').toLowerCase() === c);
+      card.style.display = coincide ? 'block' : 'none';
+      if (coincide) visibles++;
     });
+    const aviso = document.getElementById('sinResultados');
+    if (aviso) aviso.style.display = visibles ? 'none' : 'block';
   }));
 </script>
 </body>

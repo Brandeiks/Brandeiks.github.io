@@ -37,6 +37,17 @@ FEED = "https://www.youtube.com/feeds/videos.xml?channel_id=" + CANAL_ID
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SALIDA = os.path.join(RAIZ, "videos", "index.html")
 
+# Icono de la pestana: la "B" negra sobre cuadrado verde, incrustado como data URI
+# para que no dependa de ningun archivo externo.
+FAVICON = (
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20"
+    "viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20"
+    "fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20"
+    "dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20"
+    "Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20"
+    "fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E"
+)
+
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
          "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
 
@@ -310,13 +321,16 @@ def etiquetas(titulo):
 # ------------------------------------------------------------------ plantilla
 def tarjeta(v, i):
     clase = clasificar(v["titulo"])
+    # el atributo va en minusculas para que coincida con el valor de los botones
+    # de filtro (data-clase="ciberseguridad"), que tambien van en minusculas
+    clase_attr = clase.lower()
     fecha = ("%s %d" % (MESES[v["fecha"].month - 1].capitalize(), v["fecha"].year)
              if v["fecha"] else "")
     etqs = "".join('<span class="card-tag">%s</span>' % html.escape(x)
                    for x in etiquetas(v["titulo"]))
     titulo = v["titulo"] if len(v["titulo"]) <= 70 else v["titulo"][:67] + "…"
     return """      <a href="{url}" target="_blank" rel="noopener noreferrer"
-         class="writeup-card video-card reveal" data-clase="{clase}" data-i="{i}" style="padding:0">
+         class="writeup-card video-card reveal" data-clase="{clase_attr}" data-i="{i}" style="padding:0">
         <div class="video-thumb">
           <img src="{mini}" alt="{alt}" loading="lazy" />
           <span class="video-play">▶</span>
@@ -333,8 +347,8 @@ def tarjeta(v, i):
             <span class="card-arrow">ABRIR →</span>
           </div>
         </div>
-      </a>""".format(url=v["url"], clase=clase, i=i, mini=v["miniatura"],
-                     alt=html.escape(v["titulo"]), fecha=fecha,
+      </a>""".format(url=v["url"], clase=clase, clase_attr=clase_attr, i=i,
+                     mini=v["miniatura"], alt=html.escape(v["titulo"]), fecha=fecha,
                      titulo=html.escape(titulo), etqs=etqs)
 
 
@@ -371,6 +385,8 @@ def generar(videos, actualizado):
 <title>Vídeos | Brandeiks</title>
 <meta name="description" content="Vídeos de ciberseguridad y ciberderecho del canal Abogado Cibernético — Brandon Zevallos Pastrana.">
 <meta name="author" content="Brandon Zevallos Pastrana">
+<link rel="icon" type="image/svg+xml" href="%s">
+<link rel="apple-touch-icon" href="%s">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
 <style>
 %s
@@ -411,6 +427,11 @@ def generar(videos, actualizado):
   <div class="cards-grid">
 %s
   </div>
+
+  <p id="sinResultados" style="display:none;text-align:center;margin-top:2rem;
+            font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);letter-spacing:2px">
+    NO HAY VÍDEOS EN ESTA CATEGORÍA TODAVÍA
+  </p>
 
   <div style="text-align:center;margin-top:3rem">
     <a href="%s" target="_blank" rel="noopener noreferrer" class="filter-btn"
@@ -454,15 +475,21 @@ def generar(videos, actualizado):
   botones.forEach(b => b.addEventListener('click', () => {
     botones.forEach(x => x.classList.remove('active'));
     b.classList.add('active');
-    const c = b.dataset.clase;
+    // se compara en minusculas para que no importe como este escrito el atributo
+    const c = (b.dataset.clase || '').toLowerCase();
+    let visibles = 0;
     document.querySelectorAll('.video-card').forEach(card => {
-      card.style.display = (c === 'all' || card.dataset.clase === c) ? 'block' : 'none';
+      const coincide = (c === 'all' || (card.dataset.clase || '').toLowerCase() === c);
+      card.style.display = coincide ? 'block' : 'none';
+      if (coincide) visibles++;
     });
+    const aviso = document.getElementById('sinResultados');
+    if (aviso) aviso.style.display = visibles ? 'none' : 'block';
   }));
 </script>
 </body>
 </html>
-""" % (CSS, stats_html, filtros, tarjetas, CANAL_URL, actualizado,
+""" % (CSS, FAVICON, FAVICON, stats_html, filtros, tarjetas, CANAL_URL, actualizado,
        datetime.date.today().year)
 
 
