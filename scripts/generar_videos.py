@@ -489,7 +489,7 @@ def generar(videos, actualizado):
 </script>
 </body>
 </html>
-""" % (CSS, FAVICON, FAVICON, stats_html, filtros, tarjetas, CANAL_URL, actualizado,
+""" % (FAVICON, FAVICON, CSS, stats_html, filtros, tarjetas, CANAL_URL, actualizado,
        datetime.date.today().year)
 
 
