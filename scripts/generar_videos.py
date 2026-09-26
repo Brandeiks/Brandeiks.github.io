@@ -171,7 +171,6 @@ CSS = """
       text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
       margin-left: 1.4rem;
     }
-    .nav-back::before { content: '\u2190 '; color: inherit; }
     .nav-back:hover, .nav-back:hover::before { color: var(--green); }
     .nav-back:visited, .nav-logo:visited { color: inherit; }
 

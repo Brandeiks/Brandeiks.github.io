@@ -93,7 +93,6 @@
   text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
   margin-left: 1.4rem;
 }
-.nav-back::before { content: '← '; color: inherit; }
 .nav-back:hover, .nav-back:hover::before { color: var(--green); }
 .nav-back:visited, .nav-logo:visited { color: inherit; }
     .page-header {
@@ -578,7 +577,6 @@ const cursor = document.getElementById('cursor');
     const ring = document.getElementById('cursorRing');
     // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
     // aparecen clavados en la esquina antes del primer movimiento.
-    let punteroVisible = false;
     // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
     // aparecen clavados en la esquina antes del primer movimiento.
     let punteroVisible = false;
