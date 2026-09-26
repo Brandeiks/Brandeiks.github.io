@@ -1,32 +1,32 @@
 {
-  "actualizado": "2026-09-26T04:18:53Z",
+  "actualizado": "2026-09-26T04:34:00Z",
   "canal": "Abogado Cibernetico",
   "canal_id": "UCgipGAOra-KHwucH6Pjb3aw",
   "total_videos": 4,
   "videos": [
     {
-      "titulo": "",
-      "fecha": null,
-      "tipo": "OTROS",
+      "titulo": "$ whoami — Mi presentación oficial y futuro del canal",
+      "fecha": "2026-08-30",
+      "tipo": "PRESENTACIÓN",
       "url": "https://www.youtube.com/watch?v=gK5p9E9hzd4"
     },
     {
-      "titulo": "",
-      "fecha": null,
-      "tipo": "OTROS",
+      "titulo": "LEY 30999  - ARTICULO 1 🇵🇪",
+      "fecha": "2026-02-13",
+      "tipo": "DERECHO",
+      "url": "https://www.youtube.com/watch?v=uy449tLSinU"
+    },
+    {
+      "titulo": "ABOGADO CIBERNETICO #ciberseguridad #derecho",
+      "fecha": "2026-01-31",
+      "tipo": "CIBERSEGURIDAD",
       "url": "https://www.youtube.com/watch?v=7YSDp4Y9g6s"
     },
     {
-      "titulo": "",
-      "fecha": null,
-      "tipo": "OTROS",
+      "titulo": "WALLPAPERS en kali Linux",
+      "fecha": "2025-10-26",
+      "tipo": "TUTORIAL",
       "url": "https://www.youtube.com/watch?v=WjlQOw_xWSU"
-    },
-    {
-      "titulo": "",
-      "fecha": null,
-      "tipo": "OTROS",
-      "url": "https://www.youtube.com/watch?v=uy449tLSinU"
     }
   ]
 }
