@@ -73,8 +73,8 @@
   text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
   margin-left: 1.4rem;
 }
-.nav-back:hover, .nav-back:hover::before { color: var(--green); }
 .nav-back:visited, .nav-logo:visited { color: inherit; }
+    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
     .hero {
       min-height: 38vh; display: flex; align-items: flex-end;
       padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
@@ -174,8 +174,7 @@
     .card-desc { font-size: 0.88rem; line-height: 1.6; color: var(--text-dim); margin-bottom: 1.2rem; }
     .card-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.2rem; }
     .card-tag { font-family: var(--font-mono); font-size: 0.62rem; color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); padding: 0.15rem 0.5rem; letter-spacing: 1px; }
-    .card-footer { display: flex; justify-content: space-between; align-items: center; }
-    .card-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); }
+    .card-    .card-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); }
     .card-arrow { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); transition: color 0.2s, transform 0.2s; display: inline-block; }
     .writeup-card:hover .card-arrow { color: var(--green); transform: translateX(4px); }
 
@@ -200,13 +199,6 @@
     .hidden { display: none !important; }
 
     /* FOOTER */
-    footer {
-      padding: 2rem 4rem; border-top: 1px solid var(--dim);
-      display: flex; justify-content: space-between; align-items: center;
-      margin-top: 4rem;
-    }
-    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
-    footer span { color: var(--green); }
 
     @media (max-width: 768px) {
       nav { padding: 1rem 1.5rem; }
@@ -214,7 +206,6 @@
       .filters-bar { padding: 1.2rem 1.5rem; top: 57px; }
       .main { padding: 2rem 1.5rem; }
       .cards-grid { grid-template-columns: 1fr; }
-      footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
       body, a, button { cursor: auto; }
       .cursor, .cursor-ring { display: none; }
     }
@@ -258,8 +249,18 @@
       nav { padding: 0.55rem 0.8rem; }
       .nav-logo { font-size: 0.76rem; }
       .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+    footer {
+      padding: 2rem 4rem; border-top: 1px solid var(--dim);
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 4rem;
     }
-
+    footer p {
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    footer span { color: var(--green); }
 </style>
 </head>
 <body>

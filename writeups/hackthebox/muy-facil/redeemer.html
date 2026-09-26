@@ -76,8 +76,8 @@
   text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
   margin-left: 1.4rem;
 }
-.nav-back:hover, .nav-back:hover::before { color: var(--green); }
 .nav-back:visited, .nav-logo:visited { color: inherit; }
+    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
     /* HERO */
     .writeup-hero {
       min-height: 42vh; display: flex; align-items: flex-end;
@@ -285,12 +285,6 @@
     .glos-def { font-size: 0.95rem; color: var(--text-dim); line-height: 1.75; }
 
     /* FOOTER */
-    footer {
-      padding: 2rem 4rem; border-top: 1px solid var(--dim);
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
-    footer span { color: var(--green); }
 
     @media (max-width: 1024px) {
       .writeup-layout { grid-template-columns: 1fr; }
@@ -302,7 +296,6 @@
       .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
       .writeup-layout { padding: 2rem 1.5rem; }
       .cmd-ref-grid { grid-template-columns: 1fr; }
-      footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
       body, a, button { cursor: auto; }
       .cursor, .cursor-ring { display: none; }
     }
@@ -346,8 +339,18 @@
       nav { padding: 0.55rem 0.8rem; }
       .nav-logo { font-size: 0.76rem; }
       .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+    footer {
+      padding: 2rem 4rem; border-top: 1px solid var(--dim);
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 4rem;
     }
-
+    footer p {
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    footer span { color: var(--green); }
 </style>
 </head>
 <body>
