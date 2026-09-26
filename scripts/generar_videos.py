@@ -97,31 +97,61 @@ CSS = """
     ::-webkit-scrollbar-thumb:hover { background: var(--green); }
 
     /* cursor */
-    .cursor {
-      position: fixed; width: 8px; height: 8px; background: var(--green);
-      border-radius: 50%; pointer-events: none; z-index: 10000;
-      transform: translate(-50%,-50%); opacity: 0; transition: opacity .3s;
+        .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+      box-shadow: 0 0 12px var(--green);
     }
-    .cursor-ring {
-      position: fixed; width: 36px; height: 36px; border: 1px solid rgba(0,255,136,0.5);
-      border-radius: 50%; pointer-events: none; z-index: 9999;
-      transform: translate(-50%,-50%); opacity: 0; transition: opacity .3s, width .3s, height .3s;
+        .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
     }
+    /* MENU MOVIL */
+    .menu-check { position: absolute; opacity: 0; pointer-events: none; }
+    .menu-btn { display: none; }
+
     /* NAV RESPONSIVE */
     @media (max-width: 900px) {
       nav { padding: 0.7rem 1rem; }
       .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
       .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
     }
-    @media (max-width: 700px) {
-      nav { flex-wrap: wrap; justify-content: center; row-gap: 0.35rem; padding: 0.6rem 0.5rem; }
-      .nav-logo { font-size: 0.78rem; letter-spacing: 1px; }
-      .nav-back { font-size: 0.52rem; margin-left: 0.4rem; letter-spacing: 0.5px; }
+        @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
     }
     @media (max-width: 480px) {
-      nav { padding: 0.5rem 0.35rem; }
-      .nav-logo { font-size: 0.68rem; letter-spacing: 0px; }
-      .nav-back { font-size: 0.40rem; margin-left: 0.2rem; letter-spacing: 0; }
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
     }
     @media (max-width: 768px) { .cursor, .cursor-ring { display: none; } }
 
@@ -280,6 +310,69 @@ def leer_feed():
         return r.read().decode("utf-8")
 
 
+# ------------------------------------------------------------------ plan B
+# El feed RSS puede fallar (YouTube llego a responder 404). En ese caso se leen
+# los videos de la pagina del canal. Hay que mirar DOS pestanas: los cortos
+# (Shorts) no salen en /videos, solo en /shorts.
+UA_NAVEGADOR = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/120 Safari/537.36")
+
+
+def bajar_pagina(url, timeout=45):
+    peticion = urllib.request.Request(url, headers={
+        "User-Agent": UA_NAVEGADOR,
+        "Accept-Language": "es-ES,es;q=0.9",
+    })
+    with urllib.request.urlopen(peticion, timeout=timeout) as r:
+        return r.read().decode("utf-8", "replace")
+
+
+def videos_de_la_pagina():
+    """Plan B: saca los videos leyendo la pagina del canal."""
+    ids, vistos = [], set()
+    for pestana in ("videos", "shorts"):
+        try:
+            pagina = bajar_pagina("https://www.youtube.com/channel/%s/%s"
+                                  % (CANAL_ID, pestana))
+        except Exception as e:
+            print("   aviso: no se pudo leer /%s: %s" % (pestana, e))
+            continue
+        m = re.search(r"var ytInitialData = (\{.*?\});</script>", pagina, re.S)
+        if not m:
+            continue
+        for mm in re.finditer(r'"videoId"\s*:\s*"([A-Za-z0-9_-]{11})"', m.group(1)):
+            if mm.group(1) not in vistos:
+                vistos.add(mm.group(1))
+                ids.append(mm.group(1))
+
+    videos = []
+    for vid in ids:
+        try:
+            pagina = bajar_pagina("https://www.youtube.com/watch?v=" + vid)
+        except Exception:
+            continue
+        tit = re.search(r'<meta name="title" content="([^"]*)"', pagina)
+        pub = re.search(r'"uploadDate"\s*:\s*"([^"]+)"', pagina)
+        if not tit:
+            continue
+        fecha = None
+        if pub:
+            try:
+                fecha = datetime.datetime.strptime(pub.group(1)[:10], "%Y-%m-%d")
+            except ValueError:
+                pass
+        videos.append({
+            "id": vid,
+            "titulo": html.unescape(tit.group(1)),
+            "fecha": fecha,
+            "url": "https://www.youtube.com/watch?v=" + vid,
+            "miniatura": "https://i.ytimg.com/vi/%s/hqdefault.jpg" % vid,
+        })
+
+    videos.sort(key=lambda v: v["fecha"] or datetime.datetime.min, reverse=True)
+    return videos
+
+
 def parsear(xml):
     videos = []
     for m in re.finditer(r"<entry>([\s\S]*?)</entry>", xml):
@@ -422,8 +515,10 @@ def generar(videos, actualizado):
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 
+  <input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
   <nav>
     <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
     <a href="../index.html" class="nav-back">INICIO</a>
     <a href="index.html" class="nav-back">VÍDEOS</a>
     <a href="../writeups/index.html" class="nav-back">WRITEUPS</a>
@@ -482,10 +577,20 @@ def generar(videos, actualizado):
   const cursor = document.getElementById('cursor');
   const ring   = document.getElementById('cursorRing');
   if (cursor && ring) {
+    // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
+    // aparecen clavados en la esquina antes del primer movimiento.
+    let punteroVisible = false;
     document.addEventListener('mousemove', e => {
       cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
       ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
-      cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+      if (!punteroVisible) {
+        punteroVisible = true;
+        cursor.style.opacity = '1'; ring.style.opacity = '0.5';
+      }
+    });
+    document.addEventListener('mouseleave', () => {
+      cursor.style.opacity = '0'; ring.style.opacity = '0';
+      punteroVisible = false;
     });
     document.querySelectorAll('a, button').forEach(el => {
       el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
@@ -523,15 +628,23 @@ def generar(videos, actualizado):
 # ------------------------------------------------------------------ principal
 def main():
     print("Leyendo el feed del canal…")
+    videos, aviso = [], None
     try:
-        xml = leer_feed()
+        videos = parsear(leer_feed())
     except Exception as e:
-        print("ERROR: no se pudo leer el feed:", e)
-        return 1
+        aviso = e
 
-    videos = parsear(xml)
     if not videos:
-        print("ERROR: el feed no devolvio ningun video; no se toca la pagina.")
+        print("El feed RSS no responde (%s)." % (aviso if aviso else "sin videos"))
+        print("Se usa el plan B: leer los videos de la pagina del canal.")
+        try:
+            videos = videos_de_la_pagina()
+        except Exception as e:
+            print("ERROR: tampoco se pudo leer la pagina del canal:", e)
+            return 1
+
+    if not videos:
+        print("ERROR: no se encontro ningun video; no se toca la pagina.")
         return 1
 
     print("Videos encontrados: %d" % len(videos))

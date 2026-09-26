@@ -46,7 +46,7 @@
       color: var(--text);
       font-family: var(--font-main);
       overflow-x: hidden;
-      cursor: none;
+      cursor: auto;
     }
     #loader {
       position: fixed; inset: 0; z-index: 10000; background: #050a0e;
@@ -62,9 +62,22 @@
     .loader-sub { font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #4a6a74; letter-spacing: 3px; }
     .loader-percentage { font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; color: #00ff88; opacity: 0.8; }
 
-    a, button, .btn, .contact-link, .nav-links a { cursor: none; }
-    .cursor { position: fixed; width: 10px; height: 10px; background: #00ff88; border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); transition: transform 0.08s; box-shadow: 0 0 12px #00ff88; opacity: 0; will-change: left, top; backface-visibility: hidden; }
-    .cursor-ring { position: fixed; width: 36px; height: 36px; border: 1px solid #00ff88; border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); transition: all 0.12s ease; opacity: 0; will-change: left, top, width, height; backface-visibility: hidden; }
+    a, button, .btn, .contact-link, .nav-links a { cursor: pointer; }
+        .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+      box-shadow: 0 0 12px var(--green);
+    }
+        .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+    }
     .cursor.clicked { transform: translate(-50%, -50%) scale(0.5); }
     .cursor-ring.clicked { transform: translate(-50%, -50%) scale(1.4); }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -100,7 +113,7 @@
     .hero-desc strong { color: var(--text); }
     .hero-btns { display: flex; gap: 1.2rem; flex-wrap: wrap; opacity: 0; animation: fadeUp 0.6s 1s forwards; }
 
-    .btn { font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 2px; padding: 0.9rem 2rem; border: 1px solid var(--green); color: var(--green); text-decoration: none; background: transparent; cursor: none; transition: all 0.3s; position: relative; overflow: hidden; display: inline-block; }
+    .btn { font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 2px; padding: 0.9rem 2rem; border: 1px solid var(--green); color: var(--green); text-decoration: none; background: transparent; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; display: inline-block; }
     .btn::before { content: ''; position: absolute; inset: 0; background: var(--green); transform: translateX(-100%); transition: transform 0.3s; z-index: -1; }
     .btn:hover { color: var(--bg); }
     .btn:hover::before { transform: translateX(0); }
@@ -172,7 +185,7 @@
     .contact-inner { max-width: 600px; margin: 0 auto; }
     .contact-inner p { font-size: 1.05rem; color: var(--text-dim); line-height: 1.8; margin-bottom: 3rem; }
     .contact-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 3rem; }
-    .contact-link { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.5rem; border: 1px solid var(--dim); transition: all 0.3s; cursor: none; }
+    .contact-link { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); text-decoration: none; letter-spacing: 2px; display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1.5rem; border: 1px solid var(--dim); transition: all 0.3s; cursor: pointer; }
     .contact-link:hover { border-color: var(--green); color: var(--green); }
     .contact-link svg { width: 16px; height: 16px; fill: currentColor; }
 
@@ -193,22 +206,48 @@
       body, a, button, .btn, .contact-link, .nav-links a { cursor: auto; }
       .cursor, .cursor-ring { display: none; }
     }
-    /* NAV RESPONSIVE */
+    /* MENU MOVIL */
+    .menu-check { position: absolute; opacity: 0; pointer-events: none; }
+    .menu-btn { display: none; }
+
+        /* NAV RESPONSIVE */
     @media (max-width: 900px) {
       nav { padding: 0.7rem 1rem; }
       .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
       .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
     }
     @media (max-width: 700px) {
-      nav { flex-wrap: wrap; justify-content: center; row-gap: 0.35rem; padding: 0.6rem 0.5rem; }
-      .nav-logo { font-size: 0.78rem; letter-spacing: 1px; }
-      .nav-back { font-size: 0.52rem; margin-left: 0.4rem; letter-spacing: 0.5px; }
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
     }
     @media (max-width: 480px) {
-      nav { padding: 0.5rem 0.35rem; }
-      .nav-logo { font-size: 0.68rem; letter-spacing: 0px; }
-      .nav-back { font-size: 0.40rem; margin-left: 0.2rem; letter-spacing: 0; }
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
     }
+
 </style>
 </head>
 <body>
@@ -223,8 +262,10 @@
     <div class="loader-percentage" id="loaderPercentage">0%</div>
   </div>
 
-  <nav>
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
     <a href="index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
     <a href="index.html" class="nav-back">INICIO</a>
     <a href="videos/index.html" class="nav-back">VÍDEOS</a>
     <a href="writeups/index.html" class="nav-back">WRITEUPS</a>
@@ -454,7 +495,31 @@
 
     const cursor = document.getElementById('cursor');
     const cursorRing = document.getElementById('cursorRing');
-    document.addEventListener('mousemove', e => { cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px'; cursorRing.style.left = e.clientX + 'px'; cursorRing.style.top = e.clientY + 'px'; cursor.style.opacity = '1'; cursorRing.style.opacity = '0.5'; });
+    let punteroVisible = false;
+    // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
+    // aparecen clavados en la esquina antes del primer movimiento.
+    let punteroVisible = false;
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+      cursorRing.style.left = e.clientX + 'px';
+      cursorRing.style.top = e.clientY + 'px';
+      if (!punteroVisible) {
+        punteroVisible = true;
+        cursor.style.opacity = '1';
+        cursorRing.style.opacity = '0.5';
+      }
+    });
+    document.addEventListener('mouseleave', () => {
+      cursor.style.opacity = '0';
+      cursorRing.style.opacity = '0';
+      punteroVisible = false;
+    });
+    document.addEventListener('mouseleave', () => {
+      cursor.style.opacity = '0';
+      cursorRing.style.opacity = '0';
+      punteroVisible = false;
+    });
     document.addEventListener('mousedown', () => { cursor.classList.add('clicked'); cursorRing.classList.add('clicked'); });
     document.addEventListener('mouseup', () => { cursor.classList.remove('clicked'); cursorRing.classList.remove('clicked'); });
     document.querySelectorAll('a, button, .btn').forEach(el => { el.addEventListener('mouseenter', () => { cursorRing.style.width = '54px'; cursorRing.style.height = '54px'; cursorRing.style.opacity = '0.3'; }); el.addEventListener('mouseleave', () => { cursorRing.style.width = '36px'; cursorRing.style.height = '36px'; cursorRing.style.opacity = '0.5'; }); });
