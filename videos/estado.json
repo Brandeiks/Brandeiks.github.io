@@ -1,9 +1,15 @@
 {
-  "actualizado": "2026-09-27T10:53:01Z",
+  "actualizado": "2026-09-28T12:03:14Z",
   "canal": "Abogado Cibernetico",
   "canal_id": "UCgipGAOra-KHwucH6Pjb3aw",
-  "total_videos": 4,
+  "total_videos": 5,
   "videos": [
+    {
+      "titulo": "FirstHacking | DockerLabs | vsftpd 2.3.4 - Backdoor :) | Hacking Ético en vivo",
+      "fecha": "2026-09-28",
+      "tipo": "CIBERSEGURIDAD",
+      "url": "https://www.youtube.com/watch?v=_cOuVuO--RE"
+    },
     {
       "titulo": "$ whoami — Mi presentación oficial y futuro del canal",
       "fecha": "2026-08-30",
