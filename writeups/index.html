@@ -123,7 +123,7 @@
     .filters-bar {
       padding: 2rem 4rem; display: flex; gap: 1rem; flex-wrap: wrap;
       border-bottom: 1px solid var(--dim); background: var(--bg2);
-      position: sticky; top: 65px; z-index: 100;
+      position: static; z-index: 100;
     }
     .filter-btn {
       font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px;
@@ -297,7 +297,7 @@
     .search-clear:hover { color: var(--green); }
     .tag-bar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-top: 1.2rem; }
     .tag-label { font-family: var(--font-mono); font-size: .6rem; color: var(--text-dim); letter-spacing: 2px; }
-    .tag-chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .tag-chips { display: flex; gap: .4rem; flex-wrap: nowrap; overflow-x: auto; padding-bottom: .4rem; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
     .tag-chip {
       font-family: var(--font-mono); font-size: .62rem; letter-spacing: 1px;
       padding: .25rem .6rem; border: 1px solid var(--dim); background: transparent;
@@ -319,9 +319,12 @@
     .results-line .aviso { color: var(--red); }
     .writeup-card mark, .card-name mark { background: rgba(0,255,136,.18); color: var(--green); padding: 0 .08rem; }
     @media (max-width: 768px) {
-      .filter-row { flex-direction: column; align-items: stretch; }
+      .filter-row { flex-direction: column; align-items: stretch; gap: .6rem; }
       .search-wrap { margin-left: 0; max-width: none; }
-      .tag-bar { flex-direction: column; align-items: flex-start; }
+      .tag-bar { flex-direction: column; align-items: flex-start; gap: .5rem; margin-top: .9rem; }
+      .tag-chips { width: 100%; }
+      .filters-bar { padding: 1.1rem 1.5rem; }
+      .results-line { margin-top: .7rem; }
     }
 
   </style>
