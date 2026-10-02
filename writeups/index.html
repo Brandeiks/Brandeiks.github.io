@@ -115,9 +115,9 @@
     .hero-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; letter-spacing: 2px; line-height: 1; }
     .hero-title span { color: var(--green); }
     .hero-sub { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-dim); margin-top: 1rem; letter-spacing: 1px; }
-    .hero-stats { display: flex; gap: 2.5rem; margin-top: 2rem; }
-    .stat { font-family: var(--font-mono); }
-    .stat-num { font-size: 1.8rem; color: var(--green); display: block; line-height: 1; }
+    .hero-stats { display: flex; flex-wrap: wrap; gap: 1.1rem 1.9rem; margin-top: 2rem; }
+    .stat { font-family: var(--font-mono); flex: 0 0 auto; min-width: 4.5ch; }
+    .stat-num { font-size: 1.8rem; color: var(--green, #00ff88); display: block; line-height: 1.15; }
     .stat-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 0.2rem; }
 
     /* FILTERS */
@@ -221,6 +221,8 @@
       .hero { padding: 6rem 1.5rem 2.5rem; }
       .filters-bar { padding: 1.2rem 1.5rem; top: 57px; }
       .main { padding: 2rem 1.5rem; }
+      .hero-stats { gap: .8rem 1.3rem; margin-top: 1.5rem; }
+      .stat-num { font-size: 1.5rem; }
       .cards-grid { grid-template-columns: 1fr; }
       body, a, button { cursor: auto; }
       .cursor, .cursor-ring { display: none; }
@@ -279,8 +281,14 @@
     footer span { color: var(--green); }
 
     /* BUSCADOR Y FILTROS */
-    .filters-bar { flex-direction: column; align-items: stretch; flex-wrap: nowrap; max-width: 100%; overflow: hidden; position: sticky; top: 65px; z-index: 100; transition: transform .25s ease; }
-    .filters-bar.oculta { transform: translateY(-130%); }
+    .filters-bar { flex-direction: column; align-items: stretch; flex-wrap: nowrap; max-width: 100%; overflow: hidden; position: sticky; top: 65px; z-index: 100; transition: transform .25s ease, height .22s ease, padding .22s ease; }
+    .filters-bar.oculta {
+      transform: translateY(-130%);
+      height: 0 !important;
+      min-height: 0;
+      padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0;
+      border-bottom-width: 0; overflow: hidden; visibility: hidden;
+    }
     .filter-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; max-width: 100%; min-width: 0; }
     .search-wrap { position: relative; display: flex; align-items: center; margin-left: auto; flex: 1 1 260px; max-width: 380px; }
     .search-ico { position: absolute; left: .8rem; color: var(--text-dim); font-size: .95rem; pointer-events: none; }
@@ -1353,7 +1361,8 @@
       const y = window.scrollY;
       const delta = y - ultimo;
       const escribiendo = barra.contains(document.activeElement);
-      if (y < 120 || escribiendo) { barra.classList.remove('oculta'); }
+      const pegada = barra.getBoundingClientRect().top <= (parseInt(getComputedStyle(barra).top, 10) || 0) + 2;
+      if (y < 120 || escribiendo || !pegada) { barra.classList.remove('oculta'); }
       else if (delta > 6) { barra.classList.add('oculta'); }
       else if (delta < -6) { barra.classList.remove('oculta'); }
       ultimo = y;
