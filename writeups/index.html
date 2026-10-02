@@ -276,7 +276,55 @@
       color: var(--text-dim); letter-spacing: 1px;
     }
     footer span { color: var(--green); }
-</style>
+
+    /* BUSCADOR Y FILTROS */
+    .filters-bar { flex-direction: column; align-items: stretch; }
+    .filter-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .search-wrap { position: relative; display: flex; align-items: center; margin-left: auto; flex: 1 1 260px; max-width: 380px; }
+    .search-ico { position: absolute; left: .8rem; color: var(--text-dim); font-size: .95rem; pointer-events: none; }
+    #buscador {
+      font-family: var(--font-mono); font-size: .72rem; letter-spacing: 1px;
+      background: var(--bg); border: 1px solid var(--dim); color: var(--text);
+      padding: .5rem 2.2rem .5rem 2rem; width: 100%; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    #buscador::placeholder { color: var(--text-dim); }
+    #buscador:focus { border-color: var(--green); box-shadow: 0 0 0 2px rgba(0,255,136,.15); }
+    .search-clear {
+      position: absolute; right: .4rem; background: none; border: none;
+      color: var(--text-dim); font-size: 1.15rem; line-height: 1; padding: 0 .35rem;
+    }
+    .search-clear:hover { color: var(--green); }
+    .tag-bar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    .tag-label { font-family: var(--font-mono); font-size: .6rem; color: var(--text-dim); letter-spacing: 2px; }
+    .tag-chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .tag-chip {
+      font-family: var(--font-mono); font-size: .62rem; letter-spacing: 1px;
+      padding: .25rem .6rem; border: 1px solid var(--dim); background: transparent;
+      color: var(--text-dim); transition: all .2s;
+    }
+    .tag-chip:hover { border-color: var(--cyan); color: var(--cyan); }
+    .tag-chip.active {
+      border-color: var(--cyan); color: var(--cyan);
+      background: rgba(0,229,255,.08); box-shadow: 0 0 10px rgba(0,229,255,.12);
+    }
+    .tag-chip.mas { border-style: dashed; }
+    .tag-chip.reset { border-color: rgba(255,45,85,.4); color: var(--red); }
+    .tag-chip.reset:hover { background: rgba(255,45,85,.06); }
+    .results-line {
+      font-family: var(--font-mono); font-size: .68rem; color: var(--text-dim);
+      letter-spacing: 1px; margin-top: 1rem; min-height: 1rem;
+    }
+    .results-line b { color: var(--green); }
+    .results-line .aviso { color: var(--red); }
+    .writeup-card mark, .card-name mark { background: rgba(0,255,136,.18); color: var(--green); padding: 0 .08rem; }
+    @media (max-width: 768px) {
+      .filter-row { flex-direction: column; align-items: stretch; }
+      .search-wrap { margin-left: 0; max-width: none; }
+      .tag-bar { flex-direction: column; align-items: flex-start; }
+    }
+
+  </style>
 </head>
 <body>
 
@@ -315,11 +363,24 @@
 
 <!-- FILTERS -->
 <div class="filters-bar">
-  <button class="filter-btn active" data-diff="all">TODOS</button>
-  <button class="filter-btn" data-diff="muy-facil">● MUY FÁCIL</button>
-  <button class="filter-btn" data-diff="facil">● FÁCIL</button>
-  <button class="filter-btn" data-diff="medio">● MEDIO</button>
-  <button class="filter-btn" data-diff="dificil">● DIFÍCIL</button>
+  <div class="filter-row">
+    <button class="filter-btn active" data-diff="all">TODOS</button>
+    <button class="filter-btn" data-diff="muy-facil">● MUY FÁCIL</button>
+    <button class="filter-btn" data-diff="facil">● FÁCIL</button>
+    <button class="filter-btn" data-diff="medio">● MEDIO</button>
+    <button class="filter-btn" data-diff="dificil">● DIFÍCIL</button>
+    <div class="search-wrap">
+      <span class="search-ico" aria-hidden="true">⌕</span>
+      <input type="search" id="buscador" placeholder="Buscar máquina, técnica o herramienta…  ( / )" aria-label="Buscar writeups" autocomplete="off" spellcheck="false">
+      <button type="button" class="search-clear" id="limpiar" aria-label="Limpiar búsqueda" hidden>×</button>
+    </div>
+  </div>
+  <div class="tag-bar">
+    <span class="tag-label">// HERRAMIENTAS Y TÉCNICAS</span>
+    <div class="tag-chips" id="tagChips" role="group" aria-label="Filtrar por herramienta o técnica"></div>
+    <button type="button" class="tag-chip reset" id="resetFiltros" hidden>LIMPIAR TODO ×</button>
+  </div>
+  <p class="results-line" id="resultsLine" aria-live="polite"></p>
 </div>
 
 <!-- MAIN -->
@@ -1067,37 +1128,219 @@
   }, { threshold: 0.08 });
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
-  // FILTERS
-  const filterBtns = document.querySelectorAll('.filter-btn');
-  const cards = document.querySelectorAll('.writeup-card, .card-soon');
+  // ================= BUSCADOR Y FILTROS (estado en la URL) =================
+  const norm = t => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const escapar = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const tarjetas = Array.from(document.querySelectorAll('.writeup-card'));
+  const rejillas = [
+    { grid: 'dockerlabs-grid',      label: 'docker-visible-count' },
+    { grid: 'hackthebox-grid',      label: 'htb-visible-count' },
+    { grid: 'google-xss-game-grid', label: 'ggxss-visible-count' }
+  ];
+  const NOMBRES_DIFF = { 'all': 'TODOS', 'muy-facil': 'MUY FÁCIL', 'facil': 'FÁCIL', 'medio': 'MEDIO', 'dificil': 'DIFÍCIL' };
+  const estado = { q: '', diff: 'all', tags: new Set() };
 
+  tarjetas.forEach(c => {
+    c.dataset.busca = norm(c.textContent);
+    c.dataset.etiquetas = norm(Array.from(c.querySelectorAll('.card-tag')).map(t => t.textContent).join(' | '));
+    const n = c.querySelector('.card-name');
+    const d = c.querySelector('.card-desc');
+    if (n) n.dataset.orig = n.innerHTML;
+    if (d) d.dataset.orig = d.innerHTML;
+  });
+
+  // --- chips de etiquetas generados desde las tarjetas reales ---
+  const frecuencia = new Map();
+  tarjetas.forEach(c => c.querySelectorAll('.card-tag').forEach(t => {
+    const v = t.textContent.trim();
+    frecuencia.set(v, (frecuencia.get(v) || 0) + 1);
+  }));
+  const etiquetasOrden = Array.from(frecuencia.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))
+    .map(par => par[0]);
+  const LIMITE = 18;
+  const contenedor = document.getElementById('tagChips');
+  etiquetasOrden.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tag-chip' + (i >= LIMITE ? ' extra' : '');
+    b.dataset.tag = t;
+    b.textContent = t;
+    if (i >= LIMITE) b.hidden = true;
+    b.addEventListener('click', () => {
+      if (estado.tags.has(t)) estado.tags.delete(t); else estado.tags.add(t);
+      b.classList.toggle('active', estado.tags.has(t));
+      aplicar();
+    });
+    contenedor.appendChild(b);
+  });
+  const sobrantes = etiquetasOrden.length - LIMITE;
+  if (sobrantes > 0) {
+    const mas = document.createElement('button');
+    mas.type = 'button';
+    mas.className = 'tag-chip mas';
+    mas.textContent = 'MÁS ETIQUETAS (' + sobrantes + ') ▾';
+    mas.addEventListener('click', () => {
+      const abierto = mas.dataset.abierto === '1';
+      document.querySelectorAll('.tag-chip.extra').forEach(c => c.hidden = abierto);
+      mas.dataset.abierto = abierto ? '' : '1';
+      mas.textContent = abierto ? 'MÁS ETIQUETAS (' + sobrantes + ') ▾' : 'MENOS ETIQUETAS ▴';
+    });
+    contenedor.appendChild(mas);
+  }
+
+  // --- resaltado de coincidencias ---
+  function resaltar(el, terminos) {
+    if (!el || !el.dataset.orig) return;
+    if (!terminos.length) { el.innerHTML = el.dataset.orig; return; }
+    const texto = el.textContent;
+    const bajo = norm(texto);
+    let rangos = [];
+    terminos.forEach(t => {
+      let p = 0;
+      while ((p = bajo.indexOf(t, p)) !== -1) { rangos.push([p, p + t.length]); p += t.length; }
+    });
+    if (!rangos.length) { el.innerHTML = el.dataset.orig; return; }
+    rangos.sort((a, b) => a[0] - b[0]);
+    const unidos = [];
+    rangos.forEach(r => {
+      const u = unidos[unidos.length - 1];
+      if (u && r[0] <= u[1]) u[1] = Math.max(u[1], r[1]); else unidos.push([r[0], r[1]]);
+    });
+    let salida = '', fin = 0;
+    unidos.forEach(r => {
+      salida += escapar(texto.slice(fin, r[0])) + '<mark>' + escapar(texto.slice(r[0], r[1])) + '</mark>';
+      fin = r[1];
+    });
+    salida += escapar(texto.slice(fin));
+    el.innerHTML = salida;
+  }
+
+  // --- aplicar filtros ---
+  function aplicar() {
+    const terminos = norm(estado.q).split(/\s+/).filter(Boolean);
+    const selTags = Array.from(estado.tags);
+    let visibles = 0;
+    tarjetas.forEach(c => {
+      const okDiff = estado.diff === 'all' || c.dataset.diff === estado.diff;
+      const okTags = selTags.every(t => c.dataset.etiquetas.includes(norm(t)));
+      const okTexto = terminos.every(t => c.dataset.busca.includes(t));
+      const pasa = okDiff && okTags && okTexto;
+      c.classList.toggle('hidden', !pasa);
+      if (pasa) visibles++;
+      if (terminos.length) { resaltar(c.querySelector('.card-name'), terminos); resaltar(c.querySelector('.card-desc'), terminos); }
+      else { resaltar(c.querySelector('.card-name'), []); resaltar(c.querySelector('.card-desc'), []); }
+    });
+
+    rejillas.forEach(({ grid, label }) => {
+      const g = document.getElementById(grid);
+      if (!g) return;
+      const v = g.querySelectorAll('.writeup-card:not(.hidden)').length;
+      const el = document.getElementById(label);
+      if (el) el.textContent = v + (v === 1 ? ' writeup' : ' writeups');
+      const seccion = g.closest('.platform-section');
+      if (seccion) seccion.classList.toggle('hidden', v === 0);
+    });
+
+    const activo = estado.diff !== 'all' || estado.tags.size > 0 || estado.q.trim() !== '';
+    document.querySelectorAll('.card-soon').forEach(s => s.classList.toggle('hidden', activo));
+
+    const total = document.getElementById('totalCount');
+    if (total) total.textContent = activo ? visibles : tarjetas.length;
+
+    const rl = document.getElementById('resultsLine');
+    if (rl) {
+      if (!activo) { rl.innerHTML = ''; }
+      else if (visibles === 0) {
+        const sugerencia = estado.tags.size > 1
+          ? 'ninguna combina todas las etiquetas; prueba quitando alguna'
+          : 'prueba con otra palabra o quita algún filtro';
+        rl.innerHTML = '<span class="aviso">SIN RESULTADOS</span> — ' + sugerencia;
+      } else {
+        const partes = [];
+        if (estado.diff !== 'all') partes.push('dificultad ' + NOMBRES_DIFF[estado.diff]);
+        if (selTags.length) partes.push(selTags.join(' + '));
+        if (estado.q.trim()) partes.push('«' + estado.q.trim() + '»');
+        rl.innerHTML = 'MOSTRANDO <b>' + visibles + '</b> DE <b>' + tarjetas.length + '</b> WRITEUPS · ' + partes.join(' · ');
+      }
+    }
+    const limpiar = document.getElementById('limpiar');
+    if (limpiar) limpiar.hidden = estado.q === '';
+    const reset = document.getElementById('resetFiltros');
+    if (reset) reset.hidden = !activo;
+    sincronizarURL();
+  }
+
+  // --- URL compartible ---
+  function sincronizarURL() {
+    const p = new URLSearchParams();
+    if (estado.q.trim()) p.set('q', estado.q.trim());
+    if (estado.diff !== 'all') p.set('diff', estado.diff);
+    if (estado.tags.size) p.set('tag', Array.from(estado.tags).join(','));
+    const qs = p.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+  }
+
+  function leerURL() {
+    const p = new URLSearchParams(location.search);
+    estado.q = p.get('q') || '';
+    estado.diff = p.get('diff') || 'all';
+    estado.tags = new Set((p.get('tag') || '').split(',').map(s => s.trim()).filter(Boolean));
+  }
+
+  // --- controles ---
+  const filterBtns = document.querySelectorAll('.filter-btn[data-diff]');
   filterBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const diff = btn.dataset.diff;
-      cards.forEach(card => {
-        const cardDiff = card.dataset.diff;
-        if (diff === 'all' || cardDiff === diff || cardDiff === 'all') {
-          card.classList.remove('hidden');
-        } else {
-          card.classList.add('hidden');
-        }
-      });
-      // Update visible counts for every platform section
-      const counters = [
-        { grid: 'dockerlabs-grid',       label: 'docker-visible-count' },
-        { grid: 'hackthebox-grid',       label: 'htb-visible-count' },
-        { grid: 'google-xss-game-grid',  label: 'ggxss-visible-count' }
-      ];
-      counters.forEach(({ grid, label }) => {
-        const el = document.getElementById(label);
-        if (!el) return;
-        const visible = document.querySelectorAll(`#${grid} .writeup-card:not(.hidden)`).length;
-        el.textContent = visible + (visible === 1 ? ' writeup' : ' writeups');
-      });
+      estado.diff = btn.dataset.diff;
+      filterBtns.forEach(b => b.classList.toggle('active', b === btn));
+      aplicar();
     });
   });
+  const buscador = document.getElementById('buscador');
+  let temporizador = null;
+  if (buscador) {
+    buscador.addEventListener('input', () => {
+      estado.q = buscador.value;
+      clearTimeout(temporizador);
+      temporizador = setTimeout(aplicar, 120);
+    });
+    buscador.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { buscador.value = ''; estado.q = ''; aplicar(); buscador.blur(); }
+    });
+  }
+  const limpiar = document.getElementById('limpiar');
+  if (limpiar) limpiar.addEventListener('click', () => {
+    if (buscador) buscador.value = '';
+    estado.q = ''; aplicar(); if (buscador) buscador.focus();
+  });
+  const reset = document.getElementById('resetFiltros');
+  if (reset) reset.addEventListener('click', () => {
+    estado.q = ''; estado.diff = 'all'; estado.tags.clear();
+    if (buscador) buscador.value = '';
+    filterBtns.forEach(b => b.classList.toggle('active', b.dataset.diff === 'all'));
+    document.querySelectorAll('.tag-chip.active').forEach(c => c.classList.remove('active'));
+    aplicar();
+  });
+  document.addEventListener('keydown', e => {
+    const enCampo = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (e.key === '/' && !enCampo && buscador) { e.preventDefault(); buscador.focus(); }
+  });
+
+  // --- estado inicial desde la URL ---
+  leerURL();
+  if (buscador) buscador.value = estado.q;
+  filterBtns.forEach(b => b.classList.toggle('active', b.dataset.diff === estado.diff));
+  document.querySelectorAll('.tag-chip').forEach(c => {
+    const t = c.dataset.tag;
+    if (t && estado.tags.has(t)) {
+      c.classList.add('active');
+      if (c.hidden) { document.querySelectorAll('.tag-chip.extra').forEach(x => x.hidden = false);
+                      const mas = document.querySelector('.tag-chip.mas');
+                      if (mas) { mas.dataset.abierto = '1'; mas.textContent = 'MENOS ETIQUETAS ▴'; } }
+    }
+  });
+  aplicar();
 </script>
 </body>
 </html>
