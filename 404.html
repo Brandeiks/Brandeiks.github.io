@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>404 — Página no encontrada | Brandeiks</title>
+  <meta name="description" content="La ruta solicitada no existe. Vuelve al portfolio, a los writeups o al diccionario de comandos de Kali Linux.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #050a0e; --bg2: #080f14; --bg3: #0a1520;
+      --green: #00ff88; --cyan: #00e5ff; --red: #ff2d55; --yellow: #ffd700; --orange: #ff8c00;
+      --dim: #1a2a2e; --text: #c8d8e0; --text-dim: #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg); color: var(--text); font-family: var(--font-main);
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 2rem;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1000;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px,
+                  rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px);
+    }
+    .grid-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    main { position: relative; z-index: 2; max-width: 780px; width: 100%; }
+    .brand {
+      font-family: var(--font-disp); font-size: 1rem; letter-spacing: 4px;
+      color: var(--green); text-decoration: none; display: inline-block; margin-bottom: 3rem;
+    }
+    .terminal {
+      border: 1px solid var(--dim); border-left: 3px solid var(--cyan);
+      background: var(--bg2); padding: 2rem 2.2rem;
+    }
+    .terminal-bar {
+      display: flex; gap: .4rem; margin-bottom: 1.4rem;
+    }
+    .terminal-bar i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+    .terminal-bar i:nth-child(1) { background: var(--red); }
+    .terminal-bar i:nth-child(2) { background: var(--yellow); }
+    .terminal-bar i:nth-child(3) { background: var(--green); }
+    .line { font-family: var(--font-mono); font-size: 0.85rem; line-height: 2; color: var(--text-dim); }
+    .line .prompt { color: var(--green); }
+    .line .err { color: var(--red); }
+    .line .path { color: var(--cyan); }
+    h1 {
+      font-family: var(--font-disp); font-weight: 900; letter-spacing: 3px;
+      font-size: clamp(2.6rem, 9vw, 4.6rem); line-height: 1; margin: 1.6rem 0 .8rem;
+    }
+    h1 span { color: var(--green); }
+    p.lead { font-size: 1.05rem; color: var(--text-dim); line-height: 1.8; margin-bottom: 2rem; }
+    .links { display: flex; flex-wrap: wrap; gap: .8rem; }
+    .links a {
+      font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 2px;
+      padding: .6rem 1.1rem; border: 1px solid var(--dim); color: var(--text-dim);
+      text-decoration: none; transition: all .2s;
+    }
+    .links a:hover, .links a:focus-visible {
+      border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.05);
+      outline: none;
+    }
+    .links a:focus-visible { box-shadow: 0 0 0 2px rgba(0,255,136,0.35); }
+    footer {
+      position: relative; z-index: 2; margin-top: 3rem;
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px;
+    }
+    footer span { color: var(--green); }
+  </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<main>
+  <a href="/" class="brand">BRANDEIKS_SEC</a>
+  <div class="terminal">
+    <div class="terminal-bar"><i></i><i></i><i></i></div>
+    <div class="line"><span class="prompt">$</span> curl -I <span class="path" id="ruta">/esta/ruta/no/existe</span></div>
+    <div class="line">HTTP/2 <span class="err">404 Not Found</span></div>
+    <div class="line"><span class="prompt">$</span> nmap -p- la-ruta-correcta</div>
+    <div class="line"><span class="err">0 hosts up</span> — la ruta no existe en este servidor</div>
+    <h1>404<span>_</span></h1>
+    <p class="lead">
+      La página que buscas no está aquí. Puede que el enlace haya cambiado, que el writeup
+      se haya movido de sección o que la URL esté mal escrita.
+    </p>
+    <div class="links">
+      <a href="/index.html">← PORTFOLIO</a>
+      <a href="/writeups/index.html">WRITEUPS</a>
+      <a href="/diccionario/index.html">DICCIONARIO</a>
+      <a href="/videos/index.html">VÍDEOS</a>
+      <a href="/certificaciones.html">CERTIFICACIONES</a>
+    </div>
+  </div>
+  <footer>© 2026 <span>Brandon Zevallos Pastrana</span> — Brandeiks · Página no encontrada</footer>
+</main>
+<script>
+  var r = document.getElementById('ruta');
+  if (r && location.pathname) r.textContent = location.pathname;
+</script>
+</body>
+</html>
