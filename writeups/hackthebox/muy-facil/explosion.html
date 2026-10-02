@@ -1005,11 +1005,6 @@
       ring.style.opacity = '0';
       punteroVisible = false;
     });
-    document.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0';
-      ring.style.opacity = '0';
-      punteroVisible = false;
-    });
   document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
   document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
   document.querySelectorAll('a, button').forEach(el => {

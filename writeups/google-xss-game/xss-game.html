@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>XSS Game — Google Writeup | Brandeiks</title>
+  <title>XSS Game — Google XSS Game Writeup | Brandeiks</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
   <meta name="description" content="Writeup del Google XSS Game (xss-game.appspot.com) — 6 niveles de Cross-Site Scripting: reflejado, almacenado, DOM-based y bypass de protocolos.">
@@ -347,7 +347,7 @@
       <a href="../../writeups/index.html">google-xss-game</a> /
       <span>xss-game</span>
     </div>
-    <h1 class="writeup-title"><span>XSS Game</span></h1>
+    <h1 class="writeup-title">XSS <span>GAME</span></h1>
     <p class="writeup-subtitle">Google xss-game.appspot.com — 6 niveles de Cross-Site Scripting: Reflejado, Almacenado, Basado en DOM y bypass de protocolo</p>
     <div class="writeup-meta">
       <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
@@ -765,7 +765,7 @@
 
 <!-- FOOTER -->
 <footer>
-    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Xss Game · Google XSS Game</p>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de XSS Game · Google XSS Game</p>
     <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
   </footer>
 
@@ -798,11 +798,6 @@
         cursor.style.opacity = '1';
         ring.style.opacity = '0.5';
       }
-    });
-    document.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0';
-      ring.style.opacity = '0';
-      punteroVisible = false;
     });
     document.addEventListener('mouseleave', () => {
       cursor.style.opacity = '0';
