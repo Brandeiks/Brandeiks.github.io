@@ -78,6 +78,7 @@
   </style>
 </head>
 <body>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
 
 <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
@@ -676,7 +677,9 @@ EOF">
       </div>
     </div>
 
-  </main>
+  <nav class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="injection.html"><span class="dir">← ANTERIOR</span><span class="nombre">Injection</span></a><a class="siguiente" href="upload.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Upload</span></a></nav>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="upload.html"><span class="nombre">Upload</span><span class="meta">dockerlabs · facil · RCE, sudo, GTFObins</span></a><a class="rel-card" href="../../hackthebox/facil/base.html"><span class="nombre">Base</span><span class="meta">hackthebox · facil · RCE, sudo, PrivEsc</span></a><a class="rel-card" href="../../hackthebox/facil/bank.html"><span class="nombre">Bank</span><span class="meta">hackthebox · facil · RCE, PrivEsc</span></a></div></section>
+</main>
 </div>
 
 <footer>
@@ -763,5 +766,7 @@ EOF">
     }).catch(() => showToast('Error al copiar'));
   }
 </script>
+<script id="datos-writeup" type="application/json">{"nombre": "PINGUINAZO", "plataforma": "dockerlabs", "dificultad": "facil", "url": "https://brandeiks.github.io/writeups/dockerlabs/facil/pinguinazo.html"}</script>
+<script src="../../../assets/writeup.js" defer></script>
 </body>
 </html>

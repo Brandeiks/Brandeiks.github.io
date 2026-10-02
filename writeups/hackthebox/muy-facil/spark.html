@@ -78,6 +78,7 @@
   </style>
 </head>
 <body>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
 
 <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
@@ -798,7 +799,9 @@
       </div>
     </div>
 
-  </main>
+  <nav class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="dancing.html"><span class="dir">← ANTERIOR</span><span class="nombre">Dancing</span></a><a class="siguiente" href="unholy-union.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Unholy Union</span></a></nav>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="../facil/blue.html"><span class="nombre">Blue</span><span class="meta">hackthebox · facil · nmap, RCE</span></a><a class="rel-card" href="../facil/lame.html"><span class="nombre">Lame</span><span class="meta">hackthebox · facil · nmap, RCE</span></a><a class="rel-card" href="../../dockerlabs/facil/pinguinazo.html"><span class="nombre">Pinguinazo</span><span class="meta">dockerlabs · facil · RCE, Reverse shell</span></a></div></section>
+</main>
 </div>
 
 <footer>
@@ -885,5 +888,7 @@
     }).catch(() => showToast('Error al copiar'));
   }
 </script>
+<script id="datos-writeup" type="application/json">{"nombre": "SPARK", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/spark.html"}</script>
+<script src="../../../assets/writeup.js" defer></script>
 </body>
 </html>

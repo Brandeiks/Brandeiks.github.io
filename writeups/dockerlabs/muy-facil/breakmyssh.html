@@ -87,6 +87,7 @@
 <body>
 
 <a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
@@ -726,7 +727,9 @@
       </div>
     </div>
 
-  </main>
+  <nav class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="tproot.html"><span class="dir">← ANTERIOR</span><span class="nombre">Tproot</span></a><a class="siguiente" href="../facil/mirame.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Mírame</span></a></nav>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="../../hackthebox/facil/blue.html"><span class="nombre">Blue</span><span class="meta">hackthebox · facil · nmap, Metasploit</span></a><a class="rel-card" href="../../hackthebox/facil/lame.html"><span class="nombre">Lame</span><span class="meta">hackthebox · facil · nmap, Metasploit</span></a><a class="rel-card" href="../../hackthebox/facil/cap.html"><span class="nombre">Cap</span><span class="meta">hackthebox · facil · SSH</span></a></div></section>
+</main>
 </div>
 
 <!-- FOOTER -->
@@ -824,5 +827,7 @@
     });
   }
 </script>
+<script id="datos-writeup" type="application/json">{"nombre": "BREAKMYSSH", "plataforma": "dockerlabs", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/dockerlabs/muy-facil/breakmyssh.html"}</script>
+<script src="../../../assets/writeup.js" defer></script>
 </body>
 </html>

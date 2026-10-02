@@ -87,6 +87,7 @@
 <body>
 
 <a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
@@ -535,7 +536,9 @@
       </div>
     </div>
 
-  </main>
+  <nav class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="meow.html"><span class="dir">← ANTERIOR</span><span class="nombre">Meow</span></a><a class="siguiente" href="redeemer.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Redeemer</span></a></nav>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="dancing.html"><span class="nombre">Dancing</span><span class="meta">hackthebox · muy-facil · nmap, Acceso anónimo</span></a><a class="rel-card" href="meow.html"><span class="nombre">Meow</span><span class="meta">hackthebox · muy-facil · nmap, Credenciales por defecto</span></a><a class="rel-card" href="../facil/blue.html"><span class="nombre">Blue</span><span class="meta">hackthebox · facil · nmap</span></a></div></section>
+</main>
 </div>
 
 <!-- FOOTER -->
@@ -633,5 +636,7 @@
     });
   }
 </script>
+<script id="datos-writeup" type="application/json">{"nombre": "FAWN", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/fawn.html"}</script>
+<script src="../../../assets/writeup.js" defer></script>
 </body>
 </html>

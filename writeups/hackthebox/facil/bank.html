@@ -80,6 +80,7 @@
   </style>
 </head>
 <body>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
 
 <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
@@ -1310,7 +1311,9 @@
       </div>
     </div>
 
-  </main>
+  <nav class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="base.html"><span class="dir">← ANTERIOR</span><span class="nombre">Base</span></a><a class="siguiente" href="cap.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Cap</span></a></nav>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="base.html"><span class="nombre">Base</span><span class="meta">hackthebox · facil · Subida de archivos, RCE, Burp Suite</span></a><a class="rel-card" href="../../dockerlabs/muy-facil/obsession.html"><span class="nombre">Obsession</span><span class="meta">dockerlabs · muy-facil · wfuzz, SUID, PrivEsc</span></a><a class="rel-card" href="../../dockerlabs/facil/upload.html"><span class="nombre">Upload</span><span class="meta">dockerlabs · facil · Subida de archivos, RCE, PrivEsc</span></a></div></section>
+</main>
 </div>
 
 <!-- FOOTER -->
@@ -1408,5 +1411,7 @@
     });
   }
 </script>
+<script id="datos-writeup" type="application/json">{"nombre": "BANK", "plataforma": "hackthebox", "dificultad": "facil", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/bank.html"}</script>
+<script src="../../../assets/writeup.js" defer></script>
 </body>
 </html>
