@@ -242,4 +242,23 @@
       }
     });
   }
+
+  /* ---------------- 8. Copiar todos los comandos ---------------- */
+  var bloquesCmd = $$('.cmd-block[data-cmd]');
+  if (bloquesCmd.length > 1) {
+    var btn = document.createElement('button');
+    btn.id = 'btnTodos';
+    btn.className = 'flotante';
+    btn.type = 'button';
+    btn.textContent = '⧉ COPIAR COMANDOS (' + bloquesCmd.length + ')';
+    btn.title = 'Copiar todos los comandos del writeup como script';
+    btn.addEventListener('click', function () {
+      var cabecera = '#!/bin/bash\n# ' + (datos.nombre || document.title.split('—')[0].trim()) +
+        ' — comandos del writeup\n# ' + location.href + '\n\n';
+      var cuerpo = bloquesCmd.map(function (b) { return b.dataset.cmd; })
+        .filter(function (c) { return c && c.indexOf('COMMAND') !== 0; }).join('\n');
+      copiar(cabecera + cuerpo, btn);
+    });
+    document.body.appendChild(btn);
+  }
 })();

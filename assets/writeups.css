@@ -465,3 +465,6 @@ figure.shot figcaption {
   .guion-paso .guion-cmd { font-size: .95rem; }
   #btnGuion { bottom: 68px; }
 }
+
+#btnTodos { bottom: 126px; }
+.flotante.copiado { border-color: var(--green); color: var(--green); }
