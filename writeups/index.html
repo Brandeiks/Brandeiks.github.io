@@ -43,6 +43,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; overflow-x: hidden; }
     body {
+      overflow-x: hidden;
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-main);
@@ -278,8 +279,8 @@
     footer span { color: var(--green); }
 
     /* BUSCADOR Y FILTROS */
-    .filters-bar { flex-direction: column; align-items: stretch; }
-    .filter-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .filters-bar { flex-direction: column; align-items: stretch; flex-wrap: nowrap; max-width: 100%; overflow: hidden; }
+    .filter-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; max-width: 100%; min-width: 0; }
     .search-wrap { position: relative; display: flex; align-items: center; margin-left: auto; flex: 1 1 260px; max-width: 380px; }
     .search-ico { position: absolute; left: .8rem; color: var(--text-dim); font-size: .95rem; pointer-events: none; }
     #buscador {
@@ -295,9 +296,9 @@
       color: var(--text-dim); font-size: 1.15rem; line-height: 1; padding: 0 .35rem;
     }
     .search-clear:hover { color: var(--green); }
-    .tag-bar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    .tag-bar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-top: 1.2rem; max-width: 100%; min-width: 0; }
     .tag-label { font-family: var(--font-mono); font-size: .6rem; color: var(--text-dim); letter-spacing: 2px; }
-    .tag-chips { display: flex; gap: .4rem; flex-wrap: nowrap; overflow-x: auto; padding-bottom: .4rem; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+    .tag-chips { display: flex; gap: .4rem; flex-wrap: nowrap; overflow-x: auto; padding-bottom: .4rem; scrollbar-width: thin; -webkit-overflow-scrolling: touch; width: 100%; max-width: 100%; min-width: 0; }
     .tag-chip {
       font-family: var(--font-mono); font-size: .62rem; letter-spacing: 1px;
       padding: .25rem .6rem; border: 1px solid var(--dim); background: transparent;
@@ -316,12 +317,22 @@
       letter-spacing: 1px; margin-top: 1rem; min-height: 1rem;
     }
     .results-line b { color: var(--green); }
+    /* pista de que hay mas etiquetas al deslizar */
+    .tag-scroll { position: relative; width: 100%; max-width: 100%; min-width: 0; }
+    .tag-scroll::before, .tag-scroll::after {
+      content: ''; position: absolute; top: 0; bottom: .4rem; width: 46px;
+      pointer-events: none; z-index: 2; opacity: 0; transition: opacity .2s;
+    }
+    .tag-scroll::before { left: 0; background: linear-gradient(90deg, var(--bg2) 20%, transparent); }
+    .tag-scroll::after { right: 0; background: linear-gradient(270deg, var(--bg2) 20%, transparent); }
+    .tag-scroll.hay-mas::after { opacity: 1; }
+    .tag-scroll.hay-antes::before { opacity: 1; }
     .results-line .aviso { color: var(--red); }
     .writeup-card mark, .card-name mark { background: rgba(0,255,136,.18); color: var(--green); padding: 0 .08rem; }
     @media (max-width: 768px) {
       .filter-row { flex-direction: column; align-items: stretch; gap: .6rem; }
       .search-wrap { margin-left: 0; max-width: none; }
-      .tag-bar { flex-direction: column; align-items: flex-start; gap: .5rem; margin-top: .9rem; }
+      .tag-bar { flex-direction: column; align-items: stretch; gap: .5rem; margin-top: .9rem; }
       .tag-chips { width: 100%; }
       .filters-bar { padding: 1.1rem 1.5rem; }
       .results-line { margin-top: .7rem; }
@@ -381,7 +392,7 @@
   </div>
   <div class="tag-bar">
     <span class="tag-label">// HERRAMIENTAS Y TÉCNICAS</span>
-    <div class="tag-chips" id="tagChips" role="group" aria-label="Filtrar por herramienta o técnica"></div>
+    <div class="tag-scroll"><div class="tag-chips" id="tagChips" role="group" aria-label="Filtrar por herramienta o técnica"></div></div>
     <button type="button" class="tag-chip reset" id="resetFiltros" hidden>LIMPIAR TODO ×</button>
   </div>
   <p class="results-line" id="resultsLine" aria-live="polite"></p>
@@ -1330,6 +1341,22 @@
     const enCampo = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
     if (e.key === '/' && !enCampo && buscador) { e.preventDefault(); buscador.focus(); }
   });
+
+  // --- pista visual de desplazamiento en la fila de etiquetas ---
+  (function () {
+    const caja = document.querySelector('.tag-scroll');
+    const chips = document.getElementById('tagChips');
+    if (!caja || !chips) return;
+    function pista() {
+      const max = chips.scrollWidth - chips.clientWidth;
+      caja.classList.toggle('hay-mas', max > 4 && chips.scrollLeft < max - 4);
+      caja.classList.toggle('hay-antes', chips.scrollLeft > 4);
+    }
+    chips.addEventListener('scroll', pista, { passive: true });
+    window.addEventListener('resize', pista);
+    new MutationObserver(pista).observe(chips, { childList: true });
+    pista();
+  })();
 
   // --- estado inicial desde la URL ---
   leerURL();
