@@ -1,9 +1,15 @@
 {
-  "actualizado": "2026-10-01T11:52:15Z",
+  "actualizado": "2026-10-02T11:24:18Z",
   "canal": "Abogado Cibernetico",
   "canal_id": "UCgipGAOra-KHwucH6Pjb3aw",
-  "total_videos": 5,
+  "total_videos": 6,
   "videos": [
+    {
+      "titulo": "Argón de Google: análisis y mi opinión",
+      "fecha": "2026-10-02",
+      "tipo": "OTROS",
+      "url": "https://www.youtube.com/watch?v=_bA5MaV4CZY"
+    },
     {
       "titulo": "FirstHacking | DockerLabs | vsftpd 2.3.4 - Backdoor :) | Hacking Ético en vivo",
       "fecha": "2026-09-28",
