@@ -5,34 +5,41 @@
     <link>https://brandeiks.github.io/writeups/index.html</link>
     <description>Writeups de máquinas CTF: HackTheBox, DockerLabs y retos web.</description>
     <language>es</language>
-    <lastBuildDate>2026-10-02</lastBuildDate>
+    <lastBuildDate>2026-10-03</lastBuildDate>
     <atom:link href="https://brandeiks.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
       <title>RansomNet — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/ransomnet.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/ransomnet.html</guid>
-      <pubDate>2026-10-02</pubDate>
+      <pubDate>2026-10-03</pubDate>
       <description>Writeup del challenge RansomNet de HackTheBox (Web, Muy Fácil) — CVE-2025-48828 en vBulletin 6.0.3: invocación no autenticada de métodos protegidos de la API → inyección de plantilla &amp;lt;vb:if&amp;gt; → RCE → cat /flag.txt.</description>
     </item>
     <item>
       <title>GoodGames — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/goodgames.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/goodgames.html</guid>
-      <pubDate>2026-10-02</pubDate>
+      <pubDate>2026-10-03</pubDate>
       <description>Writeup de la máquina GoodGames de HackTheBox — Dificultad: Fácil. SQLi → sqlmap → SSTI Jinja2 → Reverse Shell → Docker Escape → Root.</description>
     </item>
     <item>
       <title>XSS Game — Google XSS Game Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/google-xss-game/xss-game.html</link>
       <guid>https://brandeiks.github.io/writeups/google-xss-game/xss-game.html</guid>
-      <pubDate>2026-10-02</pubDate>
+      <pubDate>2026-10-03</pubDate>
       <description>Writeup del Google XSS Game (xss-game.appspot.com) — 6 niveles de Cross-Site Scripting: reflejado, almacenado, DOM-based y bypass de protocolos.</description>
+    </item>
+    <item>
+      <title>FirstHacking — Dockerlabs Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/firsthacking.html</link>
+      <guid>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/firsthacking.html</guid>
+      <pubDate>2026-10-03</pubDate>
+      <description>DockerLabs muy facil: nmap detecta vsFTPd 2.3.4 en el puerto 21 y el backdoor de la version troyanizada abre una shell como root en el 6200 tras autenticarse con un usuario que contiene la secuencia de dos puntos y parentesis.</description>
     </item>
     <item>
       <title>BreakMySSH — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/breakmyssh.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/breakmyssh.html</guid>
-      <pubDate>2026-10-02</pubDate>
+      <pubDate>2026-10-03</pubDate>
       <description>Writeup de la máquina BreakMySSH de DockerLabs — Dificultad: Muy Fácil. nmap → puerto 22 SSH → Metasploit ssh_login → fuerza bruta → acceso root.</description>
     </item>
     <item>

