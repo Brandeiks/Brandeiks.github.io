@@ -468,3 +468,8 @@ figure.shot figcaption {
 
 #btnTodos { bottom: 126px; }
 .flotante.copiado { border-color: var(--green); color: var(--green); }
+
+
+/* los saltos a ancla no deben quedar tapados por el nav fijo ni por la barra */
+.section[id], .step-marker[id] { scroll-margin-top: 110px; }
+html { scroll-padding-top: 110px; }
