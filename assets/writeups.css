@@ -267,7 +267,7 @@ footer span { color: var(--green); }
 .glos-def strong { color: var(--green); }
 /* GLOSARIO */
     .glos-grid { display: flex; flex-direction: column; gap: 1.2rem; margin-top: 1.5rem; }
-.nav-back:hover,    .writeup-hero{min-height:42vh;display:flex;align-items:flex-end;padding:8rem 4rem 3rem;position:relative;overflow:hidden;border-bottom:1px solid var(--dim);}
+.writeup-hero{min-height:42vh;display:flex;align-items:flex-end;padding:8rem 4rem 3rem;position:relative;overflow:hidden;border-bottom:1px solid var(--dim);}
 .output-block .o-blue   { color: var(--blue); }
 .output-block .o-orange{color:var(--orange);}
 .output-block .o-purple { color: var(--purple); }
