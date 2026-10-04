@@ -1361,27 +1361,8 @@
     if (e.key === '/' && !enCampo && buscador) { e.preventDefault(); buscador.focus(); }
   });
 
-  // --- auto-ocultar: se esconde al bajar, reaparece al subir ---
-  (function () {
-    const barra = document.querySelector('.filters-bar');
-    if (!barra) return;
-    let ultimo = window.scrollY, pedido = false;
-    function revisar() {
-      pedido = false;
-      const y = window.scrollY;
-      const delta = y - ultimo;
-      const escribiendo = barra.contains(document.activeElement);
-      const pegada = barra.getBoundingClientRect().top <= (parseInt(getComputedStyle(barra).top, 10) || 0) + 2;
-      if (y < 120 || escribiendo || !pegada) { barra.classList.remove('oculta'); }
-      else if (delta > 6) { barra.classList.add('oculta'); }
-      else if (delta < -6) { barra.classList.remove('oculta'); }
-      ultimo = y;
-    }
-    window.addEventListener('scroll', function () {
-      if (!pedido) { pedido = true; requestAnimationFrame(revisar); }
-    }, { passive: true });
-    window.addEventListener('resize', function () { ultimo = window.scrollY; });
-  })();
+  // La barra de filtros permanece fija y visible al desplazarse (sin auto-ocultar),
+  // igual que la barra de navegacion del resto del sitio.
 
   // --- pista visual de desplazamiento en la fila de etiquetas ---
   (function () {
