@@ -426,8 +426,6 @@
 </head>
 <body>
 
-  <div class="cursor" id="cursor"></div>
-  <div class="cursor-ring" id="cursorRing"></div>
 
   <!-- NAV -->
 <input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
@@ -612,35 +610,7 @@
   </div>
 
   <script>
-    // Cursor
-const cursor = document.getElementById('cursor');
-    const ring = document.getElementById('cursorRing');
-    // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
-    // aparecen clavados en la esquina antes del primer movimiento.
-    // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
-    // aparecen clavados en la esquina antes del primer movimiento.
-    let punteroVisible = false;
-    document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
-      ring.style.left = e.clientX + 'px';
-      ring.style.top = e.clientY + 'px';
-      if (!punteroVisible) {
-        punteroVisible = true;
-        cursor.style.opacity = '1';
-        ring.style.opacity = '0.5';
-      }
-    });
-    document.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0';
-      ring.style.opacity = '0';
-      punteroVisible = false;
-    });
-    document.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0';
-      ring.style.opacity = '0';
-      punteroVisible = false;
-    });
+    // El cursor personalizado lo gestiona assets/cursor.js (unico para todo el sitio).
 
     // Reveal on scroll
     const observer = new IntersectionObserver(entries => {
@@ -658,8 +628,6 @@ const cursor = document.getElementById('cursor');
     <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Certificaciones y formación</p>
     <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
   </footer>
-
-
-
+  <script src="assets/cursor.js" defer></script>
 </body>
 </html>

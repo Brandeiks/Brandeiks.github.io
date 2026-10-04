@@ -531,9 +531,6 @@ def generar(videos, actualizado):
 </head>
 <body>
 
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
-
   <input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
   <nav>
     <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
@@ -594,29 +591,7 @@ def generar(videos, actualizado):
   </footer>
 
 <script>
-  const cursor = document.getElementById('cursor');
-  const ring   = document.getElementById('cursorRing');
-  if (cursor && ring) {
-    // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
-    // aparecen clavados en la esquina antes del primer movimiento.
-    let punteroVisible = false;
-    document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
-      ring.style.left   = e.clientX + 'px'; ring.style.top   = e.clientY + 'px';
-      if (!punteroVisible) {
-        punteroVisible = true;
-        cursor.style.opacity = '1'; ring.style.opacity = '0.5';
-      }
-    });
-    document.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0'; ring.style.opacity = '0';
-      punteroVisible = false;
-    });
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
-      el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
-    });
-  }
+  // El cursor personalizado lo gestiona assets/cursor.js (unico para todo el sitio).
 
   const obs = new IntersectionObserver(entries => {
     entries.forEach((e, i) => { if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 70); });
@@ -639,6 +614,7 @@ def generar(videos, actualizado):
     if (aviso) aviso.style.display = visibles ? 'none' : 'block';
   }));
 </script>
+<script src="../assets/cursor.js" defer></script>
 </body>
 </html>
 """ % (FAVICON, FAVICON, CSS, stats_html, filtros, tarjetas, CANAL_URL, actualizado,

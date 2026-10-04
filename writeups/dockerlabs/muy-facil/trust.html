@@ -86,8 +86,6 @@
 
 <a href="#main-content" class="skip-link">Saltar al contenido</a>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
 
 <!-- NAV -->
 <input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
@@ -825,34 +823,6 @@
   }, { rootMargin: '-30% 0px -60% 0px' });
   sections.forEach(s => tocObserver.observe(s));
 
-  // CURSOR
-  const cursor = document.getElementById('cursor');
-  const ring   = document.getElementById('cursorRing');
-    // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
-    // aparecen clavados en la esquina antes del primer movimiento.
-    let punteroVisible = false;
-    document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
-      ring.style.left = e.clientX + 'px';
-      ring.style.top = e.clientY + 'px';
-      if (!punteroVisible) {
-        punteroVisible = true;
-        cursor.style.opacity = '1';
-        ring.style.opacity = '0.5';
-      }
-    });
-    document.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0';
-      ring.style.opacity = '0';
-      punteroVisible = false;
-    });
-  document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
-  document.addEventListener('mouseup',   () => { cursor.style.transform = 'translate(-50%,-50%)'; });
-  document.querySelectorAll('a, button').forEach(el => {
-    el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
-    el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
-  });
 
   // SCROLL REVEAL
   const obs = new IntersectionObserver(entries => {
@@ -900,6 +870,7 @@
   }
 </script>
 <script id="datos-writeup" type="application/json">{"nombre": "TRUST", "plataforma": "dockerlabs", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/dockerlabs/muy-facil/trust.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
 <script src="../../../assets/writeup.js" defer></script>
 </body>
 </html>

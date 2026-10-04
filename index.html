@@ -270,8 +270,6 @@
 </head>
 <body>
 
-  <div class="cursor" id="cursor"></div>
-  <div class="cursor-ring" id="cursorRing"></div>
 
   <div id="loader">
     <div class="loader-text">[SYSTEM BOOT]</div>
@@ -521,30 +519,7 @@
     setTimeout(() => { clearInterval(interval); loaderBar.style.width = '100%'; if (loaderPercentage) loaderPercentage.textContent = '100%'; setTimeout(finishLoader, 120); }, 650);
     window.addEventListener('load', () => { setTimeout(finishLoader, 150); });
 
-    const cursor = document.getElementById('cursor');
-    const cursorRing = document.getElementById('cursorRing');
-    // El punto y el anillo solo se muestran cuando el raton se mueve: asi no
-    // aparecen clavados en la esquina antes del primer movimiento.
-    let punteroVisible = false;
-    document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
-      cursorRing.style.left = e.clientX + 'px';
-      cursorRing.style.top = e.clientY + 'px';
-      if (!punteroVisible) {
-        punteroVisible = true;
-        cursor.style.opacity = '1';
-        cursorRing.style.opacity = '0.5';
-      }
-    });
-    document.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0';
-      cursorRing.style.opacity = '0';
-      punteroVisible = false;
-    });
-    document.addEventListener('mousedown', () => { cursor.classList.add('clicked'); cursorRing.classList.add('clicked'); });
-    document.addEventListener('mouseup', () => { cursor.classList.remove('clicked'); cursorRing.classList.remove('clicked'); });
-    document.querySelectorAll('a, button, .btn').forEach(el => { el.addEventListener('mouseenter', () => { cursorRing.style.width = '54px'; cursorRing.style.height = '54px'; cursorRing.style.opacity = '0.3'; }); el.addEventListener('mouseleave', () => { cursorRing.style.width = '36px'; cursorRing.style.height = '36px'; cursorRing.style.opacity = '0.5'; }); });
+    // El cursor personalizado lo gestiona assets/cursor.js (unico para todo el sitio).
 
     const revealObserver = new IntersectionObserver(entries => { entries.forEach((entry, i) => { if (entry.isIntersecting) setTimeout(() => entry.target.classList.add('visible'), i * 80); }); }, { threshold: 0.1 });
     document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
@@ -553,5 +528,6 @@
     const navLinks = document.querySelectorAll('.nav-links a');
     window.addEventListener('scroll', () => { let current = ''; document.querySelectorAll('section[id]').forEach(s => { if (window.scrollY >= s.offsetTop - 140) current = s.getAttribute('id'); }); navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); }); });
   </script>
+  <script src="assets/cursor.js" defer></script>
 </body>
 </html>

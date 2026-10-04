@@ -214,8 +214,6 @@ pagina = f'''<!DOCTYPE html>
 </head>
 <body>
 <a href="#main" class="skip-link">Saltar al contenido</a>
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
 <div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
 <input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
 <nav>
@@ -268,21 +266,7 @@ pagina = f'''<!DOCTYPE html>
   <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
 </footer>
 <script>
-  // CURSOR, REVELADO, PROGRESO Y COPIAR (igual que el resto del sitio)
-  const cursor = document.getElementById('cursor'), ring = document.getElementById('cursorRing');
-  let visible = false;
-  document.addEventListener('mousemove', e => {{
-    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
-    ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px';
-    if (!visible) {{ visible = true; cursor.style.opacity = '1'; ring.style.opacity = '0.5'; }}
-  }});
-  document.addEventListener('mouseleave', () => {{ cursor.style.opacity = '0'; ring.style.opacity = '0'; visible = false; }});
-  document.addEventListener('mousedown', () => {{ cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; }});
-  document.addEventListener('mouseup', () => {{ cursor.style.transform = 'translate(-50%,-50%)'; }});
-  document.querySelectorAll('a, button').forEach(el => {{
-    el.addEventListener('mouseenter', () => {{ ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; }});
-    el.addEventListener('mouseleave', () => {{ ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; }});
-  }});
+  // REVELADO, PROGRESO Y COPIAR (el cursor lo gestiona assets/cursor.js)
   const obs = new IntersectionObserver(es => es.forEach(e => {{ if (e.isIntersecting) e.target.classList.add('visible'); }}), {{ threshold: 0.06 }});
   document.querySelectorAll('.section').forEach(s => obs.observe(s));
   const seccionesTOC = document.querySelectorAll('.section[id]');
@@ -312,6 +296,7 @@ pagina = f'''<!DOCTYPE html>
   }}
 </script>
 <script>window.__datos = {{}};</script>
+<script src="{'../' * a.salida.count('/')}assets/cursor.js" defer></script>
 <script src="{'../' * a.salida.count('/')}assets/writeup.js" defer></script>
 </body>
 </html>

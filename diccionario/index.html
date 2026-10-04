@@ -237,9 +237,6 @@ mark{background:rgba(0,255,136,.22);color:var(--green)}
       color: var(--text-dim); letter-spacing: 1px;
     }
     footer span { color: var(--green); }
-    .cursor { position: fixed; width: 10px; height: 10px; background: var(--green); border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); opacity: 0; transition: opacity 0.15s; box-shadow: 0 0 12px var(--green); }
-    .cursor-ring { position: fixed; width: 36px; height: 36px; border: 1px solid var(--green); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); opacity: 0; transition: opacity 0.15s; }
-    @media (max-width: 960px) { .cursor, .cursor-ring { display: none !important; } }
 </style>
   <link rel="canonical" href="https://brandeiks.github.io/diccionario/index.html">
   <meta property="og:type" content="website">
@@ -258,8 +255,6 @@ mark{background:rgba(0,255,136,.22);color:var(--green)}
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Diccionario de Comandos | Brandeiks", "description": "Diccionario de comandos de Kali Linux en español: opciones, ejemplos y catálogo completo de herramientas.\" /> <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" /> <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin /> <link href=\"https://fonts.googleapis.com/css2?family=S...", "url": "https://brandeiks.github.io/diccionario/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
 </head>
 <body>
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
 
 <input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
 <nav>
@@ -472,24 +467,6 @@ document.addEventListener("keydown", e=>{
 
 pintar();
 </script>
-<script>
-  (function () {
-    const cursor = document.getElementById('cursor'), ring = document.getElementById('cursorRing');
-    if (!cursor || !ring) return;
-    let visible = false;
-    document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
-      ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px';
-      if (!visible) { visible = true; cursor.style.opacity = '1'; ring.style.opacity = '0.5'; }
-    });
-    document.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; ring.style.opacity = '0'; visible = false; });
-    document.addEventListener('mousedown', () => { cursor.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
-    document.addEventListener('mouseup', () => { cursor.style.transform = 'translate(-50%,-50%)'; });
-    document.querySelectorAll('a, button, input').forEach(el => {
-      el.addEventListener('mouseenter', () => { ring.style.width = '54px'; ring.style.height = '54px'; ring.style.opacity = '0.3'; });
-      el.addEventListener('mouseleave', () => { ring.style.width = '36px'; ring.style.height = '36px'; ring.style.opacity = '0.5'; });
-    });
-  })();
-</script>
+<script src="../assets/cursor.js" defer></script>
 </body>
 </html>
