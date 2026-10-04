@@ -83,6 +83,22 @@
       <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-facil">MUY FÁCIL</span></div>
       <div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">FTP</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">vsftpd 2.3.4</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Backdoor</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">CVE-2011-2523</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Netcat</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Root</span></div>
     </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>auto_deploy.sh</span> → laboratorio activo en 172.17.0.2</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → 21 FTP · vsftpd 2.3.4</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CVE-2011-2523</span> → versión troyanizada identificada</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>FTP user :)</span> → activa el backdoor</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nc :6200</span> → shell del backdoor</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div class="ap-text"><span style="color:var(--green)">ROOT</span> → whoami = root · sin escalada</div></div>
+      </div>
+    </div>
   </aside>
   <main id="main" class="writeup-content">
     <div class="section" id="contexto">
@@ -175,6 +191,15 @@
         <p class="info-box-title">// NOTA</p>
         <p>No importa si la contraseña es correcta o si la conexión FTP se cae después: el solo hecho de enviar un usuario con <code>:)</code> ya disparó el backdoor en el puerto 6200 del lado del servidor.</p>
       </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// CVE-2011-2523 — ANÁLISIS DEL BACKDOOR</p>
+        <p>
+          <strong>Disparador:</strong> el binario troyanizado inspecciona cada <code>USER</code> enviado al FTP; si contiene la secuencia <code>:)</code>, ejecuta la carga maliciosa oculta.<br>
+          <strong>Acción:</strong> abre un nuevo socket que escucha en el puerto <strong>6200/TCP</strong> y le asocia <code>/bin/sh</code>, sin pedir ninguna autenticación.<br>
+          <strong>Privilegios:</strong> vsftpd corre como root para poder enlazar el puerto 21 (&lt; 1024), así que la shell del 6200 hereda ese UID 0.<br><br>
+          <strong>Resultado:</strong> quien conozca el gatillo obtiene una shell de root remota, sin contraseña y sin necesidad de tocar el canal FTP legítimo.
+        </p>
+      </div>
     </div>
 
     <div class="section" id="acceso-y-escalada">
@@ -229,35 +254,83 @@
       <p class="section-label">// 05</p>
       <h2 class="section-title">Referencia de comandos</h2>
       <div class="section-line"></div>
-      <table class="vuln-table">
-        <thead><tr><th>Comando</th><th>Para qué sirve</th></tr></thead>
-        <tbody>
-<tr><td><code>nmap -sV</code></td><td>Detecta la versión exacta de los servicios encontrados en los puertos abiertos.</td></tr>
-<tr><td><code>nmap -p-</code></td><td>Escanea los 65535 puertos TCP en lugar de solo los 1000 más comunes.</td></tr>
-<tr><td><code>nmap --min-rate 5000</code></td><td>Fuerza a nmap a enviar al menos 5000 paquetes por segundo, acelerando el escaneo.</td></tr>
-<tr><td><code>ftp &lt;ip&gt;</code></td><td>Abre un cliente FTP interactivo para conectarse al servicio del puerto 21.</td></tr>
-<tr><td><code>nc &lt;ip&gt; &lt;puerto&gt;</code></td><td>Netcat; abre una conexión TCP cruda al puerto indicado, usada aquí para recibir la shell del backdoor.</td></tr>
-<tr><td><code>whoami</code></td><td>Muestra el usuario bajo el cual se está ejecutando la shell actual.</td></tr>
-<tr><td><code>ls -la</code></td><td>Lista todos los archivos de un directorio, incluidos los ocultos, con permisos y metadatos.</td></tr>
-        </tbody>
-      </table>
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -sV -p- --min-rate 5000 &lt;IP&gt;</div>
+          <div class="cmd-ref-desc">Escaneo de puertos y detección de versiones: así se identifica el vsftpd 2.3.4 del puerto 21.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-sV</span> → Detecta la versión exacta de cada servicio abierto.</li>
+            <li><span>-p-</span> → Escanea los 65535 puertos TCP, no solo los 1000 habituales.</li>
+            <li><span>--min-rate 5000</span> → Envía ≥ 5000 paquetes/s para acelerar el escaneo.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ftp</div>
+          <div class="cmd-ref-syntax">ftp &lt;IP&gt;</div>
+          <div class="cmd-ref-desc">Cliente FTP interactivo contra el puerto 21; aquí sirve para enviar el usuario con el gatillo.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>USER …:)</span> → Un nombre de usuario que contenga <code>:)</code> activa el backdoor.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nc (netcat)</div>
+          <div class="cmd-ref-syntax">nc &lt;IP&gt; 6200</div>
+          <div class="cmd-ref-desc">Conexión TCP cruda al puerto del backdoor para recibir la shell como root.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>6200</span> → Puerto que abre el backdoor de vsftpd 2.3.4.</li>
+            <li><span>reintentar</span> → El primer intento puede fallar si el listener aún no está listo.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">post-explotación</div>
+          <div class="cmd-ref-syntax">whoami ; ls -la /root</div>
+          <div class="cmd-ref-desc">Comprobación del acceso obtenido sobre la máquina comprometida.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>whoami</span> → Confirma el usuario de la shell actual (root).</li>
+            <li><span>ls -la</span> → Lista todo, incluidos los archivos ocultos, con permisos y metadatos.</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <div class="section" id="glosario">
       <p class="section-label">// 06</p>
       <h2 class="section-title">Glosario</h2>
       <div class="section-line"></div>
-      <div class="prose">
-        <ul>
-          <li><strong>FTP (File Transfer Protocol)</strong>: protocolo de transferencia de archivos que, en su forma clásica, viaja sin cifrar por el puerto 21.</li>
-          <li><strong>vsFTPd</strong>: "Very Secure FTP Daemon", servidor FTP para sistemas Unix/Linux diseñado originalmente con la seguridad como prioridad; irónicamente, la versión 2.3.4 es la más famosa por un backdoor.</li>
-          <li><strong>Backdoor</strong>: puerta trasera; código oculto insertado deliberadamente en un programa para otorgar acceso no autorizado, saltándose los controles normales de autenticación.</li>
-          <li><strong>CVE (Common Vulnerabilities and Exposures)</strong>: identificador público y estandarizado que cataloga una vulnerabilidad de seguridad conocida.</li>
-          <li><strong>Netcat (nc)</strong>: herramienta de red que crea conexiones TCP/UDP arbitrarias; se la conoce como la "navaja suiza" del networking y es habitual para recibir shells remotas.</li>
-          <li><strong>Shell</strong>: intérprete de comandos del sistema operativo; obtener una "shell como root" significa tener control total sobre la máquina.</li>
-          <li><strong>Root</strong>: el usuario con privilegios máximos en un sistema Unix/Linux, equivalente al administrador en Windows.</li>
-          <li><strong>Puerto</strong>: número que identifica un servicio específico dentro de una dirección IP; en este caso, el 21 (FTP legítimo) y el 6200 (backdoor).</li>
-        </ul>
+      <div class="glosario-grid">
+        <div class="glos-card">
+          <div class="glos-term">FTP — File Transfer Protocol</div>
+          <div class="glos-def">Protocolo de transferencia de archivos que, en su forma clásica, viaja <strong>sin cifrar</strong> por el puerto 21. Separa el canal de control (comandos) del de datos.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">vsFTPd — Very Secure FTP Daemon</div>
+          <div class="glos-def">Servidor FTP para Unix/Linux diseñado originalmente con la seguridad como prioridad; irónicamente, la versión <strong>2.3.4</strong> es la más famosa por el backdoor introducido en su código fuente en 2011.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Backdoor — Puerta trasera</div>
+          <div class="glos-def">Código oculto insertado deliberadamente en un programa para otorgar acceso no autorizado, <strong>saltándose</strong> los controles normales de autenticación.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">CVE — Common Vulnerabilities and Exposures</div>
+          <div class="glos-def">Identificador público y estandarizado que cataloga una vulnerabilidad conocida. Aquí, <code>CVE-2011-2523</code> es el backdoor de vsftpd 2.3.4.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Netcat (nc)</div>
+          <div class="glos-def">Herramienta de red que crea conexiones TCP/UDP arbitrarias; la "navaja suiza" del networking, habitual para <strong>recibir shells remotas</strong>.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Shell</div>
+          <div class="glos-def">Intérprete de comandos del sistema operativo. Obtener una <strong>shell como root</strong> significa control total sobre la máquina.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Root</div>
+          <div class="glos-def">El usuario con privilegios máximos en Unix/Linux (UID 0), equivalente al administrador en Windows.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Puerto</div>
+          <div class="glos-def">Número que identifica un servicio dentro de una IP. Aquí el <strong>21</strong> (FTP legítimo) y el <strong>6200</strong> (backdoor).</div>
+        </div>
       </div>
     </div>
 
