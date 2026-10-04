@@ -103,6 +103,18 @@
       position: relative;
       overflow: hidden;
     }
+    .page-header::after {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      width: 600px;
+      height: 420px;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse, rgba(0,255,136,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
 
     .page-header-grid {
       position: absolute;
