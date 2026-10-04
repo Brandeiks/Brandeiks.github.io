@@ -156,6 +156,28 @@
       <div class="info-row"><span class="info-label">DBMS</span><span class="info-val val-red">MariaDB (MySQL)</span></div>
       <div class="info-row"><span class="info-label">Estado</span><span class="info-val val-green">● Pwned</span></div>
     </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → 22 SSH · 80 HTTP "Login Page"</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>gobuster</span> → auth.php y recursos web</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Login PHP</span> → SQLi detectada manualmente</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>sqlmap</span> → volcado de la base de datos</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>stegseek</span> → ZIP oculto en una imagen</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>zip2john + John</span> → contraseña del ZIP → secret.txt</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SSH carlos</span> → acceso con las credenciales halladas</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>find SUID</span> → /usr/bin/find con bit SUID</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div class="ap-text"><span style="color:var(--green)">ROOT</span> → whoami = root</div></div>
+      </div>
+    </div>
   </aside>
 
   <!-- CONTENT -->
