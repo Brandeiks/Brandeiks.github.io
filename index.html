@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
   <title>Brandon Zevallos Pastrana | Cybersecurity</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
@@ -27,14 +28,7 @@
   <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/site.png">
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Brandon Zevallos Pastrana | Cybersecurity", "description": "Portafolio de Brandon Zevallos Pastrana — Abogado y estudiante de Ciberseguridad especializado en Hacking Ético y Ciberderecho en Perú.", "url": "https://brandeiks.github.io/", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
   <meta name="robots" content="index, follow">
-  <meta property="og:title" content="Brandon Zevallos Pastrana | Cybersecurity">
-  <meta property="og:description" content="Abogado y estudiante de Ingeniería de Ciberseguridad — Hacking Ético · Ciberderecho · Perú">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://brandeiks.github.io">
-  <meta property="og:locale" content="es_PE">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Brandon Zevallos | Cybersecurity">
-  <meta name="twitter:description" content="Abogado y estudiante de Ingeniería de Ciberseguridad — Hacking Ético · Ciberderecho · Perú">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
 
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
 
@@ -256,8 +250,7 @@
       nav { padding: 0.55rem 0.8rem; }
       .nav-logo { font-size: 0.76rem; }
       .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
-          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
-}
+    }
     footer {
       padding: 2rem 4rem; border-top: 1px solid var(--dim);
       display: flex; justify-content: space-between;
@@ -268,6 +261,9 @@
       color: var(--text-dim); letter-spacing: 1px;
     }
     footer span { color: var(--green); }
+    @media (max-width: 480px) {
+      footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+    }
 </style>
 </head>
 <body>
@@ -290,6 +286,7 @@
     <a href="videos/index.html" class="nav-back">VÍDEOS</a>
     <a href="writeups/index.html" class="nav-back">WRITEUPS</a>
     <a href="diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="comandos/index.html" class="nav-back">COMANDOS</a>
     <a href="certificaciones.html" class="nav-back">CERTIFICACIONES</a>
   </nav>
 
@@ -528,11 +525,6 @@
         cursor.style.opacity = '1';
         cursorRing.style.opacity = '0.5';
       }
-    });
-    document.addEventListener('mouseleave', () => {
-      cursor.style.opacity = '0';
-      cursorRing.style.opacity = '0';
-      punteroVisible = false;
     });
     document.addEventListener('mouseleave', () => {
       cursor.style.opacity = '0';

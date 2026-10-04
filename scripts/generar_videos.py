@@ -502,9 +502,26 @@ def generar(videos, actualizado):
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://i.ytimg.com; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Vídeos | Brandeiks</title>
 <meta name="description" content="Vídeos de ciberseguridad y ciberderecho del canal Abogado Cibernético — Brandon Zevallos Pastrana.">
 <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/videos/index.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Vídeos | Brandeiks">
+  <meta property="og:description" content="Vídeos de ciberseguridad y ciberderecho del canal Abogado Cibernético — Brandon Zevallos Pastrana.">
+  <meta property="og:url" content="https://brandeiks.github.io/videos/index.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/videos.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Vídeos | Brandeiks">
+  <meta name="twitter:description" content="Vídeos de ciberseguridad y ciberderecho del canal Abogado Cibernético — Brandon Zevallos Pastrana.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/videos.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Vídeos | Brandeiks", "description": "Vídeos de ciberseguridad y ciberderecho del canal Abogado Cibernético — Brandon Zevallos Pastrana.", "url": "https://brandeiks.github.io/videos/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
 <link rel="icon" type="image/svg+xml" href="%s">
 <link rel="apple-touch-icon" href="%s">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
@@ -525,6 +542,7 @@ def generar(videos, actualizado):
     <a href="index.html" class="nav-back">VÍDEOS</a>
     <a href="../writeups/index.html" class="nav-back">WRITEUPS</a>
     <a href="../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../comandos/index.html" class="nav-back">COMANDOS</a>
     <a href="../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
   </nav>
 

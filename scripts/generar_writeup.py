@@ -202,6 +202,8 @@ pagina = f'''<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>{a.nombre} — {PLAT_ETIQUETA[a.plat].title()} Writeup | Brandeiks</title>
   <meta name="description" content="{html.escape(desc, quote=True)}">
   <meta name="author" content="Brandon Zevallos Pastrana">
@@ -220,8 +222,11 @@ pagina = f'''<!DOCTYPE html>
   <a href="{'../' * a.salida.count('/')}index.html" class="nav-logo">BRANDEIKS_SEC</a>
   <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
   <a href="{'../' * a.salida.count('/')}index.html" class="nav-back">INICIO</a>
+  <a href="{'../' * a.salida.count('/')}videos/index.html" class="nav-back">VÍDEOS</a>
   <a href="{'../' * a.salida.count('/')}writeups/index.html" class="nav-back">WRITEUPS</a>
+  <a href="{'../' * a.salida.count('/')}diccionario/index.html" class="nav-back">DICCIONARIO</a>
   <a href="{'../' * a.salida.count('/')}comandos/index.html" class="nav-back">COMANDOS</a>
+  <a href="{'../' * a.salida.count('/')}certificaciones.html" class="nav-back">CERTIFICACIONES</a>
 </nav>
 <div class="writeup-hero">
   <div class="hero-grid"></div><div class="hero-glow"></div>

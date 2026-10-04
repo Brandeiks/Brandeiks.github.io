@@ -5,216 +5,216 @@
     <link>https://brandeiks.github.io/writeups/index.html</link>
     <description>Writeups de máquinas CTF: HackTheBox, DockerLabs y retos web.</description>
     <language>es</language>
-    <lastBuildDate>2026-10-03</lastBuildDate>
+    <lastBuildDate>Sat, 03 Oct 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://brandeiks.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
       <title>RansomNet — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/ransomnet.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/ransomnet.html</guid>
-      <pubDate>2026-10-03</pubDate>
+      <pubDate>Sat, 03 Oct 2026 00:00:00 +0000</pubDate>
       <description>Writeup del challenge RansomNet de HackTheBox (Web, Muy Fácil) — CVE-2025-48828 en vBulletin 6.0.3: invocación no autenticada de métodos protegidos de la API → inyección de plantilla &amp;lt;vb:if&amp;gt; → RCE → cat /flag.txt.</description>
     </item>
     <item>
       <title>GoodGames — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/goodgames.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/goodgames.html</guid>
-      <pubDate>2026-10-03</pubDate>
+      <pubDate>Sat, 03 Oct 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina GoodGames de HackTheBox — Dificultad: Fácil. SQLi → sqlmap → SSTI Jinja2 → Reverse Shell → Docker Escape → Root.</description>
     </item>
     <item>
       <title>XSS Game — Google XSS Game Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/google-xss-game/xss-game.html</link>
       <guid>https://brandeiks.github.io/writeups/google-xss-game/xss-game.html</guid>
-      <pubDate>2026-10-03</pubDate>
+      <pubDate>Sat, 03 Oct 2026 00:00:00 +0000</pubDate>
       <description>Writeup del Google XSS Game (xss-game.appspot.com) — 6 niveles de Cross-Site Scripting: reflejado, almacenado, DOM-based y bypass de protocolos.</description>
     </item>
     <item>
       <title>FirstHacking — Dockerlabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/firsthacking.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/firsthacking.html</guid>
-      <pubDate>2026-10-03</pubDate>
-      <description>DockerLabs muy facil: nmap detecta vsFTPd 2.3.4 en el puerto 21 y el backdoor de la version troyanizada abre una shell como root en el 6200 tras autenticarse con un usuario que contiene la secuencia de dos puntos y parentesis.</description>
+      <pubDate>Sat, 03 Oct 2026 00:00:00 +0000</pubDate>
+      <description>nmap descubre vsFTPd 2.3.4 en el puerto 21; el backdoor de la version troyanizada de 2011 abre una shell como root en el puerto 6200.</description>
     </item>
     <item>
       <title>BreakMySSH — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/breakmyssh.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/breakmyssh.html</guid>
-      <pubDate>2026-10-03</pubDate>
+      <pubDate>Sat, 03 Oct 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina BreakMySSH de DockerLabs — Dificultad: Muy Fácil. nmap → puerto 22 SSH → Metasploit ssh_login → fuerza bruta → acceso root.</description>
     </item>
     <item>
       <title>Explosion — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/explosion.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/explosion.html</guid>
-      <pubDate>2026-10-01</pubDate>
+      <pubDate>Thu, 01 Oct 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Explosion de HackTheBox — Dificultad: Muy Fácil. nmap → puerto 3389 RDP (ms-wbt-server) → xfreerdp con Administrator y contraseña en blanco → acceso al escritorio → root flag.</description>
     </item>
     <item>
       <title>Unholy Union — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/unholy-union.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/unholy-union.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup del reto Unholy Union de HackTheBox — Dificultad: Very Easy. SQL Injection vía UNION SELECT para extraer la flag de una API de inventario embrujado.</description>
     </item>
     <item>
       <title>Redeemer — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/redeemer.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/redeemer.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Redeemer de HackTheBox — Dificultad: Muy Fácil. nmap → puerto 6379 Redis → redis-cli sin autenticación → select 0 → keys * → get flag.</description>
     </item>
     <item>
       <title>Meow — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/meow.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/meow.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Meow de HackTheBox — Dificultad: Muy Fácil. nmap → puerto 23 Telnet → credenciales por defecto root sin contraseña → flag.</description>
     </item>
     <item>
       <title>Fawn — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/fawn.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/fawn.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Fawn de HackTheBox — Dificultad: Muy Fácil. nmap → puerto 21 FTP vsftpd 3.0.3 → anonymous login → get flag.txt → flag.</description>
     </item>
     <item>
       <title>Dancing — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/dancing.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/dancing.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Dancing de HackTheBox — Dificultad: Muy Fácil. SMB Acceso Anónimo → WorkShares → flag.txt.</description>
     </item>
     <item>
       <title>Soccer — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/soccer.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/soccer.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Soccer de HackTheBox — Dificultad: Fácil. Tiny File Manager RCE (CVE-2021-45010) → Blind SQLi vía WebSockets → doas + dstat → Root.</description>
     </item>
     <item>
       <title>Mirai — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/mirai.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/mirai.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Mirai de HackTheBox — Dificultad: Fácil. nmap → x-pi-hole → credenciales por defecto Raspberry Pi → SSH pi → sudo ALL → /root/root.txt vacío → USB stick → strings /dev/sdb → root flag.</description>
     </item>
     <item>
       <title>Lame — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/lame.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/lame.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Lame de HackTheBox — Dificultad: Fácil. Nmap → SMB Samba 3.0.20 → CVE-2007-2447 → Metasploit usermap_script → Root.</description>
     </item>
     <item>
       <title>Conversor — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/conversor.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/conversor.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Conversor de HackTheBox — Dificultad: Fácil. nmap → /etc/hosts → source code → XSLT Injection → reverse shell www-data → SQLite hashes → CrackStation → SSH fismathack → CVE-2024-48990 needrestart → root.</description>
     </item>
     <item>
       <title>Blue — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/blue.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/blue.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Blue de HackTheBox — Dificultad: Fácil. EternalBlue MS17-010 (CVE-2017-0144) → Metasploit → NT AUTHORITY\SYSTEM.</description>
     </item>
     <item>
       <title>Upload — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/facil/upload.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/facil/upload.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Upload de DockerLabs — Dificultad: Fácil. Subida de Archivos sin restricciones → PHP Reverse Shell → sudo env /bin/sh → root.</description>
     </item>
     <item>
       <title>Pinguinazo — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/facil/pinguinazo.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/facil/pinguinazo.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Pinguinazo de DockerLabs — Dificultad: Fácil. SSTI Jinja2 en Flask → reverse shell → sudo java → root.</description>
     </item>
     <item>
       <title>Injection — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/facil/injection.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/facil/injection.html</guid>
-      <pubDate>2026-06-01</pubDate>
+      <pubDate>Mon, 01 Jun 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Injection de DockerLabs — Dificultad: Fácil. SQL Injection bypass → credenciales dylan → SSH → SUID env → root.</description>
     </item>
     <item>
       <title>Spark — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/spark.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/spark.html</guid>
-      <pubDate>2026-05-01</pubDate>
+      <pubDate>Fri, 01 May 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Spark de HackTheBox — Dificultad: Muy Fácil. Apache Spark CVE-2022-33891 → OS Command Injection → Reverse Shell → root.</description>
     </item>
     <item>
       <title>Overlay — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/overlay.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/overlay.html</guid>
-      <pubDate>2026-05-01</pubDate>
+      <pubDate>Fri, 01 May 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Overlay de HackTheBox — Dificultad: Muy Fácil. WebShell → Reverse Shell → CVE-2021-3493 OverlayFS LPE.</description>
     </item>
     <item>
       <title>Nocturnal — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/nocturnal.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/nocturnal.html</guid>
-      <pubDate>2026-05-01</pubDate>
+      <pubDate>Fri, 01 May 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Nocturnal de HackTheBox — Dificultad: Fácil. nmap → /etc/hosts → registro → IDOR view.php → wfuzz usuarios → ODT credenciales → command injection backup → reverse shell → SQLite hashes → CrackStation → SSH tobias → SSH tunneling → ISPConfig CVE-2023-46818 → root.</description>
     </item>
     <item>
       <title>Base — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/base.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/base.html</guid>
-      <pubDate>2026-05-01</pubDate>
+      <pubDate>Fri, 01 May 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Base de HackTheBox — Dificultad: Fácil. Directory Listing → PHP Type Juggling → Subida de Archivos → RCE → Credenciales en texto plano → SSH → sudo find LPE.</description>
     </item>
     <item>
       <title>Tproot — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/tproot.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/tproot.html</guid>
-      <pubDate>2026-05-01</pubDate>
+      <pubDate>Fri, 01 May 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Tproot de DockerLabs — Dificultad: Muy Fácil. Nmap → vsftpd 2.3.4 Backdoor → Root directo vía CVE-2011-2523.</description>
     </item>
     <item>
       <title>Mírame — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/facil/mirame.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/facil/mirame.html</guid>
-      <pubDate>2026-05-01</pubDate>
+      <pubDate>Fri, 01 May 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Mirame de DockerLabs — Dificultad: Fácil. SQLi → sqlmap → Esteganografía → SSH → SUID find LPE.</description>
     </item>
     <item>
       <title>Cap — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/cap.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/cap.html</guid>
-      <pubDate>2026-04-01</pubDate>
+      <pubDate>Wed, 01 Apr 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Cap de HackTheBox — Dificultad: Fácil. OpenVPN → nmap → IDOR /data/0 → pcap FTP credentials → SSH → Python3.8 CAP_SETUID → root.</description>
     </item>
     <item>
       <title>Bank — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/bank.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/bank.html</guid>
-      <pubDate>2026-04-01</pubDate>
+      <pubDate>Wed, 01 Apr 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Bank de HackTheBox — Dificultad: Fácil. DNS local (/etc/hosts) → wfuzz directory discovery → balance-transfer leak → credenciales en texto plano → Subida de Archivos bypass (.htb) → RCE → SUID /var/htb/bin/emergency → root.</description>
     </item>
     <item>
       <title>Trust — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/trust.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/trust.html</guid>
-      <pubDate>2026-04-01</pubDate>
+      <pubDate>Wed, 01 Apr 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Trust de DockerLabs — Dificultad: Muy Fácil. Gobuster + Hydra SSH + sudo vim PrivEsc.</description>
     </item>
     <item>
       <title>Obsession — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/obsession.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/muy-facil/obsession.html</guid>
-      <pubDate>2026-04-01</pubDate>
+      <pubDate>Wed, 01 Apr 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Obsession de DockerLabs — Dificultad: Muy Fácil. FTP anon + wfuzz + Hydra SSH + SUID env.</description>
     </item>
     <item>
       <title>Database — DockerLabs Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/dockerlabs/medio/database.html</link>
       <guid>https://brandeiks.github.io/writeups/dockerlabs/medio/database.html</guid>
-      <pubDate>2026-04-01</pubDate>
+      <pubDate>Wed, 01 Apr 2026 00:00:00 +0000</pubDate>
       <description>Writeup de la máquina Database de DockerLabs — Dificultad: Media. SQLi + SMB + Java reverse shell + SUID env.</description>
     </item>
   </channel>

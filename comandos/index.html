@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Buscador de comandos de los writeups | Brandeiks</title>
   <meta name="description" content="Busca cualquier comando usado en los writeups de Brandeiks: nmap, hydra, sqlmap, xfreerdp, GTFOBins... con enlace directo al paso exacto de cada writeup.">
   <meta name="author" content="Brandon Zevallos Pastrana">
@@ -40,9 +42,60 @@
     .meta a { color: var(--cyan); text-decoration: none; }
     .meta a:hover { text-decoration: underline; }
     .vacio { text-align: center; padding: 3rem; font-family: var(--font-mono); color: var(--text-dim); }
+
+    /* NAV RESPONSIVE */
+    .menu-check { position: absolute; opacity: 0; pointer-events: none; }
+    .menu-btn { display: none; }
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+    }
   </style>
 </head>
 <body>
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../index.html" class="nav-back">INICIO</a>
+    <a href="../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
 <div class="cab"><div class="cab-in">
   <h1>BUSCADOR DE <span>COMANDOS</span></h1>
   <p>// Todos los comandos de los 29 writeups, con enlace al paso exacto donde se usan</p>
