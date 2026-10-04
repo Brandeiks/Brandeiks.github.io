@@ -326,6 +326,8 @@ a,button{cursor:pointer;}
 
 /* --- navegacion anterior / siguiente --- */
 .writeup-nav {
+  /* no es la barra del sitio: anula el nav{position:fixed} generico */
+  position: static; top: auto; left: auto; right: auto; z-index: auto;
   display: flex; gap: 1rem; flex-wrap: wrap; justify-content: space-between;
   margin: 3.5rem 0 1rem; padding-top: 2rem; border-top: 1px solid var(--dim);
 }
