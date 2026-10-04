@@ -154,13 +154,15 @@
     .about-text p strong { color: var(--text); }
     .about-text p .highlight { color: var(--green); }
     .about-skills h3 { font-family: var(--font-mono); font-size: 0.75rem; color: var(--green); letter-spacing: 3px; margin-bottom: 1.5rem; }
-    .skill-list { list-style: none; display: flex; flex-direction: column; gap: 0.8rem; }
-    .skill-item { display: flex; align-items: center; gap: 1rem; }
-    .skill-item span:first-child { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); }
-    .skill-bar-bg { flex: 1; height: 2px; background: var(--dim); }
-    .skill-bar { height: 100%; background: linear-gradient(90deg, var(--green), var(--cyan)); transform-origin: left; transform: scaleX(0); transition: transform 1.2s ease; }
-    .skill-bar.animate { transform: scaleX(1); }
-    .skill-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); width: 130px; }
+    .about-stats { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .about-stat { display: flex; flex-direction: column; text-decoration: none; }
+    .about-stat-num { font-family: var(--font-display); font-size: 2.1rem; font-weight: 700; color: var(--green); line-height: 1; }
+    .about-stat-lbl { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 0.4rem; }
+    a.about-stat { transition: transform 0.3s; }
+    a.about-stat:hover { transform: translateY(-3px); }
+    a.about-stat:hover .about-stat-num { color: var(--cyan); }
+    .skill-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .skill-chips .stack-tag { font-size: 0.72rem; padding: 0.35rem 0.8rem; }
 
     .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
     .project-card { background: var(--bg2); border: 1px solid var(--dim); padding: 2rem; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
@@ -347,15 +349,21 @@
         <p>Actualmente construyendo mi camino en el mundo de la <strong>seguridad informática</strong>, participando en laboratorios, CTFs y proyectos prácticos que consolidan mis habilidades técnicas.</p>
       </div>
       <div class="about-skills reveal">
-        <h3>// HABILIDADES TÉCNICAS</h3>
-        <ul class="skill-list">
-          <li class="skill-item"><span>▸</span><span class="skill-label">Hacking Ético</span><div class="skill-bar-bg"><div class="skill-bar" style="width:70%"></div></div></li>
-          <li class="skill-item"><span>▸</span><span class="skill-label">Redes &amp; Protocolos</span><div class="skill-bar-bg"><div class="skill-bar" style="width:65%"></div></div></li>
-          <li class="skill-item"><span>▸</span><span class="skill-label">Linux / Kali</span><div class="skill-bar-bg"><div class="skill-bar" style="width:75%"></div></div></li>
-          <li class="skill-item"><span>▸</span><span class="skill-label">OSINT</span><div class="skill-bar-bg"><div class="skill-bar" style="width:60%"></div></div></li>
-          <li class="skill-item"><span>▸</span><span class="skill-label">Ciberderecho</span><div class="skill-bar-bg"><div class="skill-bar" style="width:85%"></div></div></li>
-          <li class="skill-item"><span>▸</span><span class="skill-label">Forense Digital</span><div class="skill-bar-bg"><div class="skill-bar" style="width:55%"></div></div></li>
-        </ul>
+        <h3>// EXPERIENCIA PRÁCTICA</h3>
+        <div class="about-stats">
+          <a href="writeups/index.html" class="about-stat"><span class="about-stat-num">30</span><span class="about-stat-lbl">WRITEUPS</span></a>
+          <div class="about-stat"><span class="about-stat-num">19</span><span class="about-stat-lbl">HACKTHEBOX</span></div>
+          <div class="about-stat"><span class="about-stat-num">10</span><span class="about-stat-lbl">DOCKERLABS</span></div>
+        </div>
+        <h3>// ÁREAS DE TRABAJO</h3>
+        <div class="skill-chips">
+          <span class="stack-tag">Hacking Ético</span>
+          <span class="stack-tag">Redes &amp; Protocolos</span>
+          <span class="stack-tag">Linux / Kali</span>
+          <span class="stack-tag">OSINT</span>
+          <span class="stack-tag">Ciberderecho</span>
+          <span class="stack-tag">Forense Digital</span>
+        </div>
       </div>
     </div>
   </section>
@@ -375,6 +383,9 @@
         <div class="project-stack">
           <span class="stack-tag">Ley 30096</span><span class="stack-tag">LPDP</span><span class="stack-tag">GDPR</span><span class="stack-tag">Perú</span>
         </div>
+        <div style="margin-top:1.2rem;">
+          <a href="videos/index.html" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--green);text-decoration:none;letter-spacing:2px;">VER EN VÍDEOS →</a>
+        </div>
       </div>
       <div class="project-card reveal">
         <p class="project-tag">// PORTFOLIO</p>
@@ -387,9 +398,9 @@
       <div class="project-card reveal">
         <p class="project-tag">// CTF · WRITEUPS</p>
         <h3 class="project-name">Writeups</h3>
-        <p class="project-desc">Documentación técnica de máquinas resueltas en DockerLabs, TryHackMe y HackTheBox. Análisis paso a paso de vulnerabilidades, exploits y escalada de privilegios.</p>
+        <p class="project-desc">Documentación técnica de máquinas resueltas en DockerLabs y HackTheBox. Análisis paso a paso de vulnerabilidades, exploits y escalada de privilegios.</p>
         <div class="project-stack">
-          <span class="stack-tag">DockerLabs</span><span class="stack-tag">TryHackMe</span><span class="stack-tag">HackTheBox</span><span class="stack-tag">CTF</span>
+          <span class="stack-tag">DockerLabs</span><span class="stack-tag">HackTheBox</span><span class="stack-tag">CTF</span>
         </div>
         <div style="margin-top:1.2rem;">
           <a href="writeups/index.html" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--green);text-decoration:none;letter-spacing:2px;">VER ANÁLISIS →</a>
@@ -505,10 +516,10 @@
     const loaderBar = document.getElementById('loader-bar');
     const loaderPercentage = document.getElementById('loaderPercentage');
     let progress = 0, loaderDone = false;
-    const finishLoader = () => { if (loaderDone) return; loaderDone = true; loader.classList.add('fade-out'); setTimeout(() => loader.classList.add('hidden'), 500); };
-    const interval = setInterval(() => { progress += Math.random() * 15; if (progress > 100) progress = 100; loaderBar.style.width = progress + '%'; if (loaderPercentage) loaderPercentage.textContent = Math.floor(progress) + '%'; if (progress >= 100) { clearInterval(interval); setTimeout(finishLoader, 500); } }, 200);
-    setTimeout(() => { clearInterval(interval); loaderBar.style.width = '100%'; if (loaderPercentage) loaderPercentage.textContent = '100%'; setTimeout(finishLoader, 500); }, 3000);
-    window.addEventListener('load', () => { setTimeout(finishLoader, 2000); });
+    const finishLoader = () => { if (loaderDone) return; loaderDone = true; loader.classList.add('fade-out'); setTimeout(() => loader.classList.add('hidden'), 300); };
+    const interval = setInterval(() => { progress += Math.random() * 30 + 18; if (progress > 100) progress = 100; loaderBar.style.width = progress + '%'; if (loaderPercentage) loaderPercentage.textContent = Math.floor(progress) + '%'; if (progress >= 100) { clearInterval(interval); setTimeout(finishLoader, 120); } }, 55);
+    setTimeout(() => { clearInterval(interval); loaderBar.style.width = '100%'; if (loaderPercentage) loaderPercentage.textContent = '100%'; setTimeout(finishLoader, 120); }, 650);
+    window.addEventListener('load', () => { setTimeout(finishLoader, 150); });
 
     const cursor = document.getElementById('cursor');
     const cursorRing = document.getElementById('cursorRing');
@@ -538,8 +549,6 @@
     const revealObserver = new IntersectionObserver(entries => { entries.forEach((entry, i) => { if (entry.isIntersecting) setTimeout(() => entry.target.classList.add('visible'), i * 80); }); }, { threshold: 0.1 });
     document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
-    const barObserver = new IntersectionObserver(entries => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('animate'); barObserver.unobserve(entry.target); } }); }, { threshold: 0.3 });
-    document.querySelectorAll('.skill-bar').forEach(bar => barObserver.observe(bar));
 
     const navLinks = document.querySelectorAll('.nav-links a');
     window.addEventListener('scroll', () => { let current = ''; document.querySelectorAll('section[id]').forEach(s => { if (window.scrollY >= s.offsetTop - 140) current = s.getAttribute('id'); }); navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); }); });
