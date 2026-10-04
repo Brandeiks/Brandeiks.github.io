@@ -497,3 +497,55 @@ html { scroll-padding-top: 110px; }
 .writeup-nav a .nombre { display: block; margin-top: .45rem; font-family: var(--font-disp); font-size: 1.05rem; color: var(--text); letter-spacing: 1px; }
 .writeup-nav a:hover .nombre { color: var(--green); }
 .writeup-nav a.siguiente { text-align: right; }
+/* ============================================================
+   RESPONSIVE COMPARTIDO (menu movil, colapso de sidebar y layout).
+   Antes vivia duplicado en el <style> de cada writeup; al estar aqui,
+   lo heredan tambien firsthacking y cualquier pagina generada por la
+   plantilla (que ya no lo emite). Las paginas con <style> propio lo
+   siguen sobrescribiendo porque su bloque va despues de este enlace.
+   ============================================================ */
+@media(max-width:960px){
+  footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+  nav,.writeup-hero,footer{padding-left:1.5rem;padding-right:1.5rem;}
+  .writeup-layout{grid-template-columns:1fr;padding:2rem 1.5rem;}
+  .sidebar{position:static;}
+  .cmd-ref-grid{grid-template-columns:1fr;}
+  body,a,button{cursor:auto;}
+  .cursor,.cursor-ring{display:none;}
+}
+@media (max-width: 900px) {
+  nav { padding: 0.7rem 1rem; }
+  .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+  .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+}
+@media (max-width: 700px) {
+  nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+  .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+  .menu-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 34px; cursor: pointer;
+    border: 1px solid var(--dim); border-radius: 3px;
+  }
+  .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+    display: block; width: 18px; height: 2px; background: var(--green);
+    transition: transform 0.25s, opacity 0.25s;
+  }
+  .menu-btn span { position: relative; }
+  .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+  .menu-btn span::before { top: -6px; }
+  .menu-btn span::after { top: 6px; }
+  .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+  .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+  .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+  .nav-back { display: none; }
+  .menu-check:checked ~ nav .nav-back {
+    display: block; width: 100%; text-align: center;
+    margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+    border-top: 1px solid var(--dim);
+  }
+}
+@media (max-width: 480px) {
+  nav { padding: 0.55rem 0.8rem; }
+  .nav-logo { font-size: 0.76rem; }
+  .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+}
