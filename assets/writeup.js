@@ -155,7 +155,7 @@
       });
     });
   }
-  activarZoom();
+  /* lightbox desactivado: se retiraron las capturas generadas */
 
   /* ---------------- 7. Modo guion ---------------- */
   var pasos = $$('.step-marker');
