@@ -475,3 +475,25 @@ figure.shot figcaption {
 /* los saltos a ancla no deben quedar tapados por el nav fijo ni por la barra */
 .section[id], .step-marker[id] { scroll-margin-top: 110px; }
 html { scroll-padding-top: 110px; }
+
+/* ==========================================================================
+   Navegacion anterior/siguiente: botones al final del writeup.
+   Se anula todo lo que heredaba de la barra del sitio (nav{position:fixed...}).
+   ========================================================================== */
+.writeup-nav {
+  position: static !important; top: auto !important; left: auto !important; right: auto !important; z-index: auto !important;
+  background: transparent !important; backdrop-filter: none !important; border-bottom: 0 !important;
+  border-top: 1px solid var(--dim); padding: 2rem 0 0 !important; margin: 3.5rem 0 1rem !important;
+  display: flex !important; align-items: stretch !important; justify-content: space-between !important;
+  gap: 1rem !important; flex-wrap: wrap !important;
+}
+.writeup-nav a {
+  display: block; flex: 1 1 240px; padding: 1.1rem 1.3rem; border: 1px solid var(--dim);
+  background: var(--bg2); text-decoration: none; cursor: pointer;
+  transition: border-color .2s, transform .2s, background .2s;
+}
+.writeup-nav a:hover, .writeup-nav a:focus-visible { border-color: var(--green); background: rgba(0,255,136,.04); transform: translateY(-2px); }
+.writeup-nav a .dir { display: block; font-family: var(--font-mono); font-size: .62rem; color: var(--text-dim); letter-spacing: 2px; }
+.writeup-nav a .nombre { display: block; margin-top: .45rem; font-family: var(--font-disp); font-size: 1.05rem; color: var(--text); letter-spacing: 1px; }
+.writeup-nav a:hover .nombre { color: var(--green); }
+.writeup-nav a.siguiente { text-align: right; }
