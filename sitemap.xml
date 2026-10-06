@@ -7,6 +7,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://brandeiks.github.io/certificaciones/dockerlabs/index.html</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://brandeiks.github.io/comandos/index.html</loc>
     <lastmod>2026-10-03</lastmod>
     <changefreq>monthly</changefreq>

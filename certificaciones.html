@@ -16,6 +16,7 @@
       --green: #00ff88;
       --cyan: #00e5ff;
       --red: #ff2d55;
+      --yellow: #ffd700;
       --dim: #1a2a2e;
       --text: #c8d8e0;
       --text-dim: #4a6a74;
@@ -306,6 +307,49 @@
     }
     .cert-specialization:hover { border-color: rgba(0,229,255,0.5); }
 
+    /* DOCKERLABS: resumen que enlaza a certificaciones/dockerlabs/
+       (el contenido lo genera scripts/generar_certificados_dockerlabs.py) */
+    .diff-muy-facil { color: var(--cyan);   border-color: rgba(0,229,255,0.4);  background: rgba(0,229,255,0.05); }
+    .diff-facil     { color: var(--green);  border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .diff-medio     { color: var(--yellow); border-color: rgba(255,215,0,0.4);  background: rgba(255,215,0,0.05); }
+    .diff-dificil   { color: var(--red);    border-color: rgba(255,45,85,0.4);  background: rgba(255,45,85,0.05); }
+    .dl-stats { display: flex; flex-wrap: wrap; gap: 2.5rem; margin-bottom: 1.4rem; }
+    .dl-stat { font-family: var(--font-mono); }
+    .dl-num { display: block; font-size: 1.8rem; line-height: 1; color: var(--green); }
+    .dl-lbl { display: block; font-size: 0.62rem; letter-spacing: 2px; color: var(--text-dim); margin-top: 0.3rem; }
+    .dl-prog-top {
+      display: flex; justify-content: space-between; gap: 1rem;
+      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 2px; color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+    .dl-barra { height: 6px; background: var(--dim); overflow: hidden; }
+    .dl-barra span {
+      display: block; height: 100%; min-width: 4px;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      box-shadow: 0 0 10px rgba(0,255,136,0.5);
+    }
+    .dl-difs { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 1px; color: var(--text-dim); margin-top: 0.6rem; }
+    .dl-difs span { background: none; }
+    @media (max-width: 768px) {
+    }
+    .dl-resumen {
+      display: block; text-decoration: none; color: inherit;
+      border: 1px solid rgba(0,229,255,0.15);
+      background: rgba(0,229,255,0.02);
+      padding: 1.5rem;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .dl-resumen:hover { border-color: rgba(0,229,255,0.4); transform: translateY(-2px); }
+    .dl-resumen-pie {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;
+      margin-top: 1.2rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+    }
+    .dl-ver {
+      color: var(--cyan); letter-spacing: 2px; border: 1px solid rgba(0,229,255,0.3);
+      padding: 0.45rem 1rem; transition: background 0.2s, color 0.2s;
+    }
+    .dl-resumen:hover .dl-ver { background: rgba(0,229,255,0.08); }
+
     /* REVEAL ANIMATION */
     .reveal {
       opacity: 0;
@@ -575,6 +619,31 @@
       </div>
 
     </div>
+
+    <!-- DOCKERLABS:INICIO (generado por scripts/generar_certificados_dockerlabs.py; no editar a mano) -->
+    <div class="cat-header" style="margin-top:3.5rem;">
+      <span class="cat-label">// DOCKERLABS · LABORATORIOS RESUELTOS</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <a href="certificaciones/dockerlabs/index.html" class="dl-resumen reveal">
+      <div class="dl-stats">
+        <div class="dl-stat"><span class="dl-num">10</span><span class="dl-lbl">MÁQUINAS RESUELTAS</span></div>
+        <div class="dl-stat"><span class="dl-num">10</span><span class="dl-lbl">DIPLOMAS</span></div>
+        <div class="dl-stat"><span class="dl-num">10</span><span class="dl-lbl">WRITEUPS PUBLICADOS</span></div>
+        <div class="dl-stat"><span class="dl-num">#108</span><span class="dl-lbl">RANKING WRITEUPS</span></div>
+      </div>
+      <div class="dl-progreso">
+        <div class="dl-prog-top"><span>PROGRESO DEL CATÁLOGO</span><span>10 / 207 · 4,8 %</span></div>
+        <div class="dl-barra"><span style="width:4.8%"></span></div>
+        <div class="dl-difs"><span class="diff-muy-facil">MUY FÁCIL 5/9</span> · <span class="diff-facil">FÁCIL 4/70</span> · <span class="diff-medio">MEDIO 1/89</span> · <span class="diff-dificil">DIFÍCIL 0/39</span></div>
+      </div>
+      <div class="dl-resumen-pie">
+        <span>Un diploma de DockerLabs por cada máquina resuelta, verificable con su identificador.</span>
+        <span class="dl-ver">VER LOS 10 DIPLOMAS →</span>
+      </div>
+    </a>
+    <!-- DOCKERLABS:FIN -->
 
     <!-- OBJETIVOS -->
     <div class="cat-header" style="margin-top:3.5rem;">

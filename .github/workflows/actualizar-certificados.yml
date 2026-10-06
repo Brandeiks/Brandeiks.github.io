@@ -1,0 +1,110 @@
+name: Actualizar certificados de DockerLabs
+
+# Mantiene al dia la galeria certificaciones/dockerlabs/ y el resumen que la
+# enlaza desde certificaciones.html.
+#
+# Lee el perfil publico https://dockerlabs.es/u/brandeiks (JSON), crea las
+# miniaturas de los diplomas nuevos y regenera ambas paginas. Se ejecuta:
+#   - todas las noches (06:30 UTC = 01:30 en Peru)
+#   - a mano, desde la pestana Actions del repositorio
+#   - cuando cambia el propio generador
+#
+# NOTA: el flujo NO se dispara con los push de las paginas generadas, asi el
+# commit que hace este mismo flujo no puede volver a dispararlo (bucle infinito).
+
+on:
+  schedule:
+    - cron: '30 6 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/generar_certificados_dockerlabs.py'
+      - '.github/workflows/actualizar-certificados.yml'
+
+# Necesita permiso de escritura para poder hacer commit del cambio
+permissions:
+  contents: write
+
+# Si se solapan dos ejecuciones, se cancela la anterior
+concurrency:
+  group: actualizar-certificados
+  cancel-in-progress: true
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+        with:
+          # historial completo: con el clon superficial que hace checkout por
+          # defecto, hacer push despues puede corromper el historial del repo
+          fetch-depth: 0
+
+      - name: Instalar Pillow (para reducir las imagenes de los diplomas)
+        run: python3 -m pip install --quiet pillow
+
+      - name: Generar las paginas desde el perfil de DockerLabs
+        run: python3 scripts/generar_certificados_dockerlabs.py
+
+      - name: Comprobar que las paginas no han quedado rotas
+        # Red de seguridad: si el generador dejara algo vacio o roto, se aborta
+        # y NO se publica nada.
+        run: |
+          RESUMEN="certificaciones.html"
+          GALERIA="certificaciones/dockerlabs/index.html"
+          for TEXTO in "DOCKERLABS:INICIO" "DOCKERLABS:FIN" "certificaciones/dockerlabs/index.html" "IBM" "PRÓXIMOS OBJETIVOS" "BRANDEIKS_SEC"; do
+            if ! grep -q "$TEXTO" "$RESUMEN"; then
+              echo "::error::Falta en $RESUMEN: $TEXTO"
+              exit 1
+            fi
+          done
+          if [ ! -f "$GALERIA" ]; then
+            echo "::error::No se ha generado $GALERIA"
+            exit 1
+          fi
+          for TEXTO in BRANDEIKS_SEC hero-title filters-bar; do
+            if ! grep -q "$TEXTO" "$GALERIA"; then
+              echo "::error::Falta en $GALERIA: $TEXTO"
+              exit 1
+            fi
+          done
+          TARJETAS=$(grep -c 'class="dl-card' "$GALERIA" || true)
+          echo "Tarjetas de diploma: $TARJETAS"
+          if [ "$TARJETAS" -lt 1 ]; then
+            echo "::error::La galeria no contiene ningun diploma; se aborta."
+            exit 1
+          fi
+          # cada tarjeta debe tener su miniatura
+          for IMG in $(grep -oE 'assets/certificados/dockerlabs/DL-[0-9A-F]{6}\.webp' "$GALERIA" | sort -u); do
+            if [ ! -s "$IMG" ]; then
+              echo "::error::Falta la imagen $IMG"
+              exit 1
+            fi
+          done
+          echo "Verificacion correcta."
+
+      - name: Ver si ha cambiado algo
+        id: cambios
+        run: |
+          # git status (y no git diff) para detectar tambien las imagenes nuevas,
+          # que aun no estan bajo control de versiones
+          if [ -z "$(git status --porcelain -- certificaciones.html certificaciones/dockerlabs assets/certificados/dockerlabs)" ]; then
+            echo "hay_cambios=false" >> "$GITHUB_OUTPUT"
+            echo "Sin novedades: todo estaba al dia."
+          else
+            echo "hay_cambios=true" >> "$GITHUB_OUTPUT"
+            echo "Hay certificados nuevos o cambios; se publicara."
+            git status --short -- certificaciones.html certificaciones/dockerlabs assets/certificados/dockerlabs
+          fi
+
+      - name: Publicar los cambios
+        if: steps.cambios.outputs.hay_cambios == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- certificaciones.html certificaciones/dockerlabs assets/certificados/dockerlabs
+          printf 'chore(certificados): actualizar los diplomas de DockerLabs\n\nGenerado automaticamente por .github/workflows/actualizar-certificados.yml\n' > /tmp/mensaje.txt
+          git commit -F /tmp/mensaje.txt
+          git push

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Diplomas de DockerLabs | Brandeiks</title>
+<meta name="description" content="Diplomas de DockerLabs obtenidos por Brandon Zevallos Pastrana al resolver máquinas de hacking ético, verificables con su identificador.">
+<meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/certificaciones/dockerlabs/index.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Diplomas de DockerLabs | Brandeiks">
+  <meta property="og:description" content="Diplomas de DockerLabs obtenidos por Brandon Zevallos Pastrana al resolver máquinas de hacking ético, verificables con su identificador.">
+  <meta property="og:url" content="https://brandeiks.github.io/certificaciones/dockerlabs/index.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/certificaciones.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Diplomas de DockerLabs | Brandeiks">
+  <meta name="twitter:description" content="Diplomas de DockerLabs obtenidos por Brandon Zevallos Pastrana al resolver máquinas de hacking ético, verificables con su identificador.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/certificaciones.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "CollectionPage", "name": "Diplomas de DockerLabs | Brandeiks", "description": "Diplomas de DockerLabs obtenidos por Brandon Zevallos Pastrana al resolver máquinas de hacking ético, verificables con su identificador.", "url": "https://brandeiks.github.io/certificaciones/dockerlabs/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+<style>
+
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg); color: var(--text); font-family: var(--font-main);
+      overflow-x: hidden; line-height: 1.6;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+      background: repeating-linear-gradient(0deg, rgba(0,255,136,0.02) 0 1px, transparent 1px 3px);
+      opacity: 0.5;
+    }
+    a { color: inherit; }
+    ::selection { background: var(--green); color: var(--bg); }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--dim); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--green); }
+
+    /* MENU MOVIL */
+    .menu-check { position: absolute; opacity: 0; pointer-events: none; }
+    .menu-btn { display: none; }
+
+    /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+      footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+    }
+
+    /* nav */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.5rem; background: rgba(5,10,14,0.85);
+      backdrop-filter: blur(10px); border-bottom: 1px solid var(--dim);
+    }
+    .nav-logo {
+      font-family: var(--font-disp); font-size: 1rem; color: var(--green);
+      letter-spacing: 4px; text-decoration: none;
+    }
+    .nav-back {
+      font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
+      margin-left: 1.4rem;
+    }
+    .nav-back:visited, .nav-logo:visited { color: inherit; }
+    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
+
+    /* hero */
+    .hero {
+      position: relative; padding: 8rem 1.5rem 3rem; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 700px; height: 500px; top: -10%; left: -5%;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-content { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; }
+    .hero-crumb {
+      font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim);
+      letter-spacing: 2px; margin-bottom: 1rem;
+    }
+    .hero-crumb a { color: var(--green); text-decoration: none; }
+    .hero-crumb a:hover { text-decoration: underline; }
+    .hero-title {
+      font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 900; letter-spacing: 2px; line-height: 1;
+    }
+    .hero-title span { color: var(--green); }
+    .hero-sub {
+      font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-dim);
+      margin-top: 1rem; letter-spacing: 1px; max-width: 720px;
+    }
+    .hero-sub a { color: var(--cyan); text-decoration: none; }
+    .hero-sub a:hover { text-decoration: underline; }
+    .hero .dl-stats { margin-top: 2rem; }
+    .hero .dl-progreso { max-width: 720px; }
+
+    .diff-muy-facil { color: var(--cyan);   border-color: rgba(0,229,255,0.4);  background: rgba(0,229,255,0.05); }
+    .diff-facil     { color: var(--green);  border-color: rgba(0,255,136,0.4);  background: rgba(0,255,136,0.05); }
+    .diff-medio     { color: var(--yellow); border-color: rgba(255,215,0,0.4);  background: rgba(255,215,0,0.05); }
+    .diff-dificil   { color: var(--red);    border-color: rgba(255,45,85,0.4);  background: rgba(255,45,85,0.05); }
+    .dl-stats { display: flex; flex-wrap: wrap; gap: 2.5rem; margin-bottom: 1.4rem; }
+    .dl-stat { font-family: var(--font-mono); }
+    .dl-num { display: block; font-size: 1.8rem; line-height: 1; color: var(--green); }
+    .dl-lbl { display: block; font-size: 0.62rem; letter-spacing: 2px; color: var(--text-dim); margin-top: 0.3rem; }
+    .dl-prog-top {
+      display: flex; justify-content: space-between; gap: 1rem;
+      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 2px; color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+    .dl-barra { height: 6px; background: var(--dim); overflow: hidden; }
+    .dl-barra span {
+      display: block; height: 100%; min-width: 4px;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      box-shadow: 0 0 10px rgba(0,255,136,0.5);
+    }
+    .dl-difs { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 1px; color: var(--text-dim); margin-top: 0.6rem; }
+    .dl-difs span { background: none; }
+    @media (max-width: 768px) {
+      .dl-stats { gap: 1.5rem; }
+      .dl-prog-top { flex-direction: column; gap: 0.2rem; }
+    }
+
+    /* filtros y buscador */
+    .filters-bar {
+      position: sticky; top: 57px; z-index: 90; display: flex; flex-wrap: wrap;
+      gap: 0.5rem; padding: 1.2rem 1.5rem; background: rgba(5,10,14,0.92);
+      backdrop-filter: blur(10px); border-bottom: 1px solid var(--dim);
+      justify-content: center; align-items: center;
+    }
+    .filter-btn {
+      font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px;
+      padding: 0.4rem 1rem; border: 1px solid var(--dim); background: transparent;
+      color: var(--text-dim); transition: all 0.2s; cursor: pointer;
+    }
+    .filter-btn:hover { border-color: var(--green); color: var(--green); }
+    .filter-btn.active { background: rgba(0,255,136,0.1); border-color: var(--green); color: var(--green); }
+    .filter-btn[data-diff="muy-facil"].active { border-color: var(--cyan);   color: var(--cyan);   background: rgba(0,229,255,0.05); }
+    .filter-btn[data-diff="medio"].active     { border-color: var(--yellow); color: var(--yellow); background: rgba(255,215,0,0.05); }
+    .filter-btn[data-diff="dificil"].active   { border-color: var(--red);    color: var(--red);    background: rgba(255,45,85,0.05); }
+    .buscar {
+      font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 1px;
+      padding: 0.4rem 0.8rem; width: 220px; max-width: 100%;
+      background: var(--bg2); color: var(--text); border: 1px solid var(--dim); outline: none;
+    }
+    .buscar:focus { border-color: var(--green); }
+    .buscar::placeholder { color: var(--text-dim); }
+
+    /* galeria */
+    .main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    .dl-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+    .dl-card {
+      border: 1px solid var(--dim); background: var(--bg2);
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .dl-card::before {
+      content: ''; position: absolute; top: 0; left: 0; z-index: 2;
+      width: 3px; height: 0; transition: height 0.4s; background: var(--green);
+    }
+    .dl-card:hover { transform: translateY(-3px); }
+    .dl-card:hover::before { height: 100%; }
+    .dl-card[data-diff="muy-facil"]::before { background: var(--cyan); }
+    .dl-card[data-diff="medio"]::before     { background: var(--yellow); }
+    .dl-card[data-diff="dificil"]::before   { background: var(--red); }
+    .dl-card[data-diff="muy-facil"]:hover { border-color: rgba(0,229,255,0.3); }
+    .dl-card[data-diff="facil"]:hover     { border-color: rgba(0,255,136,0.3); }
+    .dl-card[data-diff="medio"]:hover     { border-color: rgba(255,215,0,0.3); }
+    .dl-card[data-diff="dificil"]:hover   { border-color: rgba(255,45,85,0.3); }
+
+    .dl-thumb { display: block; aspect-ratio: 3 / 2; overflow: hidden; border-bottom: 1px solid var(--dim); background: var(--bg3); }
+    .dl-thumb img {
+      display: block; width: 100%; height: 100%; object-fit: cover;
+      filter: saturate(0.8) brightness(0.92); transition: transform 0.4s, filter 0.4s;
+    }
+    .dl-card:hover .dl-thumb img { transform: scale(1.04); filter: none; }
+
+    .dl-body { padding: 1.1rem 1.3rem 1.3rem; display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
+    .dl-top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+    .dl-diff {
+      font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 2px;
+      padding: 0.15rem 0.55rem; border: 1px solid;
+    }
+    .dl-id { font-family: var(--font-mono); font-size: 0.68rem; color: var(--cyan); letter-spacing: 1px; }
+    .dl-body h3 { font-family: var(--font-disp); font-size: 0.95rem; letter-spacing: 1px; margin-top: 0.3rem; }
+    .dl-fecha { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); }
+    .dl-acciones { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: auto; padding-top: 0.7rem; }
+    .dl-btn {
+      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 2px;
+      padding: 0.4rem 0.8rem; border: 1px solid var(--dim);
+      color: var(--text-dim); text-decoration: none; transition: border-color 0.2s, color 0.2s;
+    }
+    .dl-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .dl-btn-main { border-color: rgba(0,255,136,0.35); color: var(--green); margin-left: auto; }
+    .dl-btn-main:hover { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.06); }
+
+    .sin-resultados {
+      display: none; text-align: center; margin-top: 2rem;
+      font-family: var(--font-mono); font-size: .78rem; color: var(--text-dim); letter-spacing: 2px;
+    }
+    .pie-galeria { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 3rem; }
+    .pie-galeria a { text-decoration: none; padding: .7rem 1.6rem; }
+    .nota { text-align: center; margin-top: 1.5rem; font-family: var(--font-mono); font-size: .62rem; color: var(--text-dim); letter-spacing: 1px; }
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    footer {
+      padding: 2rem 4rem; border-top: 1px solid var(--dim);
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 4rem;
+    }
+    footer p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+    footer span { color: var(--green); }
+
+    @media (max-width: 768px) {
+      nav { padding: 0.8rem 1rem; }
+      .hero { padding: 6rem 1rem 2rem; }
+      .main { padding: 1.5rem 1rem 3rem; }
+      .dl-grid { grid-template-columns: 1fr; }
+      .filters-bar { top: 49px; }
+      .buscar { width: 100%; }
+    }
+
+</style>
+</head>
+<body>
+
+  <input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+  <nav>
+    <a href="../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../index.html" class="nav-back">INICIO</a>
+    <a href="../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <p class="hero-crumb"><a href="../../certificaciones.html">// CERTIFICACIONES</a> / DOCKERLABS</p>
+    <h1 class="hero-title">DOCKER<span>LABS</span></h1>
+    <p class="hero-sub">Diplomas emitidos por <a href="https://dockerlabs.es/perfil/brandeiks" target="_blank" rel="noopener noreferrer">DockerLabs</a> al resolver cada máquina. Cada uno se puede verificar con su identificador.</p>
+      <div class="dl-stats">
+        <div class="dl-stat"><span class="dl-num">10</span><span class="dl-lbl">MÁQUINAS RESUELTAS</span></div>
+        <div class="dl-stat"><span class="dl-num">10</span><span class="dl-lbl">DIPLOMAS</span></div>
+        <div class="dl-stat"><span class="dl-num">10</span><span class="dl-lbl">WRITEUPS PUBLICADOS</span></div>
+        <div class="dl-stat"><span class="dl-num">#108</span><span class="dl-lbl">RANKING WRITEUPS</span></div>
+      </div>
+      <div class="dl-progreso">
+        <div class="dl-prog-top"><span>PROGRESO DEL CATÁLOGO</span><span>10 / 207 · 4,8 %</span></div>
+        <div class="dl-barra"><span style="width:4.8%"></span></div>
+        <div class="dl-difs"><span class="diff-muy-facil">MUY FÁCIL 5/9</span> · <span class="diff-facil">FÁCIL 4/70</span> · <span class="diff-medio">MEDIO 1/89</span> · <span class="diff-dificil">DIFÍCIL 0/39</span></div>
+      </div>
+  </div>
+</div>
+
+<!-- FILTROS -->
+<div class="filters-bar">
+  <button class="filter-btn active" data-diff="all">TODOS</button>
+  <button class="filter-btn" data-diff="muy-facil">MUY FÁCIL</button>
+  <button class="filter-btn" data-diff="facil">FÁCIL</button>
+  <button class="filter-btn" data-diff="medio">MEDIO</button>
+  <input type="search" class="buscar" id="buscar" placeholder="Buscar máquina…" aria-label="Buscar máquina" autocomplete="off">
+</div>
+
+<main class="main">
+  <div class="dl-grid">
+      <article class="dl-card reveal" data-diff="muy-facil" data-nombre="firsthacking">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-1A6E6D" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-1A6E6D.webp" alt="Diploma de DockerLabs por resolver la máquina FirstHacking" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-muy-facil">MUY FÁCIL</span>
+            <span class="dl-id">DL-1A6E6D</span>
+          </div>
+          <h3>FirstHacking</h3>
+          <p class="dl-fecha">📅 Emitido el 05/10/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-1A6E6D" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-1A6E6D" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/muy-facil/firsthacking.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="muy-facil" data-nombre="breakmyssh">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-17C475" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-17C475.webp" alt="Diploma de DockerLabs por resolver la máquina BreakMySSH" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-muy-facil">MUY FÁCIL</span>
+            <span class="dl-id">DL-17C475</span>
+          </div>
+          <h3>BreakMySSH</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-17C475" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-17C475" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/muy-facil/breakmyssh.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="facil" data-nombre="injection">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-CD6B5E" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-CD6B5E.webp" alt="Diploma de DockerLabs por resolver la máquina Injection" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-facil">FÁCIL</span>
+            <span class="dl-id">DL-CD6B5E</span>
+          </div>
+          <h3>Injection</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-CD6B5E" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-CD6B5E" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/facil/injection.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="facil" data-nombre="mirame">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-FAB646" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-FAB646.webp" alt="Diploma de DockerLabs por resolver la máquina Mirame" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-facil">FÁCIL</span>
+            <span class="dl-id">DL-FAB646</span>
+          </div>
+          <h3>Mirame</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-FAB646" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-FAB646" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/facil/mirame.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="facil" data-nombre="pinguinazo">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-CE090F" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-CE090F.webp" alt="Diploma de DockerLabs por resolver la máquina Pinguinazo" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-facil">FÁCIL</span>
+            <span class="dl-id">DL-CE090F</span>
+          </div>
+          <h3>Pinguinazo</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-CE090F" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-CE090F" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/facil/pinguinazo.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="facil" data-nombre="upload">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-DB0B56" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-DB0B56.webp" alt="Diploma de DockerLabs por resolver la máquina Upload" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-facil">FÁCIL</span>
+            <span class="dl-id">DL-DB0B56</span>
+          </div>
+          <h3>Upload</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-DB0B56" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-DB0B56" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/facil/upload.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="medio" data-nombre="database">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-B5AF1E" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-B5AF1E.webp" alt="Diploma de DockerLabs por resolver la máquina Database" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-medio">MEDIO</span>
+            <span class="dl-id">DL-B5AF1E</span>
+          </div>
+          <h3>Database</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-B5AF1E" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-B5AF1E" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/medio/database.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="muy-facil" data-nombre="obsession">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-E43866" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-E43866.webp" alt="Diploma de DockerLabs por resolver la máquina Obsession" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-muy-facil">MUY FÁCIL</span>
+            <span class="dl-id">DL-E43866</span>
+          </div>
+          <h3>Obsession</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-E43866" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-E43866" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/muy-facil/obsession.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="muy-facil" data-nombre="tproot">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-80111B" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-80111B.webp" alt="Diploma de DockerLabs por resolver la máquina Tproot" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-muy-facil">MUY FÁCIL</span>
+            <span class="dl-id">DL-80111B</span>
+          </div>
+          <h3>Tproot</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-80111B" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-80111B" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/muy-facil/tproot.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+      <article class="dl-card reveal" data-diff="muy-facil" data-nombre="trust">
+        <a class="dl-thumb" href="https://dockerlabs.es/api/certificado/imagen/DL-020CC0" target="_blank" rel="noopener noreferrer" title="Ver el diploma a tamaño completo">
+          <img src="../../assets/certificados/dockerlabs/DL-020CC0.webp" alt="Diploma de DockerLabs por resolver la máquina Trust" width="640" height="426" loading="lazy">
+        </a>
+        <div class="dl-body">
+          <div class="dl-top">
+            <span class="dl-diff diff-muy-facil">MUY FÁCIL</span>
+            <span class="dl-id">DL-020CC0</span>
+          </div>
+          <h3>Trust</h3>
+          <p class="dl-fecha">📅 Emitido el 10/07/2026</p>
+          <div class="dl-acciones">
+            <a href="https://dockerlabs.es/api/certificado/pdf/DL-020CC0" class="dl-btn" target="_blank" rel="noopener noreferrer">PDF</a>
+            <a href="https://dockerlabs.es/api/certificado/verificar/DL-020CC0" class="dl-btn" target="_blank" rel="noopener noreferrer">VERIFICAR</a>
+            <a href="../../writeups/dockerlabs/muy-facil/trust.html" class="dl-btn dl-btn-main">WRITEUP →</a>
+          </div>
+        </div>
+      </article>
+  </div>
+
+  <p class="sin-resultados" id="sinResultados">NINGÚN DIPLOMA COINCIDE CON EL FILTRO</p>
+
+  <div class="pie-galeria">
+    <a href="../../certificaciones.html" class="filter-btn">← VOLVER A CERTIFICACIONES</a>
+    <a href="https://dockerlabs.es/perfil/brandeiks" target="_blank" rel="noopener noreferrer" class="filter-btn">VER MI PERFIL EN DOCKERLABS →</a>
+  </div>
+
+  <p class="nota">Lista actualizada automáticamente desde el perfil público de DockerLabs.</p>
+</main>
+
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Diplomas de DockerLabs</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // El cursor personalizado lo gestiona assets/cursor.js (unico para todo el sitio).
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 70);
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  // Filtro por dificultad + busqueda por nombre (se combinan)
+  const botones = document.querySelectorAll('.filter-btn[data-diff]');
+  const buscar = document.getElementById('buscar');
+  let dif = 'all';
+  function aplicar() {
+    const q = buscar.value.trim().toLowerCase();
+    let visibles = 0;
+    document.querySelectorAll('.dl-card').forEach(card => {
+      const ok = (dif === 'all' || card.dataset.diff === dif)
+              && (!q || card.dataset.nombre.includes(q));
+      card.style.display = ok ? '' : 'none';
+      if (ok) { card.classList.add('visible'); visibles++; }
+    });
+    document.getElementById('sinResultados').style.display = visibles ? 'none' : 'block';
+  }
+  botones.forEach(b => b.addEventListener('click', () => {
+    botones.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    dif = b.dataset.diff;
+    aplicar();
+  }));
+  buscar.addEventListener('input', aplicar);
+</script>
+<script src="../../assets/cursor.js" defer></script>
+</body>
+</html>
