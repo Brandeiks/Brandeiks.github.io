@@ -350,6 +350,24 @@
     }
     .dl-resumen:hover .dl-ver { background: rgba(0,229,255,0.08); }
 
+    /* HACK4U: misma tarjeta resumen (.dl-resumen), con las miniaturas de los
+       certificados; enlaza a certificaciones/hack4u/ */
+    .h4u-minis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
+    .h4u-minis img {
+      display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover;
+      border: 1px solid var(--dim); filter: saturate(0.85) brightness(0.9);
+      transition: filter 0.3s;
+    }
+    .dl-resumen:hover .h4u-minis img { filter: none; }
+    .h4u-minis figcaption {
+      font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 1px;
+      color: var(--text-dim); margin-top: 0.4rem;
+    }
+    @media (max-width: 480px) {
+      .h4u-minis { gap: 0.5rem; }
+      .h4u-minis figcaption { font-size: 0.55rem; letter-spacing: 0; }
+    }
+
     /* REVEAL ANIMATION */
     .reveal {
       opacity: 0;
@@ -619,6 +637,33 @@
       </div>
 
     </div>
+
+    <!-- HACK4U -->
+    <div class="cat-header" style="margin-top:3.5rem;">
+      <span class="cat-label">// HACK4U · CURSOS COMPLETADOS</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <a href="certificaciones/hack4u/index.html" class="dl-resumen reveal">
+      <div class="h4u-minis">
+        <figure>
+          <img src="assets/certificados/hack4u/0912-5674-6145-2072.webp" alt="" width="960" height="640" loading="lazy">
+          <figcaption>Introducción a Linux</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/certificados/hack4u/9974-6757-4085-3174.webp" alt="" width="960" height="640" loading="lazy">
+          <figcaption>Arch Linux desde Cero</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/certificados/hack4u/4499-6224-0764-5182.webp" alt="" width="960" height="640" loading="lazy">
+          <figcaption>Personalización de Linux</figcaption>
+        </figure>
+      </div>
+      <div class="dl-resumen-pie">
+        <span>Certificados de finalización de la academia Hack4u, verificables en su web oficial.</span>
+        <span class="dl-ver">VER LOS 3 CERTIFICADOS →</span>
+      </div>
+    </a>
 
     <!-- DOCKERLABS:INICIO (generado por scripts/generar_certificados_dockerlabs.py; no editar a mano) -->
     <div class="cat-header" style="margin-top:3.5rem;">
