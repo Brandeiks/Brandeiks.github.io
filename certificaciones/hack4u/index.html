@@ -184,6 +184,11 @@
     }
     .h4u-card:hover { transform: translateY(-3px); border-color: var(--tema-borde); }
     .h4u-card:hover::before { height: 100%; }
+    /* Al llegar desde certificaciones.html (#curso) el certificado queda resaltado
+       y no se esconde bajo el menu fijo */
+    .h4u-card { scroll-margin-top: 5rem; }
+    .h4u-card:target { border-color: var(--tema-borde); box-shadow: 0 0 24px var(--tema-borde); }
+    .h4u-card:target::before { height: 100%; }
 
     /* La imagen entera es el enlace de verificacion */
     .h4u-thumb {
@@ -284,11 +289,12 @@
 </div>
 
 <main class="main">
-  <!-- Para anadir un certificado: copia un <article>, cambia el ID (en los dos
+  <!-- Para anadir un certificado: copia un <article>, cambia el id (ancla a la que
+       enlaza su tarjeta en certificaciones.html), el ID del certificado (en los dos
        enlaces y en la imagen), el curso y la fecha, y guarda su miniatura en
        assets/certificados/hack4u/<ID>.webp (960x640). Los mas recientes primero. -->
   <div class="h4u-grid">
-      <article class="h4u-card reveal" data-tema="naranja">
+      <article class="h4u-card reveal" id="introduccion-a-linux" data-tema="naranja">
         <a class="h4u-thumb" href="https://hack4u.io/certificate/0912-5674-6145-2072" target="_blank" rel="noopener noreferrer" title="Verificar este certificado en Hack4u">
           <img src="../../assets/certificados/hack4u/0912-5674-6145-2072.webp" alt="Certificado de Hack4u por finalizar el curso Introducción a Linux" width="960" height="640" loading="lazy">
           <span class="h4u-thumb-ver">VERIFICAR ↗</span>
@@ -305,7 +311,7 @@
           </div>
         </div>
       </article>
-      <article class="h4u-card reveal" data-tema="cyan">
+      <article class="h4u-card reveal" id="arch-linux-desde-cero" data-tema="cyan">
         <a class="h4u-thumb" href="https://hack4u.io/certificate/9974-6757-4085-3174" target="_blank" rel="noopener noreferrer" title="Verificar este certificado en Hack4u">
           <img src="../../assets/certificados/hack4u/9974-6757-4085-3174.webp" alt="Certificado de Hack4u por finalizar el curso Arch Linux desde Cero" width="960" height="640" loading="lazy">
           <span class="h4u-thumb-ver">VERIFICAR ↗</span>
@@ -322,7 +328,7 @@
           </div>
         </div>
       </article>
-      <article class="h4u-card reveal" data-tema="violeta">
+      <article class="h4u-card reveal" id="personalizacion-de-linux" data-tema="violeta">
         <a class="h4u-thumb" href="https://hack4u.io/certificate/4499-6224-0764-5182" target="_blank" rel="noopener noreferrer" title="Verificar este certificado en Hack4u">
           <img src="../../assets/certificados/hack4u/4499-6224-0764-5182.webp" alt="Certificado de Hack4u por finalizar el curso Personalización de Linux" width="960" height="640" loading="lazy">
           <span class="h4u-thumb-ver">VERIFICAR ↗</span>
