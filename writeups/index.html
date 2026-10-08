@@ -220,6 +220,8 @@
 
     @media (max-width: 768px) {
       .hero { padding: 6rem 1.5rem 2.5rem; }
+      /* si no cabe en una linea, el contador baja a la siguiente (antes se salia de la pantalla) */
+      .platform-header { flex-wrap: wrap; gap: .4rem .9rem; }
       .filters-bar { padding: 1.2rem 1.5rem; top: 57px; }
       .main { padding: 2rem 1.5rem; }
       .hero-stats { gap: .8rem 1.3rem; margin-top: 1.5rem; }

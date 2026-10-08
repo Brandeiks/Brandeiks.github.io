@@ -164,7 +164,7 @@
     .skill-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
     .skill-chips .stack-tag { font-size: 0.72rem; padding: 0.35rem 0.8rem; }
 
-    .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+    .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 1.5rem; }
     .project-card { background: var(--bg2); border: 1px solid var(--dim); padding: 2rem; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
     .project-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 0; background: var(--green); transition: height 0.4s; }
     .project-card:hover { border-color: rgba(0,255,136,0.3); transform: translateY(-4px); }

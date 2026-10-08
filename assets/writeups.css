@@ -154,6 +154,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content
 .vuln-table th{color: var(--cyan);letter-spacing:2px;border-bottom-color: rgba(0,229,255,0.2);}
 .vuln-table td{color:var(--text-dim);}
 .vuln-table td:first-child{color:var(--green);}
+/* En movil nada del writeup puede ser mas ancho que la pantalla: si no, el navegador
+   amplia la pagina y el boton del menu queda fuera. Las palabras demasiado largas
+   (rutas, URLs, flags, comandos) se parten y las tablas se desplazan dentro de su
+   caja, sin partir palabras (como .result-table). */
+@media (max-width:700px){
+  .writeup-content{overflow-wrap:anywhere;}
+  .vuln-table{display:block;overflow-x:auto;overflow-wrap:normal;}
+  .result-table{overflow-wrap:normal;}
+}
 hr.divider{border:none;height:1px;background:linear-gradient(90deg,rgba(0,255,136,.3),transparent);margin:3rem 0;}
 .cmd-ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.5rem;}
 .cmd-ref-card{border:1px solid var(--dim);background:var(--bg2);padding:1.5rem;transition:border-color .3s;}
