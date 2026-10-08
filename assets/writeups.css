@@ -42,7 +42,7 @@ a,button{cursor:pointer;}
       transform: translate(-50%, -50%);
       opacity: 0; transition: opacity 0.15s;
     }
-nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 4rem;background:rgba(5,10,14,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,255,136,.08);}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 4rem;background:rgba(5,10,14,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,255,136,.08);}
 .nav-logo{font-family:var(--font-disp);font-size:1rem;color:var(--green);letter-spacing:4px;text-decoration:none;}
 .nav-back {
   font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);

@@ -29,16 +29,17 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   background:repeating-linear-gradient(0deg,rgba(0,255,136,.025) 0 1px,transparent 1px 3px);
   opacity:.4}
 ::selection{background:var(--green);color:var(--bg)}
-::-webkit-scrollbar{width:9px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--dim)}
-::-webkit-scrollbar-thumb:hover{background:var(--green)}
 a{color:var(--green);text-decoration:none}
 
 /* ---- nav ---- */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;
-  align-items:center;padding:1rem 1.5rem;background:rgba(5,10,14,.92);
-  backdrop-filter:blur(12px);border-bottom:1px solid var(--dim)}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;
+  align-items:center;padding:1.2rem 4rem;background:rgba(5,10,14,.85);
+  backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,255,136,.08);line-height:normal}
+/* altura del nav: la barra sticky .controls se coloca justo debajo */
+:root{--nav-h:59px}
+@media(max-width:900px){:root{--nav-h:40px}}
+@media(max-width:700px){:root{--nav-h:54px}}
+@media(max-width:480px){:root{--nav-h:52px}}
 .nav-logo{font-family:var(--font-disp);font-size:1rem;color:var(--green);letter-spacing:4px}
 .nav-right{display:flex;gap:1.4rem;align-items:center}
 .nav-back {
@@ -72,7 +73,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content
 .stat-lbl{font-size:.62rem;color:var(--text-dim);letter-spacing:2px;display:block}
 
 /* ---- barra de busqueda y filtros ---- */
-.controls{position:sticky;top:57px;z-index:90;background:rgba(8,15,20,.96);
+.controls{position:sticky;top:var(--nav-h);z-index:90;background:rgba(8,15,20,.96);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--dim);padding:1rem 1.5rem}
 .controls-in{max-width:1200px;margin:0 auto;display:flex;gap:.8rem;flex-wrap:wrap;
   align-items:center}
@@ -184,7 +185,6 @@ mark{background:rgba(0,255,136,.22);color:var(--green)}
   .hero-stats{gap:1.5rem}
   .cat-item .nm{min-width:120px}
   .cat-item .go{display:none}
-  .controls{top:53px}
 }
     /* MENU MOVIL */
     .menu-check { position: absolute; opacity: 0; pointer-events: none; }

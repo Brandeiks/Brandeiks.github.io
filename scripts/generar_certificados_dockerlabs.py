@@ -138,10 +138,32 @@ CSS = """
     }
     a { color: inherit; }
     ::selection { background: var(--green); color: var(--bg); }
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg2); }
-    ::-webkit-scrollbar-thumb { background: var(--dim); }
-    ::-webkit-scrollbar-thumb:hover { background: var(--green); }
+
+    /* nav */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem; background: rgba(5,10,14,0.85);
+      backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,255,136,0.08);
+      line-height: normal; /* igual que en el resto del sitio, aunque el body use 1.6 */
+    }
+    .nav-logo {
+      font-family: var(--font-disp); font-size: 1rem; color: var(--green);
+      letter-spacing: 4px; text-decoration: none;
+    }
+    .nav-back {
+      font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
+      margin-left: 1.4rem;
+    }
+    .nav-back:visited, .nav-logo:visited { color: inherit; }
+    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
+
+    /* altura del nav: las barras sticky se colocan justo debajo */
+    :root { --nav-h: 59px; }
+    @media (max-width: 900px) { :root { --nav-h: 40px; } }
+    @media (max-width: 700px) { :root { --nav-h: 54px; } }
+    @media (max-width: 480px) { :root { --nav-h: 52px; } }
 
     /* MENU MOVIL */
     .menu-check { position: absolute; opacity: 0; pointer-events: none; }
@@ -186,25 +208,6 @@ CSS = """
       .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
     }
 
-    /* nav */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 1rem 1.5rem; background: rgba(5,10,14,0.85);
-      backdrop-filter: blur(10px); border-bottom: 1px solid var(--dim);
-    }
-    .nav-logo {
-      font-family: var(--font-disp); font-size: 1rem; color: var(--green);
-      letter-spacing: 4px; text-decoration: none;
-    }
-    .nav-back {
-      font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);
-      text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
-      margin-left: 1.4rem;
-    }
-    .nav-back:visited, .nav-logo:visited { color: inherit; }
-    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
-
     /* hero */
     .hero {
       position: relative; padding: 8rem 1.5rem 3rem; overflow: hidden;
@@ -246,7 +249,7 @@ CSS = """
 
     /* filtros y buscador */
     .filters-bar {
-      position: sticky; top: 57px; z-index: 90; display: flex; flex-wrap: wrap;
+      position: sticky; top: var(--nav-h); z-index: 90; display: flex; flex-wrap: wrap;
       gap: 0.5rem; padding: 1.2rem 1.5rem; background: rgba(5,10,14,0.92);
       backdrop-filter: blur(10px); border-bottom: 1px solid var(--dim);
       justify-content: center; align-items: center;
@@ -341,11 +344,9 @@ CSS = """
     footer span { color: var(--green); }
 
     @media (max-width: 768px) {
-      nav { padding: 0.8rem 1rem; }
       .hero { padding: 6rem 1rem 2rem; }
       .main { padding: 1.5rem 1rem 3rem; }
       .dl-grid { grid-template-columns: 1fr; }
-      .filters-bar { top: 49px; }
       .buscar { width: 100%; }
     }
 """
