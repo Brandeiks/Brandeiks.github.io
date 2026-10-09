@@ -183,7 +183,8 @@
     .cert-info h4 { font-family: var(--font-display); font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 0.3rem; }
     .cert-info p { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
     .cert-status { font-family: var(--font-mono); font-size: 0.62rem; margin-top: 0.4rem; letter-spacing: 2px; }
-    .status-active { color: var(--green); } .status-planned { color: var(--text-dim); }
+    /* .cert-info delante: si no, .cert-info p (mas especifica) los deja en gris */
+    .cert-info .status-active { color: var(--green); } .cert-info .status-progress { color: #ffbd2e; } .cert-info .status-planned { color: var(--text-dim); }
     .cert-coursera { flex-direction: column; gap: 0.8rem; border-color: rgba(0,229,255,0.15); }
     .cert-coursera:hover { border-color: rgba(0,229,255,0.4); }
     .cert-badge { display: flex; gap: 0.5rem; }
@@ -441,7 +442,7 @@
         <div class="cert-info">
           <h4>CIBERSEGURIDAD</h4>
           <p>Estudios universitarios en curso</p>
-          <p class="cert-status status-active">● EN CURSO</p>
+          <p class="cert-status status-progress">● EN CURSO</p>
         </div>
       </div>
       <div class="cert-card reveal">

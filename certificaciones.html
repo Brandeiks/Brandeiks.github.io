@@ -230,18 +230,19 @@
       margin-top: 0.5rem;
       letter-spacing: 2px;
     }
-    .status-active  { color: var(--green); }
-    .status-progress { color: #ffbd2e; }
-    .status-planned { color: var(--text-dim); }
+    /* .cert-info delante: si no, .cert-info p (mas especifica) los deja en gris */
+    .cert-info .status-active   { color: var(--green); }
+    .cert-info .status-progress { color: #ffbd2e; }
+    .cert-info .status-planned  { color: var(--text-dim); }
 
     /* COURSERA CARD */
-    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco {
+    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc {
       flex-direction: column;
       gap: 0.8rem;
       border-color: rgba(0,229,255,0.12);
       background: rgba(0,229,255,0.02);
     }
-    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover {
+    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover {
       border-color: rgba(0,229,255,0.4);
       transform: translateY(-2px);
     }
@@ -377,6 +378,21 @@
        "Verificar certificado" abre la insignia publica en Credly */
     .badge-cisco {
       background: #049fd9;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.6rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    /* UPC · HXPLOIT: un certificado por ciclo de la carrera (10 en total). Las
+       tarjetas comparten los estilos de Coursera (.cert-upc) y la barra reutiliza
+       .dl-prog-top / .dl-barra del resumen de DockerLabs. "Ver certificado" lleva
+       a la galeria certificaciones/hxploit/ (no hay verificacion en linea). */
+    .upc-progreso { margin-bottom: 1.2rem; }
+    .badge-upc {
+      background: #d6001c;
       color: #fff;
       font-family: var(--font-mono);
       font-size: 0.62rem;
@@ -545,7 +561,7 @@
           <h4>CIBERSEGURIDAD</h4>
           <p>Estudios universitarios en curso</p>
           <p>Perú</p>
-          <p class="cert-status status-active">● EN CURSO</p>
+          <p class="cert-status status-progress">● EN CURSO</p>
         </div>
       </div>
 
@@ -556,6 +572,88 @@
           <p>Derecho — Universidad</p>
           <p>Perú</p>
           <p class="cert-status status-active">● COMPLETADO</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPC · HXPLOIT (al terminar un ciclo: su tarjeta pasa a COMPLETADO con su
+         certificado, se anade la del siguiente EN CURSO y se actualiza la barra) -->
+    <div class="cat-header" style="margin-top:3.5rem;">
+      <span class="cat-label">// UPC · HXPLOIT · UN TALLER POR CICLO</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="upc-progreso reveal">
+      <div class="dl-prog-top"><span>CICLOS COMPLETADOS</span><span>4 / 10 · 40 %</span></div>
+      <div class="dl-barra"><span style="width:40%"></span></div>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card cert-upc reveal">
+        <div class="cert-badge">
+          <span class="badge-upc">UPC</span>
+          <span class="badge-ruta">Ciclo 1</span>
+        </div>
+        <div class="cert-info">
+          <h4>Programa UPC HTB</h4>
+          <p>Ciberseguridad Ofensiva · 30 horas</p>
+          <p class="cert-date">📅 Noviembre 2024</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones/hxploit/index.html" class="cert-verify">🔗 Ver certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-upc reveal">
+        <div class="cert-badge">
+          <span class="badge-upc">UPC</span>
+          <span class="badge-ruta">Ciclo 2</span>
+        </div>
+        <div class="cert-info">
+          <h4>HXPLOIT · Nivel Básico</h4>
+          <p>Ciberseguridad Ofensiva · 37 horas</p>
+          <p class="cert-date">📅 Julio 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones/hxploit/index.html" class="cert-verify">🔗 Ver certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-upc reveal">
+        <div class="cert-badge">
+          <span class="badge-upc">UPC</span>
+          <span class="badge-ruta">Ciclo 3</span>
+        </div>
+        <div class="cert-info">
+          <h4>HXPLOIT · Nivel Básico</h4>
+          <p>Ciberseguridad Ofensiva · 37 horas</p>
+          <p class="cert-date">📅 Noviembre 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones/hxploit/index.html" class="cert-verify">🔗 Ver certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-upc reveal">
+        <div class="cert-badge">
+          <span class="badge-upc">UPC</span>
+          <span class="badge-ruta">Ciclo 4</span>
+        </div>
+        <div class="cert-info">
+          <h4>Hacking Ético · Intermedio</h4>
+          <p>Ciberseguridad Ofensiva · 63 horas</p>
+          <p class="cert-date">📅 Junio 2026</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones/hxploit/index.html" class="cert-verify">🔗 Ver certificado</a>
+        </div>
+      </div>
+
+      <div class="cert-card cert-upc reveal">
+        <div class="cert-badge">
+          <span class="badge-upc">UPC</span>
+          <span class="badge-ruta">Ciclo 5</span>
+        </div>
+        <div class="cert-info">
+          <h4>HXPLOIT · Ciclo 5</h4>
+          <p>Ciberseguridad Ofensiva</p>
+          <p class="cert-status status-progress">● EN CURSO</p>
         </div>
       </div>
     </div>
