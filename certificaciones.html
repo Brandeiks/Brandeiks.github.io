@@ -236,13 +236,13 @@
     .cert-info .status-planned  { color: var(--text-dim); }
 
     /* COURSERA CARD */
-    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc {
+    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc, .cert-ieee {
       flex-direction: column;
       gap: 0.8rem;
       border-color: rgba(0,229,255,0.12);
       background: rgba(0,229,255,0.02);
     }
-    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover {
+    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover, .cert-ieee:hover {
       border-color: rgba(0,229,255,0.4);
       transform: translateY(-2px);
     }
@@ -393,6 +393,18 @@
     .upc-progreso { margin-bottom: 1.2rem; }
     .badge-upc {
       background: #d6001c;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.6rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    /* IEEE: mismas tarjetas que Coursera (.cert-ieee comparte sus estilos);
+       "Ver certificado" lleva a la galeria certificaciones/ieee/ */
+    .badge-ieee {
+      background: #00629b;
       color: #fff;
       font-family: var(--font-mono);
       font-size: 0.62rem;
@@ -771,6 +783,28 @@
           <p class="cert-date">📅 Junio 2025</p>
           <p class="cert-status status-active">● COMPLETADO</p>
           <a href="https://www.udemy.com/certificate/UC-4fe621a2-71f0-4585-8505-ec5b2cfb7a8b/" target="_blank" rel="noopener noreferrer" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- IEEE COMPUTER SOCIETY UPC -->
+    <div class="cat-header" style="margin-top:3.5rem;">
+      <span class="cat-label">// IEEE · COMPUTER SOCIETY UPC</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card cert-ieee reveal">
+        <div class="cert-badge">
+          <span class="badge-ieee">IEEE</span>
+          <span class="badge-ruta">Computer Society</span>
+        </div>
+        <div class="cert-info">
+          <h4>The Weekend Hack 2025</h4>
+          <p>Talleres de ciberseguridad · 12 horas</p>
+          <p class="cert-date">📅 Septiembre 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones/ieee/index.html" class="cert-verify">🔗 Ver certificado</a>
         </div>
       </div>
     </div>
