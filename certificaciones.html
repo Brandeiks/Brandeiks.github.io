@@ -235,13 +235,13 @@
     .status-planned { color: var(--text-dim); }
 
     /* COURSERA CARD */
-    .cert-coursera, .cert-hack4u {
+    .cert-coursera, .cert-hack4u, .cert-udemy {
       flex-direction: column;
       gap: 0.8rem;
       border-color: rgba(0,229,255,0.12);
       background: rgba(0,229,255,0.02);
     }
-    .cert-coursera:hover, .cert-hack4u:hover {
+    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover {
       border-color: rgba(0,229,255,0.4);
       transform: translateY(-2px);
     }
@@ -354,6 +354,17 @@
        "Ver certificado" lleva a la galeria certificaciones/hack4u/ */
     .badge-hack4u {
       background: #e3262f;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.6rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    /* UDEMY: mismas tarjetas que Coursera (.cert-udemy comparte sus estilos) */
+    .badge-udemy {
+      background: #a435f0;
       color: #fff;
       font-family: var(--font-mono);
       font-size: 0.62rem;
@@ -630,6 +641,28 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- UDEMY -->
+    <div class="cat-header" style="margin-top:3.5rem;">
+      <span class="cat-label">// UDEMY · CURSOS COMPLETADOS</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card cert-udemy reveal">
+        <div class="cert-badge">
+          <span class="badge-udemy">UDEMY</span>
+          <span class="badge-ruta">OSINT</span>
+        </div>
+        <div class="cert-info">
+          <h4>Curso de Google Hacking || Dorks Comandos para Hackear</h4>
+          <p>lubutech dev · 1 hora</p>
+          <p class="cert-date">📅 Junio 2025</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="https://www.udemy.com/certificate/UC-4fe621a2-71f0-4585-8505-ec5b2cfb7a8b/" target="_blank" rel="noopener noreferrer" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
     </div>
 
     <!-- HACK4U -->
