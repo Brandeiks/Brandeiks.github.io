@@ -540,7 +540,7 @@ def bloque_resumen(perfil, certs):
     """Lo que va entre las marcas de certificaciones.html: una sola tarjeta que
     enlaza a la galeria, para no tapar al resto de certificaciones."""
     return """{inicio} (generado por scripts/generar_certificados_dockerlabs.py; no editar a mano) -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="dockerlabs" style="margin-top:3.5rem;">
       <span class="cat-label">// DOCKERLABS · LABORATORIOS RESUELTOS</span>
       <div class="cat-line"></div>
     </div>

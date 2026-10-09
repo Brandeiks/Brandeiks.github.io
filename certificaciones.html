@@ -6,6 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Certificaciones | Brandon Zevallos</title>
+  <meta name="description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u y DockerLabs, con enlaces de verificación.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
@@ -23,7 +24,11 @@
       --font-mono: 'Share Tech Mono', monospace;
       --font-main: 'Rajdhani', sans-serif;
       --font-display: 'Orbitron', sans-serif;
+      --nav-h: 59px; /* altura del nav: la barra .cert-indice se coloca justo debajo */
     }
+    @media (max-width: 900px) { :root { --nav-h: 40px; } }
+    @media (max-width: 700px) { :root { --nav-h: 54px; } }
+    @media (max-width: 480px) { :root { --nav-h: 52px; } }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -160,6 +165,33 @@
       color: var(--text-dim);
       letter-spacing: 2px;
     }
+
+    /* RESUMEN DE LA CABECERA (mismas cifras que las galerias: .dl-stat/.dl-num/.dl-lbl).
+       El script del final las recalcula con lo que hay en la pagina: tarjetas con
+       enlace + diplomas del bloque de DockerLabs, asi no se quedan viejas. */
+    .cert-stats { display: flex; flex-wrap: wrap; gap: 2.5rem; margin-top: 2rem; }
+
+    /* INDICE DE SECCIONES: barra fija bajo el nav (botones como los filtros de
+       writeups); en pantallas estrechas se desplaza en horizontal y el script
+       resalta la seccion que se esta leyendo */
+    .cert-indice {
+      position: sticky; top: var(--nav-h); z-index: 400;
+      display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none;
+      padding: 0.8rem 4rem;
+      background: rgba(8,15,20,0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--dim);
+    }
+    .cert-indice::-webkit-scrollbar { display: none; }
+    .cert-indice a {
+      flex: 0 0 auto; white-space: nowrap;
+      font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 2px;
+      padding: 0.4rem 0.9rem; border: 1px solid var(--dim);
+      color: var(--text-dim); text-decoration: none; transition: all 0.2s;
+    }
+    .cert-indice a:hover, .cert-indice a.activo { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.05); }
+    .cert-indice a.activo { box-shadow: 0 0 12px rgba(0,255,136,0.15); }
+    .cert-indice a:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+    .cat-header { scroll-margin-top: calc(var(--nav-h) + 4.5rem); }
 
     /* MAIN CONTENT */
     main {
@@ -459,7 +491,9 @@
     /* RESPONSIVE */
     @media (max-width: 768px) {
       footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
-      nav, .page-header, main, .back-section { padding-left: 1.5rem; padding-right: 1.5rem; }
+      nav, .page-header, main, .back-section, .cert-indice { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .cert-indice { padding-top: 0.7rem; padding-bottom: 0.7rem; }
+      .cert-stats { gap: 1.5rem; }
       .certs-grid { grid-template-columns: 1fr; }
       .cert-specialization { grid-column: 1; }
     }
@@ -519,7 +553,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Brandeiks">
   <meta property="og:title" content="Certificaciones | Brandon Zevallos">
-  <meta property="og:description" content="Portafolio de ciberseguridad de Brandon Zevallos Pastrana: writeups de CTF, diccionario de Kali Linux y vídeos.">
+  <meta property="og:description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u y DockerLabs, con enlaces de verificación.">
   <meta property="og:url" content="https://brandeiks.github.io/certificaciones.html">
   <meta property="og:image" content="https://brandeiks.github.io/assets/og/certificaciones.png">
   <meta property="og:image:width" content="1200">
@@ -527,9 +561,9 @@
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Certificaciones | Brandon Zevallos">
-  <meta name="twitter:description" content="Portafolio de ciberseguridad de Brandon Zevallos Pastrana: writeups de CTF, diccionario de Kali Linux y vídeos.">
+  <meta name="twitter:description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u y DockerLabs, con enlaces de verificación.">
   <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/certificaciones.png">
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Certificaciones | Brandon Zevallos", "description": "Portafolio de ciberseguridad de Brandon Zevallos Pastrana: writeups de CTF, diccionario de Kali Linux y vídeos.", "url": "https://brandeiks.github.io/certificaciones.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Certificaciones | Brandon Zevallos", "description": "Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u y DockerLabs, con enlaces de verificación.", "url": "https://brandeiks.github.io/certificaciones.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
 </head>
 <body>
 
@@ -554,14 +588,33 @@
       <p class="page-label">// CERTIFICACIONES & FORMACIÓN</p>
       <h1 class="page-title">Certificaciones y <span>Formación</span></h1>
       <p class="page-subtitle">Formación académica, certificaciones obtenidas y objetivos próximos</p>
+      <!-- Los numeros se recalculan al cargar (script del final); estos son el respaldo -->
+      <div class="cert-stats">
+        <div class="dl-stat"><span class="dl-num" id="totalCertificados">26</span><span class="dl-lbl">CERTIFICADOS</span></div>
+        <div class="dl-stat"><span class="dl-num" id="totalEmisores">7</span><span class="dl-lbl">EMISORES</span></div>
+        <div class="dl-stat"><span class="dl-num" id="ultimoCertificado">AGO 2026</span><span class="dl-lbl">ÚLTIMO CERTIFICADO</span></div>
+      </div>
     </div>
+  </div>
+
+  <!-- INDICE: un enlace por seccion (data-emisor = cuenta como emisor en el resumen) -->
+  <div class="cert-indice" role="navigation" aria-label="Secciones de certificaciones">
+    <a href="#formacion">FORMACIÓN</a>
+    <a href="#upc" data-emisor>UPC · HXPLOIT</a>
+    <a href="#ibm" data-emisor>IBM</a>
+    <a href="#udemy" data-emisor>UDEMY</a>
+    <a href="#ieee" data-emisor>IEEE</a>
+    <a href="#cisco" data-emisor>CISCO</a>
+    <a href="#hack4u" data-emisor>HACK4U</a>
+    <a href="#dockerlabs" data-emisor>DOCKERLABS</a>
+    <a href="#objetivos">OBJETIVOS</a>
   </div>
 
   <!-- MAIN -->
   <main>
 
     <!-- FORMACIÓN PRINCIPAL -->
-    <div class="cat-header">
+    <div class="cat-header" id="formacion">
       <span class="cat-label">// FORMACIÓN ACADÉMICA</span>
       <div class="cat-line"></div>
     </div>
@@ -590,7 +643,7 @@
 
     <!-- UPC · HXPLOIT (al terminar un ciclo: su tarjeta pasa a COMPLETADO con su
          certificado, se anade la del siguiente EN CURSO y se actualiza la barra) -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="upc" style="margin-top:3.5rem;">
       <span class="cat-label">// UPC · HXPLOIT · UN TALLER POR CICLO</span>
       <div class="cat-line"></div>
     </div>
@@ -671,7 +724,7 @@
     </div>
 
     <!-- IBM COURSERA -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="ibm" style="margin-top:3.5rem;">
       <span class="cat-label">// IBM · COURSERA</span>
       <div class="cat-line"></div>
     </div>
@@ -766,7 +819,7 @@
     </div>
 
     <!-- UDEMY -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="udemy" style="margin-top:3.5rem;">
       <span class="cat-label">// UDEMY · CURSOS COMPLETADOS</span>
       <div class="cat-line"></div>
     </div>
@@ -788,7 +841,7 @@
     </div>
 
     <!-- IEEE COMPUTER SOCIETY UPC -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="ieee" style="margin-top:3.5rem;">
       <span class="cat-label">// IEEE · COMPUTER SOCIETY UPC</span>
       <div class="cat-line"></div>
     </div>
@@ -810,7 +863,7 @@
     </div>
 
     <!-- CISCO -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="cisco" style="margin-top:3.5rem;">
       <span class="cat-label">// CISCO · NETWORKING ACADEMY</span>
       <div class="cat-line"></div>
     </div>
@@ -832,7 +885,7 @@
     </div>
 
     <!-- HACK4U -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="hack4u" style="margin-top:3.5rem;">
       <span class="cat-label">// HACK4U · CURSOS COMPLETADOS</span>
       <div class="cat-line"></div>
     </div>
@@ -882,7 +935,7 @@
     </div>
 
     <!-- DOCKERLABS:INICIO (generado por scripts/generar_certificados_dockerlabs.py; no editar a mano) -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="dockerlabs" style="margin-top:3.5rem;">
       <span class="cat-label">// DOCKERLABS · LABORATORIOS RESUELTOS</span>
       <div class="cat-line"></div>
     </div>
@@ -907,7 +960,7 @@
     <!-- DOCKERLABS:FIN -->
 
     <!-- OBJETIVOS -->
-    <div class="cat-header" style="margin-top:3.5rem;">
+    <div class="cat-header" id="objetivos" style="margin-top:3.5rem;">
       <span class="cat-label">// PRÓXIMOS OBJETIVOS</span>
       <div class="cat-line"></div>
     </div>
@@ -952,6 +1005,54 @@
       });
     }, { threshold: 0.1 });
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Resumen de la cabecera: se recalcula con lo que hay en la pagina, asi basta
+    // con anadir la tarjeta (o con que el script de DockerLabs actualice su bloque).
+    const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                   'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const diplomas = [...document.querySelectorAll('main .dl-stat')]
+      .find(s => s.querySelector('.dl-lbl').textContent.trim() === 'DIPLOMAS');
+    document.getElementById('totalCertificados').textContent =
+      document.querySelectorAll('main .cert-card .cert-verify').length +
+      (diplomas ? parseInt(diplomas.querySelector('.dl-num').textContent, 10) || 0 : 0);
+    document.getElementById('totalEmisores').textContent =
+      document.querySelectorAll('.cert-indice a[data-emisor]').length;
+    let ultimo = 0;   // anio * 12 + mes de la fecha mas reciente
+    document.querySelectorAll('main .cert-date').forEach(d => {
+      const m = d.textContent.toLowerCase().match(/([a-záéíóú]+)\s+(\d{4})/);
+      const mes = m ? MESES.indexOf(m[1]) : -1;
+      if (mes >= 0) ultimo = Math.max(ultimo, Number(m[2]) * 12 + mes);
+    });
+    if (ultimo) document.getElementById('ultimoCertificado').textContent =
+      MESES[ultimo % 12].slice(0, 3).toUpperCase() + ' ' + Math.floor(ultimo / 12);
+
+    // Indice de secciones: resalta la que se esta leyendo y, si la barra no cabe
+    // (movil), la desplaza para que el boton activo quede a la vista.
+    const indice = document.querySelector('.cert-indice');
+    const enlaces = [...indice.querySelectorAll('a')];
+    const secciones = enlaces.map(a => document.getElementById(a.hash.slice(1)));
+    let activo = null;
+    const marcar = () => {
+      const limite = indice.getBoundingClientRect().bottom + 40;
+      let i = -1;
+      secciones.forEach((s, k) => { if (s && s.getBoundingClientRect().top <= limite) i = k; });
+      if (i >= 0 && innerHeight + scrollY >= document.documentElement.scrollHeight - 2) i = secciones.length - 1;
+      const nuevo = enlaces[i] || null;
+      if (nuevo === activo) return;
+      if (activo) { activo.classList.remove('activo'); activo.removeAttribute('aria-current'); }
+      activo = nuevo;
+      if (!activo) return;
+      activo.classList.add('activo'); activo.setAttribute('aria-current', 'true');
+      if (indice.scrollWidth > indice.clientWidth)
+        indice.scrollTo({ left: activo.offsetLeft - (indice.clientWidth - activo.offsetWidth) / 2, behavior: 'smooth' });
+    };
+    let pendiente = false;
+    addEventListener('scroll', () => {
+      if (pendiente) return;
+      pendiente = true;
+      requestAnimationFrame(() => { pendiente = false; marcar(); });
+    }, { passive: true });
+    marcar();
   </script>
 
   <footer>

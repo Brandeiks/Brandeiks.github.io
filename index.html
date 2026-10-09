@@ -185,12 +185,16 @@
     .cert-status { font-family: var(--font-mono); font-size: 0.62rem; margin-top: 0.4rem; letter-spacing: 2px; }
     /* .cert-info delante: si no, .cert-info p (mas especifica) los deja en gris */
     .cert-info .status-active { color: var(--green); } .cert-info .status-progress { color: #ffbd2e; } .cert-info .status-planned { color: var(--text-dim); }
-    .cert-coursera { flex-direction: column; gap: 0.8rem; border-color: rgba(0,229,255,0.15); }
-    .cert-coursera:hover { border-color: rgba(0,229,255,0.4); }
+    /* Destacados: mismas tarjetas que en certificaciones.html; "VER →" salta a su seccion */
+    .cert-coursera, .cert-hack4u, .cert-upc, .cert-cisco { flex-direction: column; gap: 0.8rem; border-color: rgba(0,229,255,0.15); }
+    .cert-coursera:hover, .cert-hack4u:hover, .cert-upc:hover, .cert-cisco:hover { border-color: rgba(0,229,255,0.4); }
     .cert-badge { display: flex; gap: 0.5rem; }
-    .badge-ibm { background: #1f70c1; color: #fff; font-family: var(--font-mono); font-size: 0.62rem; padding: 0.2rem 0.5rem; font-weight: bold; letter-spacing: 1px; }
+    .badge-ibm, .badge-hack4u, .badge-upc, .badge-cisco { color: #fff; font-family: var(--font-mono); font-size: 0.62rem; padding: 0.2rem 0.5rem; font-weight: bold; letter-spacing: 1px; }
+    .badge-ibm { background: #1f70c1; } .badge-hack4u { background: #e3262f; } .badge-upc { background: #d6001c; } .badge-cisco { background: #049fd9; }
     .badge-coursera { background: rgba(0,229,255,0.12); color: var(--cyan); font-family: var(--font-mono); font-size: 0.62rem; padding: 0.2rem 0.5rem; border: 1px solid rgba(0,229,255,0.3); letter-spacing: 1px; }
     .cert-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 0.2rem; }
+    .cert-ver { display: inline-block; margin-top: 0.6rem; font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); text-decoration: none; letter-spacing: 1px; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+    .cert-ver:hover { border-bottom-color: var(--cyan); }
 
     #contact { text-align: center; }
     .contact-inner { max-width: 600px; margin: 0 auto; }
@@ -393,6 +397,9 @@
         <div class="project-stack">
           <span class="stack-tag">HTML/CSS</span><span class="stack-tag">JavaScript</span><span class="stack-tag">GitHub Pages</span>
         </div>
+        <div style="margin-top:1.2rem;">
+          <a href="https://github.com/Brandeiks/Brandeiks.github.io" target="_blank" rel="noopener noreferrer" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--green);text-decoration:none;letter-spacing:2px;">VER CÓDIGO ↗</a>
+        </div>
       </div>
       <div class="project-card reveal">
         <p class="project-tag">// CTF · WRITEUPS</p>
@@ -453,6 +460,46 @@
           <p class="cert-status status-active">● COMPLETADO</p>
         </div>
       </div>
+      <!-- Destacados, del mas reciente al mas antiguo (el resto, en certificaciones.html) -->
+      <div class="cert-card cert-hack4u reveal">
+        <div class="cert-badge">
+          <span class="badge-hack4u">HACK4U</span>
+          <span class="badge-coursera">Linux</span>
+        </div>
+        <div class="cert-info">
+          <h4>3 cursos de Linux</h4>
+          <p>Introducción, Arch Linux y personalización · S4vitar</p>
+          <p class="cert-date">📅 Agosto 2026</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones.html#hack4u" class="cert-ver">VER →</a>
+        </div>
+      </div>
+      <div class="cert-card cert-upc reveal">
+        <div class="cert-badge">
+          <span class="badge-upc">UPC</span>
+          <span class="badge-coursera">HXPLOIT</span>
+        </div>
+        <div class="cert-info">
+          <h4>Hacking Ético · Intermedio</h4>
+          <p>Ciberseguridad Ofensiva · 4 de 10 ciclos · 167 horas</p>
+          <p class="cert-date">📅 Junio 2026</p>
+          <p class="cert-status status-progress">● CICLO 5 EN CURSO</p>
+          <a href="certificaciones.html#upc" class="cert-ver">VER →</a>
+        </div>
+      </div>
+      <div class="cert-card cert-cisco reveal">
+        <div class="cert-badge">
+          <span class="badge-cisco">CISCO</span>
+          <span class="badge-coursera">NetAcad</span>
+        </div>
+        <div class="cert-info">
+          <h4>Introducción a la Ciberseguridad</h4>
+          <p>Cisco Networking Academy · insignia verificada</p>
+          <p class="cert-date">📅 Enero 2026</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones.html#cisco" class="cert-ver">VER →</a>
+        </div>
+      </div>
       <div class="cert-card cert-coursera reveal">
         <div class="cert-badge">
           <span class="badge-ibm">IBM</span>
@@ -463,6 +510,7 @@
           <p>Especialización — 5 cursos · IBM Skills Network</p>
           <p class="cert-date">📅 Mayo 2025</p>
           <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones.html#ibm" class="cert-ver">VER →</a>
         </div>
       </div>
       <div class="cert-card reveal">

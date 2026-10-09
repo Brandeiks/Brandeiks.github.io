@@ -147,6 +147,7 @@ else:
           "-> IDENTICO" if sha(a.origen) == sha(destino_abs) else "-> DISTINTO")
 
 etiqueta_card = plataforma
+cuenta_repo = None   # tarjetas por plataforma del indice del repositorio (para la portada)
 for ruta in INDICES:
     print(f"\n--- indice: {ruta}")
     html = open(ruta, encoding="utf-8").read().replace("\r\n", "\n")
@@ -163,6 +164,8 @@ for ruta in INDICES:
     if abiertos != cerrados:
         print(f"   FALLO: divs desbalanceados ({abiertos}/{cerrados}), no se escribe")
         continue
+    if ruta == INDICES[0]:
+        cuenta_repo = cuenta
     print(f"   insertada en el bloque '{a.diff}' | contadores -> TOTAL {total} | " +
           " | ".join(f"{k} {v}" for k, v in sorted(cuenta.items())))
     informe_orden(html, plataforma)
@@ -171,4 +174,26 @@ for ruta in INDICES:
         verificado = open(ruta, encoding="utf-8").read()
         print("   verificado:", verificado.count(href), "referencia(s) |",
               "TOTAL =", re.search(r'id="totalCount">(\d+)', verificado).group(1))
+
+# 5. Portada: las cifras de "Experiencia practica" (WRITEUPS, HACKTHEBOX, DOCKERLABS)
+#    salen del indice de writeups del repositorio, para que no se queden viejas.
+PORTADA = os.path.join(REPO, "index.html")
+print(f"\n--- portada: {PORTADA}")
+if cuenta_repo is None:   # la tarjeta ya existia o fallo: se cuenta lo que hay escrito
+    cuenta_repo = contar_cards(open(INDICES[0], encoding="utf-8").read())
+cifras = {"WRITEUPS": sum(cuenta_repo.values()),
+          "HACKTHEBOX": cuenta_repo.get("hackthebox", 0),
+          "DOCKERLABS": cuenta_repo.get("dockerlabs", 0)}
+portada = open(PORTADA, encoding="utf-8", newline="").read()
+nueva = portada
+for etiqueta, n in cifras.items():
+    nueva, k = re.subn(r'(<span class="about-stat-num">)\d+(</span><span class="about-stat-lbl">' + etiqueta + r'\b)',
+                       lambda m: m.group(1) + str(n) + m.group(2), nueva)
+    if k != 1:
+        print(f"   AVISO: no se encontro la cifra {etiqueta} en la portada")
+estado = "sin cambios" if nueva == portada else ("dry-run, no se escribe" if a.dry_run else "actualizada")
+print("   " + " | ".join(f"{k} {v}" for k, v in cifras.items()) + f" ({estado})")
+if nueva != portada and not a.dry_run:
+    open(PORTADA, "w", encoding="utf-8", newline="").write(nueva)
+
 print("\nRESULTADO:", "DRY-RUN" if a.dry_run else "OK")
