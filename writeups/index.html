@@ -343,9 +343,12 @@
     .writeup-card mark, .card-name mark { background: rgba(0,255,136,.18); color: var(--green); padding: 0 .08rem; }
     @media (max-width: 768px) {
       .filter-row { flex-direction: column; align-items: stretch; gap: .6rem; }
-      .search-wrap { margin-left: 0; max-width: none; }
-      .tag-bar { flex-direction: column; align-items: stretch; gap: .5rem; margin-top: .9rem; }
-      .tag-chips { width: 100%; }
+      /* en columna, el flex-basis de 260px pasaria a ser su ALTO y dejaba un hueco
+         enorme encima y debajo del buscador */
+      .search-wrap { margin-left: 0; max-width: none; flex: 0 0 auto; }
+      /* en movil sin la fila de etiquetas: quedan la dificultad y el buscador
+         (cada uno con su forma de limpiar: TODOS y la ×) */
+      .tag-bar { display: none; }
       .filters-bar { padding: 1.1rem 1.5rem; top: 57px; }
       .results-line { margin-top: .7rem; }
     }
