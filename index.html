@@ -578,5 +578,6 @@
     window.addEventListener('scroll', () => { let current = ''; document.querySelectorAll('section[id]').forEach(s => { if (window.scrollY >= s.offsetTop - 140) current = s.getAttribute('id'); }); navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); }); });
   </script>
   <script src="assets/cursor.js" defer></script>
+  <script src="assets/dragon.js" defer></script>
 </body>
 </html>
