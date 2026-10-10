@@ -8,6 +8,21 @@
    - Crea los <div> del cursor si la pagina no los trae.
    - Se desactiva en tactil y en pantallas <= 960px.
    ============================================================ */
+
+/* Adornos de temporada: como este archivo esta en todas las paginas, desde aqui
+   se carga assets/halloween.js (junto a este archivo) solo en octubre, segun la
+   fecha del visitante. Para probar: ?halloween=1 los enciende y ?halloween=0 los
+   apaga en cualquier fecha. Va antes del cursor porque este se corta en tactil. */
+(function () {
+  var forzado = /[?&]halloween=([01])/.exec(location.search);
+  var activo = forzado ? forzado[1] === '1' : new Date().getMonth() === 9;
+  var yo = document.currentScript && document.currentScript.src;
+  if (!activo || !yo) return;
+  var s = document.createElement('script');
+  s.src = yo.replace(/cursor\.js(\?.*)?$/, 'halloween.js');
+  document.head.appendChild(s);
+})();
+
 (function () {
   // En dispositivos tactiles no hay cursor que seguir.
   if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
