@@ -12,3 +12,7 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# Instrucciones locales de Claude (no publicar)
+CLAUDE.md
+.claude/
