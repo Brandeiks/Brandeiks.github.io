@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Synced — HackTheBox Writeup | Brandeiks</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Synced de HackTheBox (Linux, Muy Fácil): un demonio rsync en el puerto 873 expone el módulo public como 'Anonymous Share' sin autenticación → rsync --list-only enumera módulos y archivos → se descarga flag.txt sin credenciales.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Synced — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Synced de HackTheBox (Linux, Muy Fácil): demonio rsync en el 873 con el módulo public como Anonymous Share → rsync --list-only → descarga de flag.txt sin credenciales.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/synced.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Synced — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Synced de HackTheBox (Linux, Muy Fácil): rsync con módulo anónimo public → --list-only → descarga de flag.txt sin credenciales.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/synced.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Synced — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Synced de HackTheBox (Linux, Muy Fácil): un demonio rsync en el puerto 873 expone el módulo public como Anonymous Share sin autenticación, se enumeran módulos y archivos con rsync --list-only y se descarga flag.txt sin credenciales.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html", "image": "https://brandeiks.github.io/assets/og/synced.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../../../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>synced</span>
+    </div>
+    <h1 class="writeup-title">SYN<span>CED</span></h1>
+    <p class="writeup-subtitle">// rsync con módulo anónimo (public) → --list-only → descarga de flag.txt</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-tech">RSYNC · 873</span>
+      <span class="meta-badge badge-anon">ACCESO ANÓNIMO</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#modulos">02 · Módulos rsync</a></li>
+        <li><a href="#flag">03 · Contenido y flag</a></li>
+        <li><a href="#cmdref">04 · Referencia Comandos</a></li>
+        <li><a href="#glosario">05 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Synced</span></div>
+      <div class="info-row"><span class="info-label">SO</span><span class="info-val val-cyan">Linux</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">rsync · 873</span></div>
+      <div class="info-row"><span class="info-label">PROTOCOLO</span><span class="info-val val-cyan">versión 31</span></div>
+      <div class="info-row"><span class="info-label">TÉCNICA</span><span class="info-val val-cyan">Acceso anónimo</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>873 rsync (v31)</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">rsync --list-only → módulo <span>public</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Anonymous Share</span> (sin credenciales)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">listar public/ → <span>flag.txt</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">rsync descarga → <span>cat flag.txt</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECON ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">CONTEXTO DE LA MÁQUINA</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>Synced</strong> es una máquina <span class="hl-cyan">Linux</span> de dificultad
+          <span class="hl">Very Easy</span> que explora el protocolo <strong>rsync</strong> y los peligros
+          de una configuración que permite <strong>autenticación anónima</strong>. Igual que un NFS o un
+          SMB mal configurado, un demonio rsync puede exponer <strong>módulos</strong> (carpetas
+          compartidas) sin pedir usuario ni contraseña, permitiendo leer —o incluso escribir— archivos del
+          sistema remoto.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Escaneamos todos los puertos TCP con detección de versión. Solo hay <strong>un puerto
+          abierto</strong>: el <span class="hl-cyan">873</span>, puerto por defecto de rsync, corriendo la
+          <strong>versión de protocolo 31</strong>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nmap -sV -p- --min-rate 5000 10.129.228.37">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-sV</span> <span class="flag">-p-</span> <span class="flag">--min-rate</span> <span class="arg">5000</span> <span class="arg">10.129.228.37</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Host is up (0.0088s latency).</div>
+        <div>Not shown: 65534 closed tcp ports (conn-refused)</div>
+        <div>PORT    STATE SERVICE VERSION</div>
+        <div>873/tcp open  rsync   <span class="o-green">(protocol version 31)</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// SI RSYNC DA «CONNECTION REFUSED»</p>
+        <p>
+          En un primer intento la conexión puede devolver <code>Connection refused</code>: suele ser que
+          la VPN/instancia aún no ha terminado de establecer la red del laboratorio. Reintentando el
+          escaneo unos segundos después, el puerto 873 responde con normalidad.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 MODULOS ===================== -->
+    <div class="section" id="modulos">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Enumeración de módulos rsync</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">LISTAR LOS MÓDULOS (SIN CREDENCIALES)</span>
+      </div>
+      <div class="prose">
+        <p>
+          A diferencia de SSH o FTP, rsync no tiene por qué pedir usuario y contraseña: basta con listar
+          los <strong>módulos</strong> que expone el demonio remoto. Lo probamos sin ninguna credencial
+          con <span class="hl-yel">--list-only</span> sobre la URL <code>rsync://IP/</code>:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="rsync --list-only rsync://10.129.228.37/">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RSYNC · MÓDULOS</span>
+        <div><span class="prompt">$ </span><span class="cmd">rsync <span class="flag">--list-only</span> <span class="arg">rsync://10.129.228.37/</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">public</span>          <span class="o-yellow">Anonymous Share</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// MÓDULO ANÓNIMO EXPUESTO</p>
+        <p>
+          Hay un único módulo, <strong>public</strong>, descrito explícitamente como
+          <strong>«Anonymous Share»</strong>. El propio nombre confirma que <strong>no requiere
+          autenticación</strong>: cualquiera con acceso al 873 puede leer su contenido.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 FLAG ===================== -->
+    <div class="section" id="flag">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Contenido del módulo y flag</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">LISTAR EL CONTENIDO DE public</span>
+      </div>
+      <div class="prose">
+        <p>
+          Añadimos el nombre del módulo a la URL (<code>rsync://IP/public/</code>) y volvemos a usar
+          <span class="hl-yel">--list-only</span> para ver qué contiene. Dentro hay un único archivo:
+          <span class="hl-cyan">flag.txt</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="rsync --list-only rsync://10.129.228.37/public/">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RSYNC · CONTENIDO</span>
+        <div><span class="prompt">$ </span><span class="cmd">rsync <span class="flag">--list-only</span> <span class="arg">rsync://10.129.228.37/public/</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>drwxr-xr-x          4,096 2022/10/24 18:02:23 .</div>
+        <div>-rw-r--r--             33 2022/10/24 17:32:03 <span class="o-cyan">flag.txt</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">DESCARGAR Y LEER LA FLAG</span>
+      </div>
+      <div class="prose">
+        <p>
+          Descargamos el archivo indicando la <strong>ruta completa dentro del módulo</strong>
+          (<code>public/flag.txt</code>, no solo <code>public</code> como si fuera un módulo) a un fichero
+          local, y lo leemos con <span class="hl">cat</span>:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="rsync rsync://10.129.228.37/public/flag.txt ./flag.txt &amp;&amp; cat ./flag.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RSYNC · DESCARGA</span>
+        <div><span class="prompt">$ </span><span class="cmd">rsync <span class="arg">rsync://10.129.228.37/public/flag.txt</span> <span class="arg">./flag.txt</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">./flag.txt</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">72eaf5344ebb84908ae543a719830519</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// FLAG</p>
+        <p>
+          <strong>72eaf5344ebb84908ae543a719830519</strong> — descargada vía rsync anónimo, sin
+          credenciales ni escalada. Toda la máquina se resuelve explotando un módulo rsync expuesto de
+          forma anónima.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">RESPUESTAS DEL MODO GUIADO</span>
+      </div>
+      <table class="vuln-table">
+        <thead>
+          <tr>
+            <th>PREGUNTA</th>
+            <th>RESPUESTA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Puerto predeterminado de rsync</td><td>873</td></tr>
+          <tr><td>Puertos TCP abiertos en el host</td><td>1</td></tr>
+          <tr><td>Versión del protocolo rsync</td><td>31</td></tr>
+          <tr><td>Comando para interactuar con rsync</td><td>rsync</td></tr>
+          <tr><td>Credenciales para la autenticación anónima</td><td>None (ninguna)</td></tr>
+          <tr><td>Opción para enumerar recursos y archivos</td><td>--list-only</td></tr>
+        </tbody>
+      </table>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// LECCIÓN Y MITIGACIÓN</p>
+        <p>
+          Un servicio <strong>rsync</strong> mal configurado con acceso anónimo deja que cualquiera
+          enumere y descargue archivos sin dejar rastro de autenticación. La mitigación: exigir
+          credenciales con <code>auth users</code> y <code>secrets file</code> en <code>rsyncd.conf</code>,
+          restringir el puerto 873 por firewall (nunca abierto a Internet), revisar qué rutas
+          (<code>path</code>) exponen los módulos, habilitar logging, y preferir
+          <strong>rsync sobre SSH</strong> (<code>rsync -e ssh</code>) frente al demonio rsync expuesto.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -sV -p- --min-rate 5000 &lt;ip&gt;</div>
+          <div class="cmd-ref-desc">Escaneo de todos los puertos con detección de versión. Identifica rsync en el 873 y su versión de protocolo (31).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-sV</span> — detección de versión del servicio</li>
+            <li><span>-p-</span> — los 65 535 puertos TCP</li>
+            <li><span>--min-rate 5000</span> — mínimo de paquetes por segundo (más rápido)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">rsync --list-only (módulos)</div>
+          <div class="cmd-ref-syntax">rsync --list-only rsync://&lt;ip&gt;/</div>
+          <div class="cmd-ref-desc">Enumera los módulos (shares) que expone el demonio rsync. Sin credenciales, revela los que permiten acceso anónimo.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>--list-only</span> — solo lista, no transfiere</li>
+            <li><span>rsync://ip/</span> — raíz: lista módulos</li>
+            <li><span>rsync://ip/mod/</span> — dentro de un módulo: lista archivos</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">rsync (descarga)</div>
+          <div class="cmd-ref-syntax">rsync rsync://&lt;ip&gt;/public/flag.txt ./flag.txt</div>
+          <div class="cmd-ref-desc">Descarga un archivo del módulo al sistema local. Hay que dar la ruta completa dentro del módulo (public/flag.txt), no solo el módulo.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-a</span> — modo archivo (recursivo, preserva atributos)</li>
+            <li><span>-v</span> — verboso</li>
+            <li><span>-P</span> — progreso + continuar descargas parciales</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">SECUENCIA COMPLETA</span>
+      </div>
+      <div class="cmd-block" data-cmd="nmap -sV -p- --min-rate 5000 10.129.228.37 &amp;&amp; rsync --list-only rsync://10.129.228.37/ &amp;&amp; rsync --list-only rsync://10.129.228.37/public/ &amp;&amp; rsync rsync://10.129.228.37/public/flag.txt ./flag.txt &amp;&amp; cat ./flag.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RESUMEN</span>
+        <div><span class="comment"># 1. escanear</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-sV -p- --min-rate 5000</span> <span class="arg">10.129.228.37</span></span></div>
+        <div><span class="comment"># 2. enumerar módulos</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">rsync <span class="flag">--list-only</span> <span class="arg">rsync://10.129.228.37/</span></span></div>
+        <div><span class="comment"># 3. listar el contenido del módulo public</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">rsync <span class="flag">--list-only</span> <span class="arg">rsync://10.129.228.37/public/</span></span></div>
+        <div><span class="comment"># 4. descargar y leer la flag</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">rsync <span class="arg">rsync://10.129.228.37/public/flag.txt ./flag.txt</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">./flag.txt</span></span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 05 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">rsync</div>
+          <div class="glos-def">
+            Herramienta de <strong>sincronización y copia de archivos</strong> entre sistemas, muy eficiente
+            porque solo transfiere las diferencias. Puede funcionar sobre SSH o como <strong>demonio</strong>
+            independiente escuchando en el puerto <strong>873</strong>, que es el modo que expone esta
+            máquina.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Módulo rsync</div>
+          <div class="glos-def">
+            Un <strong>módulo</strong> es un recurso compartido que el demonio rsync publica, definido en
+            <code>rsyncd.conf</code> con un nombre y una ruta (<code>path</code>). Equivale a un «share» de
+            SMB: se accede como <code>rsync://ip/&lt;modulo&gt;/</code>. Aquí el módulo
+            <code>public</code> apunta a la carpeta con la flag.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Puerto 873</div>
+          <div class="glos-def">
+            Puerto TCP por defecto del <strong>demonio rsync</strong> (<code>rsyncd</code>). Verlo abierto
+            indica un servidor rsync independiente; si además acepta módulos anónimos, cualquiera con
+            conectividad puede leer sus archivos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Acceso anónimo</div>
+          <div class="glos-def">
+            Configuración en la que el servicio acepta conexiones <strong>sin usuario ni contraseña</strong>.
+            En rsync se refleja en módulos sin <code>auth users</code>; el aviso «Anonymous Share» del
+            listado lo confirma. Es una de las malas configuraciones más comunes en servicios de datos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">--list-only</div>
+          <div class="glos-def">
+            Opción de rsync que <strong>solo lista</strong> módulos o archivos, sin transferir nada. Es la
+            forma natural de enumerar un servidor rsync: primero los módulos
+            (<code>rsync://ip/</code>) y luego el contenido de uno (<code>rsync://ip/mod/</code>).
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Versión de protocolo 31</div>
+          <div class="glos-def">
+            Número que negocian cliente y servidor rsync para entenderse. La <strong>versión 31</strong> es
+            la de las ramas rsync 3.x modernas; nmap la reporta al detectar el servicio y es una de las
+            preguntas del modo guiado de la máquina.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">rsync sobre SSH</div>
+          <div class="glos-def">
+            Alternativa segura al demonio rsync expuesto: <code>rsync -e ssh origen destino</code> tuneliza
+            la transferencia por SSH, añadiendo <strong>cifrado y autenticación</strong>. Evita exponer el
+            873 y el acceso anónimo que compromete esta máquina.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">rsyncd.conf</div>
+          <div class="glos-def">
+            Archivo de configuración del demonio rsync. Define los módulos, su <code>path</code>, si son de
+            solo lectura y, sobre todo, la autenticación (<code>auth users</code>, <code>secrets file</code>).
+            Dejar un módulo sin esas dos últimas opciones es lo que habilita el acceso anónimo.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="mongod.html"><span class="dir">← ANTERIOR</span><span class="nombre">Mongod</span></a><a class="siguiente" href="../facil/base.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Base</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="mongod.html"><span class="nombre">Mongod</span><span class="meta">hackthebox · muy-facil · MongoDB</span></a><a class="rel-card" href="dancing.html"><span class="nombre">Dancing</span><span class="meta">hackthebox · muy-facil · SMB</span></a><a class="rel-card" href="fawn.html"><span class="nombre">Fawn</span><span class="meta">hackthebox · muy-facil · FTP</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Synced · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "SYNCED", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

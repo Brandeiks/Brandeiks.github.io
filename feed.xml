@@ -8,6 +8,13 @@
     <lastBuildDate>Sat, 03 Oct 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://brandeiks.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>Synced — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html</guid>
+      <pubDate>Fri, 10 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Synced de HackTheBox (Linux, Muy Fácil): un demonio rsync en el puerto 873 expone el módulo public como Anonymous Share sin autenticación; con rsync --list-only se enumeran módulos y archivos y se descarga flag.txt sin credenciales.</description>
+    </item>
+    <item>
       <title>Mongod — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/mongod.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/mongod.html</guid>
