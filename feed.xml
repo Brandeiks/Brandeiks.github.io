@@ -8,6 +8,13 @@
     <lastBuildDate>Sat, 03 Oct 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://brandeiks.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>Preignition — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/preignition.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/preignition.html</guid>
+      <pubDate>Fri, 10 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Preignition de HackTheBox (Linux, Muy Fácil): nmap encuentra nginx 1.14.2 en el puerto 80, gobuster descubre /admin.php y el panel Admin Console Login cae con las credenciales por defecto admin:admin, revelando la flag.</description>
+    </item>
+    <item>
       <title>Synced — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/synced.html</guid>

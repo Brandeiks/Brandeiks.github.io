@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Preignition — HackTheBox Writeup | Brandeiks</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Preignition de HackTheBox (Linux, Muy Fácil): nmap encuentra nginx 1.14.2 en el puerto 80 → gobuster descubre /admin.php → el panel 'Admin Console Login' cae con las credenciales por defecto admin:admin → flag.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/preignition.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Preignition — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Preignition de HackTheBox (Linux, Muy Fácil): nginx en el 80 → gobuster descubre /admin.php → credenciales por defecto admin:admin → flag.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/preignition.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/preignition.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Preignition — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Preignition de HackTheBox (Linux, Muy Fácil): gobuster descubre /admin.php → credenciales por defecto admin:admin → flag.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/preignition.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Preignition — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Preignition de HackTheBox (Linux, Muy Fácil): nmap encuentra nginx 1.14.2 en el puerto 80, gobuster descubre /admin.php y el panel Admin Console Login cae con las credenciales por defecto admin:admin, revelando la flag.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/preignition.html", "image": "https://brandeiks.github.io/assets/og/preignition.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/preignition.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../../../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>preignition</span>
+    </div>
+    <h1 class="writeup-title">PRE<span>IGNITION</span></h1>
+    <p class="writeup-subtitle">// gobuster descubre /admin.php → Admin Console Login → credenciales por defecto admin:admin</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-tech">NGINX 1.14.2</span>
+      <span class="meta-badge badge-gobuster">GOBUSTER</span>
+      <span class="meta-badge badge-creds">DEFAULT CREDS</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#fuzzing">02 · Dir busting</a></li>
+        <li><a href="#exploit">03 · Credenciales por defecto</a></li>
+        <li><a href="#cmdref">04 · Referencia Comandos</a></li>
+        <li><a href="#glosario">05 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Preignition</span></div>
+      <div class="info-row"><span class="info-label">SO</span><span class="info-val val-cyan">Linux</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">nginx 1.14.2 · 80</span></div>
+      <div class="info-row"><span class="info-label">VECTOR</span><span class="info-val val-cyan">/admin.php</span></div>
+      <div class="info-row"><span class="info-label">TÉCNICA</span><span class="info-val val-cyan">Credenciales por defecto</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>80 nginx 1.14.2</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">gobuster <span>-x php</span> → /admin.php</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Admin Console Login</span> (200 OK)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">credenciales <span>admin:admin</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">panel interno → <span>flag</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECON ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">CONTEXTO DE LA MÁQUINA</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>Preignition</strong> es una máquina <span class="hl-cyan">Linux</span> de dificultad
+          <span class="hl">Very Easy</span> centrada en la <strong>enumeración web básica</strong>: fuzzing
+          de directorios para descubrir un panel de administración y el peligro de dejar
+          <strong>credenciales por defecto</strong> en una aplicación mal configurada. Un recorrido
+          limpio por la metodología inicial de cualquier auditoría web.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">COMPROBAR CONECTIVIDAD</span>
+      </div>
+      <div class="prose">
+        <p>
+          Antes de nada confirmamos que llegamos a la máquina (<code>10.129.2.4</code>) con unos paquetes
+          ICMP. El TTL de la respuesta, de paso, suele delatar el sistema operativo (~64 = Linux).
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="ping 10.129.2.4 -c3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">PING</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.2.4</span> <span class="flag">-c3</span></span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Escaneamos con detección de versión (<span class="hl-yel">-sV</span>). Solo hay un servicio
+          relevante: un servidor web <strong>nginx 1.14.2</strong> en el puerto <span class="hl-cyan">80</span>.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nmap -sV 10.129.2.4">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-sV</span> <span class="arg">10.129.2.4</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PORT   STATE SERVICE VERSION</div>
+        <div>80/tcp open  http    <span class="o-green">nginx 1.14.2</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// UN ÚNICO SERVICIO WEB</p>
+        <p>
+          Con solo el puerto <strong>80</strong> abierto, toda la superficie de ataque es la aplicación
+          web. El siguiente paso lógico es <strong>enumerar</strong> lo que esconde: directorios y
+          archivos no enlazados desde la página principal.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 FUZZING ===================== -->
+    <div class="section" id="fuzzing">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Enumeración web · Dir busting</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">FUZZING DE DIRECTORIOS CON GOBUSTER</span>
+      </div>
+      <div class="prose">
+        <p>
+          Usamos <span class="hl-cyan">gobuster</span> en modo <code>dir</code> para probar nombres de un
+          diccionario (<code>common.txt</code>) contra el servidor y descubrir rutas ocultas. Con
+          <span class="hl-yel">-x php</span> le pedimos que pruebe también cada nombre con extensión
+          <code>.php</code>, ya que es una app PHP.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="gobuster dir -u http://10.129.2.4 -w /usr/share/wordlists/dirb/common.txt -x php">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">GOBUSTER</span>
+        <div><span class="prompt">$ </span><span class="cmd">gobuster dir <span class="flag">-u</span> <span class="arg">http://10.129.2.4</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirb/common.txt</span> <span class="flag">-x</span> <span class="arg">php</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>===============================================================</div>
+        <div>[+] Url:            http://10.129.2.4</div>
+        <div>[+] Wordlist:       /usr/share/wordlists/dirb/common.txt</div>
+        <div>[+] Extensions:     php</div>
+        <div>===============================================================</div>
+        <div><span class="o-green">/admin.php</span>            (Status: <span class="o-green">200</span>) [Size: 999]</div>
+        <div>===============================================================</div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// HALLAZGO: /admin.php</p>
+        <p>
+          Gobuster descubre <strong>/admin.php</strong> con código <strong>200 OK</strong>: la página
+          existe y es accesible, aunque no esté enlazada en ningún sitio. Un nombre así —un panel de
+          administración— es justo lo que buscábamos.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 EXPLOIT ===================== -->
+    <div class="section" id="exploit">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Explotación · Credenciales por defecto</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">EL PANEL «ADMIN CONSOLE LOGIN»</span>
+      </div>
+      <div class="prose">
+        <p>
+          Abrimos <span class="hl-cyan">http://10.129.2.4/admin.php</span> en el navegador y nos recibe un
+          formulario de inicio de sesión: <strong>«Admin Console Login»</strong>. El objetivo de la
+          máquina es demostrar el riesgo de no cambiar la configuración de fábrica, así que —antes de
+          ruido como SQLi o fuerza bruta— probamos las credenciales por defecto más típicas de la
+          industria.
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr>
+            <th>CAMPO</th>
+            <th>VALOR PROBADO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Username</td><td>admin</td></tr>
+          <tr><td>Password</td><td>admin</td></tr>
+        </tbody>
+      </table>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">ACCESO Y FLAG</span>
+      </div>
+      <div class="prose">
+        <p>
+          Las credenciales <span class="hl-cyan">admin:admin</span> funcionan a la primera. El panel
+          interno nos da la bienvenida y muestra directamente la <strong>flag</strong>:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">6483bee07c1c1d57f14e5b0717503c73</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// FLAG</p>
+        <p>
+          <strong>6483bee07c1c1d57f14e5b0717503c73</strong> — obtenida sin exploits ni escalada: basta
+          descubrir <code>/admin.php</code> por fuerza de diccionario y usar las credenciales de fábrica
+          <code>admin:admin</code>.
+        </p>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// LECCIÓN Y MITIGACIÓN</p>
+        <p>
+          Dos malas prácticas encadenadas: dejar un <strong>panel de administración accesible</strong> y
+          no cambiar las <strong>credenciales por defecto</strong>. La mitigación es inmediata — forzar
+          contraseñas fuertes y únicas en el primer arranque, restringir el acceso a los paneles admin
+          (por IP, VPN o autenticación adicional), no exponerlos a Internet, y añadir límites de intentos
+          y MFA. El <em>dir busting</em> es trivial para un atacante, así que «oculto» nunca es
+          «protegido».
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ping</div>
+          <div class="cmd-ref-syntax">ping &lt;ip&gt; -c3</div>
+          <div class="cmd-ref-desc">Envía paquetes ICMP para comprobar conectividad con el objetivo. El TTL de la respuesta ayuda a intuir el SO (~64 Linux, ~128 Windows).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-c3</span> — envía solo 3 paquetes y termina</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -sV &lt;ip&gt;</div>
+          <div class="cmd-ref-desc">Escanea los puertos más comunes y detecta la versión de cada servicio. Aquí identifica nginx 1.14.2 en el puerto 80.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-sV</span> — detección de versión del servicio</li>
+            <li><span>-p-</span> — todos los puertos (si quieres ir más allá de los 1000 comunes)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">gobuster dir</div>
+          <div class="cmd-ref-syntax">gobuster dir -u &lt;url&gt; -w &lt;wordlist&gt; -x php</div>
+          <div class="cmd-ref-desc">Fuerza bruta de directorios y archivos: prueba cada palabra del diccionario contra el servidor y reporta las que devuelven respuesta. Descubre /admin.php.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-u</span> — URL objetivo</li>
+            <li><span>-w</span> — diccionario (p. ej. dirb/common.txt)</li>
+            <li><span>-x php</span> — prueba también la extensión .php</li>
+            <li><span>-t</span> — número de hilos (velocidad)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Credenciales por defecto</div>
+          <div class="cmd-ref-syntax">admin : admin</div>
+          <div class="cmd-ref-desc">Antes de ataques ruidosos, siempre se prueban las credenciales de fábrica. En paneles mal configurados (admin:admin, root:root, admin:password) suelen seguir activas.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>admin:admin</span> — la combinación que abre este panel</li>
+            <li><span>root / password / 12345</span> — otras típicas a probar</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">SECUENCIA COMPLETA</span>
+      </div>
+      <div class="cmd-block" data-cmd="ping 10.129.2.4 -c3 &amp;&amp; nmap -sV 10.129.2.4 &amp;&amp; gobuster dir -u http://10.129.2.4 -w /usr/share/wordlists/dirb/common.txt -x php">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RESUMEN</span>
+        <div><span class="comment"># 1. conectividad</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.2.4</span> <span class="flag">-c3</span></span></div>
+        <div><span class="comment"># 2. escanear servicios</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-sV</span> <span class="arg">10.129.2.4</span></span></div>
+        <div><span class="comment"># 3. fuzzing de directorios -> /admin.php</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">gobuster dir <span class="flag">-u</span> <span class="arg">http://10.129.2.4</span> <span class="flag">-w</span> <span class="arg">/usr/share/wordlists/dirb/common.txt</span> <span class="flag">-x</span> <span class="arg">php</span></span></div>
+        <div><span class="comment"># 4. en el navegador: /admin.php -> login admin:admin -> flag</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 05 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Dir busting / fuzzing de directorios</div>
+          <div class="glos-def">
+            Técnica de enumeración web que prueba <strong>nombres de un diccionario</strong> contra un
+            servidor para descubrir directorios y archivos no enlazados (paneles admin, backups, archivos
+            de configuración). Herramientas típicas: <code>gobuster</code>, <code>ffuf</code>,
+            <code>dirsearch</code>, <code>feroxbuster</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">gobuster</div>
+          <div class="glos-def">
+            Herramienta en Go para fuerza bruta de URLs (modo <code>dir</code>), subdominios (<code>dns</code>)
+            o vhosts. Rápida y sencilla; con <code>-x</code> prueba extensiones concretas y con <code>-w</code>
+            carga el diccionario. Devuelve el código de estado de cada acierto.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Credenciales por defecto</div>
+          <div class="glos-def">
+            Usuario y contraseña que trae un software «de fábrica» (<code>admin:admin</code>,
+            <code>root:root</code>…). Si no se cambian en la instalación, son una de las puertas de entrada
+            más fáciles y comunes. Es una forma de <strong>autenticación débil</strong>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">nginx</div>
+          <div class="glos-def">
+            Servidor web y proxy inverso muy extendido. Aquí sirve la aplicación PHP en el puerto 80. La
+            versión que reporta nmap (<strong>1.14.2</strong>) es solo informativa: la vulnerabilidad no
+            está en nginx, sino en la app que aloja.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Código de estado HTTP 200</div>
+          <div class="glos-def">
+            Respuesta <strong>«OK»</strong>: el recurso existe y el servidor lo devuelve. En dir busting es
+            la señal de un acierto directo; otros útiles son <code>301/302</code> (redirección),
+            <code>403</code> (existe pero prohibido) y <code>401</code> (requiere autenticación).
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Wordlist / common.txt</div>
+          <div class="glos-def">
+            Diccionario de nombres probables que usan las herramientas de fuzzing.
+            <code>/usr/share/wordlists/dirb/common.txt</code> viene en Kali/Parrot y reúne rutas habituales
+            (<code>admin</code>, <code>login</code>, <code>backup</code>…). SecLists ofrece listas mucho más
+            completas.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Panel de administración</div>
+          <div class="glos-def">
+            Interfaz web privilegiada para gestionar una aplicación. Suele ser el objetivo prioritario de
+            un atacante: comprometerlo da control sobre la app. Por eso nunca debe exponerse sin
+            protección ni con credenciales por defecto.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Autenticación débil</div>
+          <div class="glos-def">
+            Cualquier mecanismo de login fácil de superar: credenciales por defecto o adivinables, ausencia
+            de límite de intentos, falta de MFA. Es la categoría de la que depende por completo esta
+            máquina.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="synced.html"><span class="dir">← ANTERIOR</span><span class="nombre">Synced</span></a><a class="siguiente" href="../facil/base.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Base</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="../facil/base.html"><span class="nombre">Base</span><span class="meta">hackthebox · facil · Web</span></a><a class="rel-card" href="../facil/goodgames.html"><span class="nombre">GoodGames</span><span class="meta">hackthebox · facil · Web</span></a><a class="rel-card" href="ransomnet.html"><span class="nombre">RansomNet</span><span class="meta">hackthebox · muy-facil · Web</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Preignition · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "PREIGNITION", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/preignition.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>
