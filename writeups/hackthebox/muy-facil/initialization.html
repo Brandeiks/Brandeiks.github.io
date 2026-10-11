@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Initialization — HackTheBox Writeup | Brandeiks</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup del challenge Initialization de HackTheBox (Crypto, Muy Fácil): un bug de aliasing en Python reutiliza la misma clave AES y el contador AES-CTR arranca en 0, así que los 4 mensajes comparten keystream (many-time pad); con 3 textos conocidos se recupera el keystream por XOR y se descifra la flag.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/initialization.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Initialization — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup del challenge Initialization de HackTheBox (Crypto, Muy Fácil): aliasing en Python → misma clave AES + contador a 0 → keystream reutilizado (many-time pad) → XOR con textos conocidos → flag.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/initialization.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/initialization.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Initialization — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup del challenge Initialization de HackTheBox (Crypto, Muy Fácil): keystream reutilizado en AES-CTR (many-time pad) → XOR con textos conocidos → flag.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/initialization.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Initialization — HackTheBox Writeup | Brandeiks", "description": "Writeup del challenge Initialization de HackTheBox (Crypto, Muy Fácil): un bug de aliasing en Python reutiliza la misma clave AES y el contador AES-CTR arranca en 0, así que los cuatro mensajes comparten keystream (many-time pad); con tres textos conocidos se recupera el keystream por XOR y se descifra la flag.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/initialization.html", "image": "https://brandeiks.github.io/assets/og/initialization.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/initialization.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../../../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>initialization</span>
+    </div>
+    <h1 class="writeup-title">INITIAL<span>IZATION</span></h1>
+    <p class="writeup-subtitle">// AES-CTR con keystream reutilizado (bug de aliasing + contador a 0) → many-time pad → XOR</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-tech">CHALLENGE CRYPTO</span>
+      <span class="meta-badge badge-tech">AES-CTR</span>
+      <span class="meta-badge badge-tech">KEYSTREAM REUSE</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#reto">01 · El reto y los archivos</a></li>
+        <li><a href="#vuln">02 · La vulnerabilidad</a></li>
+        <li><a href="#exploit">03 · Explotación</a></li>
+        <li><a href="#cmdref">04 · Referencia Comandos</a></li>
+        <li><a href="#glosario">05 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO RETO</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Initialization</span></div>
+      <div class="info-row"><span class="info-label">TIPO</span><span class="info-val val-cyan">Challenge Crypto</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">CIFRADO</span><span class="info-val val-yellow">AES-128-CTR</span></div>
+      <div class="info-row"><span class="info-label">PUNTOS</span><span class="info-val val-cyan">100</span></div>
+      <div class="info-row"><span class="info-label">AUTOR</span><span class="info-val val-cyan">r4sti</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">3 archivos → <span>source.py · output.txt · messages.txt</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">aliasing <span>[[..]*16]*n</span> → misma clave AES</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">contador <span>Counter.new()</span> arranca en 0</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">mismo <span>keystream</span> → many-time pad</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">XOR con 3 textos conocidos → <span>keystream</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>HTB{...}</span> descifrada</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RETO ===================== -->
+    <div class="section" id="reto">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">El reto y los archivos</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">CONTEXTO DEL CHALLENGE</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>Initialization</strong> es un challenge de categoría <span class="hl-cyan">Crypto</span>
+          con dificultad <span class="hl">Very Easy</span> (100 puntos). La historia nos pone en una
+          auditoría en la que detectamos tráfico hacia territorio enemigo: hay que
+          <strong>romper el esquema de cifrado</strong> y descifrar la comunicación sospechosa. Todo el
+          reto está en un fallo de implementación del cifrado, no en atacar AES en sí.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DESCRIPCIÓN OFICIAL DEL RETO</p>
+        <p>
+          <em>«During a cyber security audit of your government's infrastructure, you discover log entries
+          showing traffic directed towards an IP address within the enemy territory of "Oumara"... you
+          analyze the encryption scheme with the goal of breaking it and decrypting the suspicious
+          communication.»</em>
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">LOS TRES ARCHIVOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          El reto entrega un <span class="hl-cyan">initialization.zip</span> que, al descomprimir,
+          contiene tres ficheros:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="unzip initialization.zip &amp;&amp; cd crypto_initialization &amp;&amp; ls">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">UNZIP</span>
+        <div><span class="prompt">$ </span><span class="cmd">unzip <span class="arg">initialization.zip</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">crypto_initialization</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">ls</span></div>
+        <div class="comment" style="padding-left:1rem; color:var(--text-dim); font-size:0.75rem;">messages.txt  output.txt  source.py</div>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr>
+            <th>ARCHIVO</th>
+            <th>CONTENIDO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>source.py</td><td>El script que generó el cifrado (el «algoritmo» vulnerable)</td></tr>
+          <tr><td>messages.txt</td><td>Los 4 mensajes en claro, con la flag censurada en uno de ellos</td></tr>
+          <tr><td>output.txt</td><td>Los 4 mensajes ya cifrados, en hexadecimal</td></tr>
+        </tbody>
+      </table>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">LOS MENSAJES EN CLARO</span>
+      </div>
+      <div class="prose">
+        <p>
+          <span class="hl-cyan">messages.txt</span> es la clave de todo: conocemos <strong>3 de los 4</strong>
+          textos planos; solo el tercero —la flag— está censurado. Ese dato es lo que permite el ataque.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>[</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;'This is some public information that can be read out loud.',</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;'No one can crack our encryption algorithm.',</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-yellow">'HTB{????????????????????????????????????????}'</span>,</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;'Secret information is encrypted with Advanced Encryption Standards.',</div>
+        <div>]</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">EL CÓDIGO FUENTE DEL CIFRADO</span>
+      </div>
+      <div class="prose">
+        <p>
+          <span class="hl-cyan">source.py</span> cifra cada mensaje con <strong>AES en modo CTR</strong>.
+          El propio autor deja un comentario tranquilizador —<code>&#35; nonce reuse : avoided!</code>—
+          que resulta ser <strong>falso</strong>. Estas son las dos piezas que importan:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-cyan">def</span> generate_encryption_keys(self):</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;keys = <span class="o-green">[[b'\x00']*16] * len(MSG)</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">for</span> i <span class="o-cyan">in</span> range(len(keys)):</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">for</span> j <span class="o-cyan">in</span> range(len(keys[i])):</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;keys[i][j] = os.urandom(1)</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">return</span> keys</div>
+        <div>&nbsp;</div>
+        <div>self.CTRs = [Counter.new(block_size) <span class="o-cyan">for</span> i <span class="o-cyan">in</span> range(len(MSG))]  <span class="comment"># nonce reuse : avoided!</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 02 VULN ===================== -->
+    <div class="section" id="vuln">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">La vulnerabilidad</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">BUG 1 — ALIASING EN LAS CLAVES</span>
+      </div>
+      <div class="prose">
+        <p>
+          La línea <code>keys = [[b'\x00']*16] * len(MSG)</code> es un error clásico de Python:
+          multiplicar una lista que contiene <strong>otra lista</strong> no crea copias independientes,
+          crea varias <strong>referencias al mismo objeto</strong>. Es decir, <code>keys[0]</code>,
+          <code>keys[1]</code>, <code>keys[2]</code> y <code>keys[3]</code> apuntan
+          <strong>a la misma lista en memoria</strong>.
+        </p>
+        <p>
+          Cuando el bucle rellena <code>keys[i][j] = os.urandom(1)</code>, en realidad sobrescribe una y
+          otra vez <strong>la misma lista de 16 bytes</strong>. Al terminar, los 4 «keys» son idénticos:
+          <span class="hl-green">KEYS[0] == KEYS[1] == KEYS[2] == KEYS[3]</span>.
+        </p>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// CONSECUENCIA 1</p>
+        <p>
+          Los <strong>4 mensajes se cifran con la misma clave AES</strong>. El comentario
+          <code>&#35; nonce reuse : avoided!</code> no se cumple.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">BUG 2 — EL CONTADOR ARRANCA EN 0</span>
+      </div>
+      <div class="prose">
+        <p>
+          <code>Counter.new(block_size)</code> se crea <strong>sin</strong> <code>initial_value</code>, de
+          modo que cada contador arranca en <strong>0</strong>. Y como se crea uno nuevo por mensaje (en
+          vez de uno solo que se vaya incrementando), los 4 cifrados empiezan en el mismo punto del
+          contador.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">RESULTADO — MANY-TIME PAD</span>
+      </div>
+      <div class="prose">
+        <p>
+          En AES-CTR el keystream se genera como <span class="hl-cyan">AES_E(key, counter)</span> — depende
+          <strong>solo</strong> de la clave y del contador, nunca del texto plano. Con la misma clave y el
+          mismo contador inicial, el keystream es <strong>idéntico</strong> para los 4 mensajes:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>CT_i = PAD(MSG_i) <span class="o-green">XOR</span> KEYSTREAM        (mismo KEYSTREAM para todo i)</div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Esto es un <strong>one-time pad reutilizado</strong> (many-time pad), uno de los errores más
+          conocidos: si el mismo keystream cifra dos o más mensajes, un XOR entre dos ciphertexts cancela
+          el keystream y deja los textos planos enredados entre sí:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>CT_a <span class="o-green">XOR</span> CT_b = PAD(MSG_a) <span class="o-green">XOR</span> PAD(MSG_b)</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// LA PALANCA</p>
+        <p>
+          Como conocemos <strong>3 de los 4</strong> mensajes en claro, podemos despejar el keystream
+          directamente (<code>KEYSTREAM = CT_i XOR PAD(MSG_i)</code>) y usarlo para descifrar el cuarto:
+          la flag. No hace falta atacar AES ni conocer la clave.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 EXPLOIT ===================== -->
+    <div class="section" id="exploit">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Explotación</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">LA IDEA EN TRES PASOS</span>
+      </div>
+      <div class="prose">
+        <ul>
+          <li><strong>1.</strong> Recuperar el keystream con los mensajes conocidos: <code>KEYSTREAM = CT_i XOR PAD(MSG_i)</code>.</li>
+          <li><strong>2.</strong> Aplicarlo al ciphertext de la flag: <code>PAD(FLAG) = CT_flag XOR KEYSTREAM</code>.</li>
+          <li><strong>3.</strong> Quitar el relleno <strong>PKCS7</strong> final (el último byte dice cuántos bytes sobran).</li>
+        </ul>
+        <p>
+          El <code>PAD</code> es el mismo PKCS7 de 16 bytes que usa <code>source.py</code> mediante
+          <code>Crypto.Util.Padding.pad</code>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">EL SCRIPT solve.py</span>
+      </div>
+      <div class="prose">
+        <p>
+          Creamos el exploit con <span class="hl-cyan">nano solve.py</span>. Reconstruye el keystream con
+          los mensajes 0, 1 y 3 (conocidos) y lo aplica al ciphertext del mensaje 2 (la flag):
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="comment">#!/usr/bin/env python3</span></div>
+        <div>messages = [</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;'This is some public information that can be read out loud.',</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;'No one can crack our encryption algorithm.',</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;'HTB{????...????}',        <span class="comment"># el mensaje 2 es la flag</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;'Secret information is encrypted with Advanced Encryption Standards.',</div>
+        <div>]</div>
+        <div>&nbsp;</div>
+        <div><span class="o-cyan">with</span> open('output.txt') <span class="o-cyan">as</span> f:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;cts = [bytes.fromhex(l.strip()) <span class="o-cyan">for</span> l <span class="o-cyan">in</span> f <span class="o-cyan">if</span> l.strip()]</div>
+        <div>&nbsp;</div>
+        <div><span class="o-cyan">def</span> pkcs7_pad(data, block=16):</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;padlen = block - (len(data) % block)</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">return</span> data + bytes([padlen]) * padlen</div>
+        <div>&nbsp;</div>
+        <div>target_len = len(cts[2])              <span class="comment"># longitud del ciphertext de la flag</span></div>
+        <div>ks = bytearray(target_len)</div>
+        <div>covered = [False] * target_len</div>
+        <div>&nbsp;</div>
+        <div><span class="comment"># keystream reutilizado a partir de los mensajes 0, 1 y 3</span></div>
+        <div><span class="o-cyan">for</span> idx <span class="o-cyan">in</span> [0, 1, 3]:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;pt = pkcs7_pad(messages[idx].encode(), 16)</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">for</span> i, b <span class="o-cyan">in</span> enumerate(bytes(a ^ c <span class="o-cyan">for</span> a, c <span class="o-cyan">in</span> zip(cts[idx], pt))):</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="o-cyan">if</span> i &lt; target_len <span class="o-cyan">and</span> <span class="o-cyan">not</span> covered[i]:</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ks[i], covered[i] = b, True</div>
+        <div>&nbsp;</div>
+        <div>flag_padded = bytes(a ^ c <span class="o-cyan">for</span> a, c <span class="o-cyan">in</span> zip(cts[2], ks))</div>
+        <div>flag = flag_padded[:-flag_padded[-1]]     <span class="comment"># quitar PKCS7</span></div>
+        <div>print('[+] Flag:', flag.decode(errors='replace'))</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">EJECUCIÓN</span>
+      </div>
+      <div class="cmd-block" data-cmd="python3 solve.py">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">EXPLOIT</span>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="arg">solve.py</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>[*] Bytes de keystream cubiertos: <span class="o-green">64/64</span></div>
+        <div>[+] Flag: <span class="o-green">HTB{...}</span>   <span class="o-yellow">← flag del reto (omitida en la versión publicada)</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// FLAG DEL RETO</p>
+        <p>
+          El keystream queda <strong>cubierto al 100 %</strong> (64/64 bytes) porque el mensaje 3 es más
+          largo que la flag, así que un solo texto conocido ya basta para descifrarla por completo. En
+          esta versión publicada el valor va <strong>censurado</strong>: es la respuesta oficial del
+          challenge y publicarla arruina el reto a quien lo esté resolviendo. La cadena completa queda
+          documentada paso a paso.
+        </p>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// LECCIÓN</p>
+        <p>
+          En cualquier cifrado de flujo (AES-CTR, OFB, RC4, one-time pad…) el keystream
+          <strong>nunca</strong> debe reutilizarse con la misma clave: si se repite, conocer un solo
+          texto plano revela cualquier otro cifrado con ese keystream. Y el bug de fondo fue de
+          programación —<code>[[0]*16] * n</code> crea referencias compartidas, no copias—, un recordatorio
+          de que los fallos criptográficos reales suelen nacer en la implementación, no en las
+          matemáticas. Un simple <code>assert KEYS[0] != KEYS[1]</code> lo habría cazado.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">unzip</div>
+          <div class="cmd-ref-syntax">unzip initialization.zip</div>
+          <div class="cmd-ref-desc">Descomprime el paquete del reto. Dentro está el directorio crypto_initialization con los tres archivos (source.py, messages.txt, output.txt).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> — lista el contenido sin extraer</li>
+            <li><span>-d &lt;dir&gt;</span> — extrae en un directorio concreto</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">cat</div>
+          <div class="cmd-ref-syntax">cat source.py messages.txt output.txt</div>
+          <div class="cmd-ref-desc">Lee los tres archivos: el código del cifrado (para detectar el bug), los mensajes en claro conocidos y los ciphertexts en hexadecimal.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>source.py</span> — revela el aliasing y el contador a 0</li>
+            <li><span>messages.txt</span> — 3 textos conocidos + flag censurada</li>
+            <li><span>output.txt</span> — 4 ciphertexts en hex</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">python3 solve.py</div>
+          <div class="cmd-ref-syntax">python3 solve.py</div>
+          <div class="cmd-ref-desc">Ejecuta el exploit: recupera el keystream con XOR entre cada ciphertext conocido y su texto plano (con padding PKCS7), lo aplica al ciphertext de la flag y quita el relleno.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>bytes.fromhex()</span> — pasa los ciphertexts de hex a bytes</li>
+            <li><span>a ^ b</span> — XOR byte a byte (recupera/aplica keystream)</li>
+            <li><span>pkcs7_pad()</span> — mismo padding de 16 bytes que source.py</li>
+            <li><span>[:-pad]</span> — recorta el relleno PKCS7 final</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">SECUENCIA COMPLETA</span>
+      </div>
+      <div class="cmd-block" data-cmd="unzip initialization.zip &amp;&amp; cd crypto_initialization &amp;&amp; cat source.py messages.txt output.txt &amp;&amp; nano solve.py &amp;&amp; python3 solve.py">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RESUMEN</span>
+        <div><span class="comment"># 1. descomprimir y entrar</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">unzip <span class="arg">initialization.zip</span> <span class="flag">&amp;&amp;</span> cd <span class="arg">crypto_initialization</span></span></div>
+        <div><span class="comment"># 2. revisar el código y los datos</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">source.py messages.txt output.txt</span></span></div>
+        <div><span class="comment"># 3. escribir el exploit</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">nano <span class="arg">solve.py</span></span></div>
+        <div><span class="comment"># 4. descifrar la flag</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="arg">solve.py</span></span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 05 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">AES-CTR (modo contador)</div>
+          <div class="glos-def">
+            Modo de operación que convierte AES, un cifrado de bloque, en un <strong>cifrado de flujo</strong>.
+            Genera un keystream cifrando valores sucesivos de un contador —<code>AES_E(key, counter)</code>—
+            y lo combina con el texto plano mediante XOR. Su seguridad depende por completo de que la pareja
+            <strong>(clave, contador)</strong> no se repita nunca.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Keystream</div>
+          <div class="glos-def">
+            El «chorro» de bytes pseudoaleatorios que un cifrado de flujo combina con el texto plano. En
+            AES-CTR solo depende de la clave y del contador, <strong>no del mensaje</strong>. Por eso, con
+            la misma clave y el mismo contador inicial, cifrar dos mensajes distintos usa exactamente el
+            mismo keystream.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">One-time pad / many-time pad</div>
+          <div class="glos-def">
+            El <strong>one-time pad</strong> es seguro solo si el keystream es verdaderamente aleatorio y se
+            usa <strong>una única vez</strong>. Reutilizarlo lo convierte en un <strong>many-time pad</strong>:
+            el XOR de dos ciphertexts elimina el keystream y deja <code>MSG_a XOR MSG_b</code>, que se puede
+            resolver si se conoce uno de los dos textos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Nonce / contador y su reutilización</div>
+          <div class="glos-def">
+            El <strong>nonce</strong> (o el contador en CTR) es el valor que hace único cada cifrado bajo una
+            misma clave. Reiniciarlo —aquí, <code>Counter.new()</code> sin <code>initial_value</code> arranca
+            siempre en 0— rompe esa unicidad y es la causa directa del keystream repetido.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">XOR</div>
+          <div class="glos-def">
+            Operación «o exclusivo», base de los cifrados de flujo. Es <strong>reversible</strong>:
+            <code>A XOR B XOR B = A</code>. Esa propiedad permite despejar el keystream
+            (<code>KEYSTREAM = CT XOR PT</code>) cuando se conoce un par texto plano / cifrado, y luego
+            aplicarlo a otro ciphertext.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Padding PKCS7</div>
+          <div class="glos-def">
+            Esquema de relleno que completa el mensaje hasta un múltiplo del tamaño de bloque (16 bytes en
+            AES). Rellena con <em>N</em> bytes de valor <em>N</em>, así que el <strong>último byte</strong>
+            indica cuántos quitar. En el exploit se replica con <code>pkcs7_pad()</code> y al final se
+            recorta con <code>[:-pad]</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Aliasing de listas en Python</div>
+          <div class="glos-def">
+            <code>[[x]*16] * n</code> no crea <em>n</em> listas independientes, sino <em>n</em> referencias a
+            <strong>la misma lista</strong>. Modificar una modifica todas. Es el bug que hace que las 4
+            «claves» sean en realidad la misma. La forma correcta sería una comprensión:
+            <code>[[x]*16 for _ in range(n)]</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Texto plano conocido (known-plaintext)</div>
+          <div class="glos-def">
+            Ataque en el que el analista dispone de pares texto&nbsp;plano / texto&nbsp;cifrado. Contra un
+            keystream reutilizado es demoledor: cada byte conocido del mensaje revela el byte
+            correspondiente del keystream, que sirve para descifrar cualquier otro mensaje cifrado con él.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="archetype.html"><span class="dir">← ANTERIOR</span><span class="nombre">Archetype</span></a><a class="siguiente" href="../facil/base.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Base</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="ransomnet.html"><span class="nombre">RansomNet</span><span class="meta">hackthebox · muy-facil · Challenge</span></a><a class="rel-card" href="archetype.html"><span class="nombre">Archetype</span><span class="meta">hackthebox · muy-facil · Windows</span></a><a class="rel-card" href="../facil/base.html"><span class="nombre">Base</span><span class="meta">hackthebox · facil · Web</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Initialization · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "INITIALIZATION", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/initialization.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

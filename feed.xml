@@ -8,6 +8,13 @@
     <lastBuildDate>Sat, 03 Oct 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://brandeiks.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>Initialization — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/initialization.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/initialization.html</guid>
+      <pubDate>Fri, 10 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup del challenge Initialization de HackTheBox (Crypto, Muy Fácil): un bug de aliasing en Python reutiliza la misma clave AES y el contador AES-CTR arranca en 0, así que los 4 mensajes comparten keystream (many-time pad); con 3 textos conocidos se recupera el keystream por XOR y se descifra la flag.</description>
+    </item>
+    <item>
       <title>Archetype — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/archetype.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/archetype.html</guid>
