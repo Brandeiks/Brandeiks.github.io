@@ -150,6 +150,9 @@ etiqueta_card = plataforma
 cuenta_repo = None   # tarjetas por plataforma del indice del repositorio (para la portada)
 for ruta in INDICES:
     print(f"\n--- indice: {ruta}")
+    if not os.path.isfile(ruta):
+        print("   (no existe, se omite)")
+        continue
     html = open(ruta, encoding="utf-8").read().replace("\r\n", "\n")
     if href in html:
         print("   AVISO: la tarjeta ya existe en este indice, no se inserta")

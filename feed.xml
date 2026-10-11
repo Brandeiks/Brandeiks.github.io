@@ -8,6 +8,13 @@
     <lastBuildDate>Sat, 03 Oct 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://brandeiks.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>Archetype — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/archetype.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/archetype.html</guid>
+      <pubDate>Fri, 10 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Archetype de HackTheBox (Windows, Muy Fácil): SMB anónimo expone prod.dtsConfig con credenciales en claro → MSSQL con Impacket y xp_cmdshell → reverse shell → WinPEAS encuentra el historial de PowerShell con la contraseña de Administrator → impacket-psexec → root.</description>
+    </item>
+    <item>
       <title>RansomNet — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/ransomnet.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/ransomnet.html</guid>
