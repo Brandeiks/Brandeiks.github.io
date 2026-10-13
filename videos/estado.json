@@ -1,9 +1,15 @@
 {
-  "actualizado": "2026-10-12T13:35:24Z",
+  "actualizado": "2026-10-13T12:59:12Z",
   "canal": "Abogado Cibernetico",
   "canal_id": "UCgipGAOra-KHwucH6Pjb3aw",
-  "total_videos": 8,
+  "total_videos": 9,
   "videos": [
+    {
+      "titulo": "Repaso de Desarrollo de Software Seguro: CIA, OWASP Top 10 y SDLC | Estudia conmigo",
+      "fecha": "2026-10-12",
+      "tipo": "OTROS",
+      "url": "https://www.youtube.com/watch?v=JaUytynYPzw"
+    },
     {
       "titulo": "¡PERÚ EN LA MIRA! Ciberespionaje Chino y Amenazas en LATAM",
       "fecha": "2026-10-12",
