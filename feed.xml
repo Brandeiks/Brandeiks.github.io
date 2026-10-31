@@ -8,6 +8,132 @@
     <lastBuildDate>Sun, 12 Oct 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://brandeiks.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>Arctic — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Arctic de HackTheBox (Windows Server 2008 R2, Fácil): directory traversal en ColdFusion 8 (CVE-2010-2861) filtra el hash del admin, una tarea programada despliega un webshell JSP, y CVE-2019-1458 (wizardopium) escala a SYSTEM.</description>
+    </item>
+    <item>
+      <title>Active — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/active.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/active.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Active de HackTheBox (Windows / Active Directory, Fácil): un cpassword de GPP en SYSVOL (MS14-025) da credenciales de SVC_TGS, el Kerberoasting rompe la contraseña de Administrator y psexec entrega SYSTEM en el controlador de dominio.</description>
+    </item>
+    <item>
+      <title>Devel — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/devel.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/devel.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Devel de HackTheBox (Windows 7, Fácil): FTP anónimo con escritura sobre el webroot de IIS permite subir una webshell ASPX, y MS15-051 (win32k.sys) escala de IIS APPPOOL\Web a NT AUTHORITY\SYSTEM.</description>
+    </item>
+    <item>
+      <title>Tabby — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/tabby.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/tabby.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Tabby de HackTheBox (Linux, Fácil): un LFI en news.php filtra las credenciales de Tomcat, un WAR malicioso da RCE como tomcat, un backup crackeado reutilizado por ash abre SSH, y el grupo lxd entrega root.</description>
+    </item>
+    <item>
+      <title>Legacy — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/legacy.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/legacy.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Legacy de HackTheBox (Windows XP SP3, Fácil): MS08-067 (CVE-2008-4250) en el servicio Server de SMB permite ejecución remota de código sin credenciales; Metasploit entrega una sesión directamente como NT AUTHORITY\SYSTEM.</description>
+    </item>
+    <item>
+      <title>Unified — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/unified.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/unified.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Unified de HackTheBox (Linux, Muy Fácil): Log4Shell (CVE-2021-44228) en UniFi Network da una shell como unifi, MongoDB local permite resetear al admin y la configuración del controlador filtra credenciales SSH de root en claro.</description>
+    </item>
+    <item>
+      <title>Bike — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/bike.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/bike.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Bike de HackTheBox (Linux, Muy Fácil): un formulario de email refleja la entrada en una plantilla Handlebars (SSTI); un gadget que llega al constructor Function escapa la sandbox y ejecuta comandos directamente como root.</description>
+    </item>
+    <item>
+      <title>Funnel — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/funnel.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/funnel.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Funnel de HackTheBox (Linux, Muy Fácil): FTP anónimo filtra usuarios y una contraseña por defecto en un PDF, hydra la encuentra válida para christine por SSH, y un túnel SSH llega al PostgreSQL local con la flag.</description>
+    </item>
+    <item>
+      <title>Pennyworth — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/pennyworth.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/pennyworth.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Pennyworth de HackTheBox (Linux, Muy Fácil): Jenkins con credenciales por defecto root:password y el Script Console ejecuta código Groovy como root, dando acceso directo a la flag.</description>
+    </item>
+    <item>
+      <title>Responder — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/responder.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/responder.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Responder de HackTheBox (Windows, Muy Fácil): un LFI acepta una ruta UNC, Responder captura el hash NetNTLMv2 de Administrator, John lo rompe con rockyou y evil-winrm entrega una shell con la flag.</description>
+    </item>
+    <item>
+      <title>Markup — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/markup.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/markup.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Markup de HackTheBox (Windows, Muy Fácil): login admin:password, un XXE en process.php filtra la clave SSH de daniel, y una tarea programada (job.bat) escribible por Users da una shell como Administrator.</description>
+    </item>
+    <item>
+      <title>Vaccine — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/vaccine.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/vaccine.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Vaccine de HackTheBox (Linux, Muy Fácil): FTP anónimo entrega un backup.zip crackeable, el código filtra un hash MD5, el panel tiene SQLi sobre PostgreSQL (COPY TO PROGRAM da RCE) y un sudo mal configurado sobre vi da root.</description>
+    </item>
+    <item>
+      <title>Oopsie — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/oopsie.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/oopsie.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Oopsie de HackTheBox (Linux, Muy Fácil): login de invitado con cookies manipulables, un IDOR revela el Access ID del admin, un webshell sube como admin y un SUID (bugtracker) con PATH hijack da root.</description>
+    </item>
+    <item>
+      <title>Included — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/included.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/included.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Included de HackTheBox (Linux, Muy Fácil): un LFI en /?file= filtra el .htpasswd del sitio, un webshell subido por TFTP se ejecuta a través del propio LFI, y el grupo lxd de mike da un contenedor privilegiado con el host montado.</description>
+    </item>
+    <item>
+      <title>Ignition — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/ignition.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/ignition.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Ignition de HackTheBox (Linux, Muy Fácil): nginx devuelve 302 por IP, el vhost ignition.htb revela una tienda Magento y el panel /admin cae con las credenciales por defecto admin:qwerty123; la flag está en el dashboard.</description>
+    </item>
+    <item>
+      <title>Tactics — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/tactics.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/tactics.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Tactics de HackTheBox (Windows, Muy Fácil): SMB abierto con la cuenta Administrator sin contraseña permite listar los recursos administrativos (C$) y leer la flag del escritorio; la misma cuenta da una shell SYSTEM con impacket-psexec.</description>
+    </item>
+    <item>
+      <title>Crocodile — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/crocodile.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/crocodile.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Crocodile de HackTheBox (Linux, Muy Fácil): FTP anónimo expone listas de usuarios y contraseñas, gobuster descubre un login oculto en /login.php y las credenciales filtradas abren el panel con la flag.</description>
+    </item>
+    <item>
+      <title>Three — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/three.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/three.html</guid>
+      <pubDate>Sun, 26 Oct 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Three de HackTheBox (Linux, Muy Fácil): fuzzing de vhosts descubre s3.thetoppers.htb, un bucket S3 sin autenticación que la web sirve como raíz, y subir un webshell PHP da RCE como www-data.</description>
+    </item>
+    <item>
       <title>GetLab — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/muy-facil/getlab.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/muy-facil/getlab.html</guid>

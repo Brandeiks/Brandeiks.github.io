@@ -378,9 +378,9 @@
     <h1 class="hero-title">WRITE<span>UPS</span></h1>
     <p class="hero-sub">Documentación técnica de máquinas resueltas — DockerLabs · HackTheBox · Google XSS Game</p>
     <div class="hero-stats">
-      <div class="stat"><span class="stat-num" id="totalCount">38</span><span class="stat-label">TOTAL</span></div>
+      <div class="stat"><span class="stat-num" id="totalCount">56</span><span class="stat-label">TOTAL</span></div>
       <div class="stat"><span class="stat-num" id="dockerCount">11</span><span class="stat-label">DOCKERLABS</span></div>
-      <div class="stat"><span class="stat-num">26</span><span class="stat-label">HACKTHEBOX</span></div>
+      <div class="stat"><span class="stat-num">44</span><span class="stat-label">HACKTHEBOX</span></div>
       <div class="stat"><span class="stat-num">1</span><span class="stat-label">GOOGLE XSS GAME</span></div>
     </div>
   </div>
@@ -672,7 +672,7 @@
       <span class="platform-label">// 02</span>
       <h2 class="platform-title">HACKTHEBOX</h2>
       <div class="platform-line"></div>
-      <span class="platform-count" id="htb-visible-count">26 análisis</span>
+      <span class="platform-count" id="htb-visible-count">44 análisis</span>
     </div>
     <div class="cards-grid" id="hackthebox-grid">
 
@@ -1016,6 +1016,263 @@
         </div>
       </a>
 
+      <!-- THREE -->
+      <a href="hackthebox/muy-facil/three.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Three</h3>
+        <p class="card-desc">Fuzzing de vhosts descubre s3.thetoppers.htb -> bucket S3 sin autenticacion servido como raiz del sitio -> subir un webshell PHP -> RCE como www-data.</p>
+        <div class="card-tags">
+          <span class="card-tag">nmap</span>
+          <span class="card-tag">Amazon S3</span>
+          <span class="card-tag">Webshell</span>
+          <span class="card-tag">RCE</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- CROCODILE -->
+      <a href="hackthebox/muy-facil/crocodile.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Crocodile</h3>
+        <p class="card-desc">FTP anonimo expone listas de usuarios y contrasenas -> gobuster descubre /login.php -> credenciales filtradas abren el panel con la flag.</p>
+        <div class="card-tags">
+          <span class="card-tag">FTP</span>
+          <span class="card-tag">gobuster</span>
+          <span class="card-tag">Credenciales filtradas</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- TACTICS -->
+      <a href="hackthebox/muy-facil/tactics.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Tactics</h3>
+        <p class="card-desc">SMB con Administrator sin contrasena -> acceso al share C$ -> flag en el escritorio; la misma cuenta da una shell SYSTEM con impacket-psexec.</p>
+        <div class="card-tags">
+          <span class="card-tag">SMB</span>
+          <span class="card-tag">Credenciales vacias</span>
+          <span class="card-tag">Windows</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- IGNITION -->
+      <a href="hackthebox/muy-facil/ignition.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Ignition</h3>
+        <p class="card-desc">nginx devuelve 302 por IP -> el vhost ignition.htb revela una tienda Magento -> panel /admin con credenciales por defecto admin:qwerty123 -> flag en el dashboard.</p>
+        <div class="card-tags">
+          <span class="card-tag">nginx</span>
+          <span class="card-tag">Magento</span>
+          <span class="card-tag">vhost</span>
+          <span class="card-tag">Credenciales por defecto</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- INCLUDED -->
+      <a href="hackthebox/muy-facil/included.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Included</h3>
+        <p class="card-desc">LFI en /?file= filtra el .htpasswd del sitio -> webshell subido por TFTP se ejecuta via el propio LFI -> mike en el grupo lxd -> contenedor privilegiado con el host montado -> root.</p>
+        <div class="card-tags">
+          <span class="card-tag">LFI</span>
+          <span class="card-tag">TFTP</span>
+          <span class="card-tag">lxd</span>
+          <span class="card-tag">PrivEsc</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- OOPSIE -->
+      <a href="hackthebox/muy-facil/oopsie.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Oopsie</h3>
+        <p class="card-desc">Login de invitado con cookies manipulables -> IDOR revela el Access ID del admin -> webshell subido como admin -> db.php filtra credenciales -> SUID bugtracker con PATH hijack -> root.</p>
+        <div class="card-tags">
+          <span class="card-tag">IDOR</span>
+          <span class="card-tag">Upload</span>
+          <span class="card-tag">SUID</span>
+          <span class="card-tag">PATH hijack</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- VACCINE -->
+      <a href="hackthebox/muy-facil/vaccine.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Vaccine</h3>
+        <p class="card-desc">FTP anonimo entrega un backup.zip crackeable -> hash MD5 filtrado -> login admin -> SQLi PostgreSQL con COPY TO PROGRAM da RCE -> SSH postgres -> sudo vi -> root.</p>
+        <div class="card-tags">
+          <span class="card-tag">FTP</span>
+          <span class="card-tag">John the Ripper</span>
+          <span class="card-tag">SQLi</span>
+          <span class="card-tag">sudo</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- MARKUP -->
+      <a href="hackthebox/muy-facil/markup.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Markup</h3>
+        <p class="card-desc">Login admin:password -> XXE en process.php filtra la clave SSH de daniel -> tarea programada job.bat escribible por Users -> certutil + ps1 -> Administrator.</p>
+        <div class="card-tags">
+          <span class="card-tag">XXE</span>
+          <span class="card-tag">Credenciales por defecto</span>
+          <span class="card-tag">Tarea programada</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- RESPONDER -->
+      <a href="hackthebox/muy-facil/responder.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Responder</h3>
+        <p class="card-desc">LFI acepta una ruta UNC -> Responder captura el hash NetNTLMv2 de Administrator -> John lo rompe con rockyou -> evil-winrm entrega la shell con la flag.</p>
+        <div class="card-tags">
+          <span class="card-tag">LFI</span>
+          <span class="card-tag">Responder</span>
+          <span class="card-tag">NetNTLMv2</span>
+          <span class="card-tag">evil-winrm</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- PENNYWORTH -->
+      <a href="hackthebox/muy-facil/pennyworth.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Pennyworth</h3>
+        <p class="card-desc">Jenkins con credenciales por defecto root:password -> Script Console ejecuta codigo Groovy -> Jenkins corre como root -> flag.</p>
+        <div class="card-tags">
+          <span class="card-tag">Jenkins</span>
+          <span class="card-tag">Credenciales por defecto</span>
+          <span class="card-tag">RCE</span>
+          <span class="card-tag">Groovy</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- FUNNEL -->
+      <a href="hackthebox/muy-facil/funnel.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Funnel</h3>
+        <p class="card-desc">FTP anonimo filtra usuarios y una contrasena por defecto en un PDF -> hydra la confirma valida para christine por SSH -> tunel SSH al PostgreSQL local -> flag.</p>
+        <div class="card-tags">
+          <span class="card-tag">FTP</span>
+          <span class="card-tag">Password spray</span>
+          <span class="card-tag">SSH tunnel</span>
+          <span class="card-tag">PostgreSQL</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- BIKE -->
+      <a href="hackthebox/muy-facil/bike.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Bike</h3>
+        <p class="card-desc">Formulario de email vulnerable a SSTI en Handlebars -> gadget que llega al constructor Function escapa la sandbox -> execSync ejecuta comandos -> la app corre como root.</p>
+        <div class="card-tags">
+          <span class="card-tag">SSTI</span>
+          <span class="card-tag">Handlebars</span>
+          <span class="card-tag">RCE</span>
+          <span class="card-tag">Node.js</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+      <!-- UNIFIED -->
+      <a href="hackthebox/muy-facil/unified.html" class="writeup-card reveal" data-diff="muy-facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-muy-facil">MUY FÁCIL</span>
+        </div>
+        <h3 class="card-name">Unified</h3>
+        <p class="card-desc">Log4Shell (CVE-2021-44228) en UniFi Network da una shell como unifi -> MongoDB local permite resetear al admin -> la configuracion del controlador filtra credenciales SSH de root en claro.</p>
+        <div class="card-tags">
+          <span class="card-tag">Log4Shell</span>
+          <span class="card-tag">CVE-2021-44228</span>
+          <span class="card-tag">MongoDB</span>
+          <span class="card-tag">SSH</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
       <!-- BASE -->
       <a href="hackthebox/facil/base.html" class="writeup-card reveal" data-diff="facil" data-platform="hackthebox">
         <div class="card-top">
@@ -1223,6 +1480,106 @@
 
       <!-- SOCCER -->
       <a href="hackthebox/facil/soccer.html" class="writeup-card reveal" data-diff="facil" data-platform="hackthebox">
+      <!-- LEGACY -->
+      <a href="hackthebox/facil/legacy.html" class="writeup-card reveal" data-diff="facil" data-platform="hackthebox">
+      <!-- TABBY -->
+      <a href="hackthebox/facil/tabby.html" class="writeup-card reveal" data-diff="facil" data-platform="hackthebox">
+      <!-- DEVEL -->
+      <a href="hackthebox/facil/devel.html" class="writeup-card reveal" data-diff="facil" data-platform="hackthebox">
+      <!-- ACTIVE -->
+      <a href="hackthebox/facil/active.html" class="writeup-card reveal" data-diff="facil" data-platform="hackthebox">
+      <!-- ARCTIC -->
+      <a href="hackthebox/facil/arctic.html" class="writeup-card reveal" data-diff="facil" data-platform="hackthebox">
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-facil">FÁCIL</span>
+        </div>
+        <h3 class="card-name">Arctic</h3>
+        <p class="card-desc">Directory traversal en ColdFusion 8 (CVE-2010-2861) filtra el hash del admin -> tarea programada despliega un webshell JSP -> CVE-2019-1458 (wizardopium) escala a SYSTEM.</p>
+        <div class="card-tags">
+          <span class="card-tag">ColdFusion</span>
+          <span class="card-tag">Directory Traversal</span>
+          <span class="card-tag">Metasploit</span>
+          <span class="card-tag">SYSTEM</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-facil">FÁCIL</span>
+        </div>
+        <h3 class="card-name">Active</h3>
+        <p class="card-desc">GPP cpassword en SYSVOL (MS14-025) da credenciales de SVC_TGS -> Kerberoasting rompe la contrasena de Administrator -> psexec entrega SYSTEM en el controlador de dominio.</p>
+        <div class="card-tags">
+          <span class="card-tag">Active Directory</span>
+          <span class="card-tag">GPP</span>
+          <span class="card-tag">Kerberoasting</span>
+          <span class="card-tag">psexec</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-facil">FÁCIL</span>
+        </div>
+        <h3 class="card-name">Devel</h3>
+        <p class="card-desc">FTP anonimo con escritura sobre el webroot de IIS permite subir una webshell ASPX -> MS15-051 (win32k.sys) escala de IIS APPPOOL Web a NT AUTHORITY SYSTEM.</p>
+        <div class="card-tags">
+          <span class="card-tag">FTP</span>
+          <span class="card-tag">Webshell ASPX</span>
+          <span class="card-tag">MS15-051</span>
+          <span class="card-tag">Metasploit</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-facil">FÁCIL</span>
+        </div>
+        <h3 class="card-name">Tabby</h3>
+        <p class="card-desc">LFI en news.php filtra las credenciales de Tomcat -> WAR malicioso da RCE como tomcat -> backup crackeado reutilizado por ash -> grupo lxd entrega root.</p>
+        <div class="card-tags">
+          <span class="card-tag">LFI</span>
+          <span class="card-tag">Tomcat</span>
+          <span class="card-tag">John the Ripper</span>
+          <span class="card-tag">lxd</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
+        <div class="card-top">
+          <span class="card-platform">HACKTHEBOX</span>
+          <span class="card-diff diff-facil">FÁCIL</span>
+        </div>
+        <h3 class="card-name">Legacy</h3>
+        <p class="card-desc">MS08-067 (CVE-2008-4250) en el servicio Server de SMB permite RCE sin credenciales en Windows XP -> Metasploit entrega una sesion directamente como NT AUTHORITY SYSTEM.</p>
+        <div class="card-tags">
+          <span class="card-tag">MS08-067</span>
+          <span class="card-tag">Metasploit</span>
+          <span class="card-tag">Windows XP</span>
+          <span class="card-tag">SYSTEM</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">Octubre 2026</span>
+          <span class="card-arrow">LEER →</span>
+        </div>
+      </a>
+
         <div class="card-top">
           <span class="card-platform">HACKTHEBOX</span>
           <span class="card-diff diff-facil">FÁCIL</span>

