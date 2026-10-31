@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Buscador Dorks | Brandeiks</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Buscador Dorks: recomienda consultas con operadores de búsqueda (Google dorks) para auditar la exposición pública de un dominio propio o autorizado. Uso académico y defensivo.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/buscador-dorks/index.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Buscador Dorks | Brandeiks">
+  <meta property="og:description" content="Recomienda consultas con operadores de búsqueda (Google dorks) para auditar la exposición pública de un dominio propio o autorizado. Uso académico y defensivo.">
+  <meta property="og:url" content="https://brandeiks.github.io/buscador-dorks/index.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Buscador Dorks | Brandeiks">
+  <meta name="twitter:description" content="Recomienda consultas con operadores de búsqueda (Google dorks) para auditar la exposición pública de un dominio propio o autorizado. Uso académico y defensivo.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Buscador Dorks | Brandeiks", "description": "Recomienda consultas con operadores de búsqueda para auditar la exposición pública de un dominio propio o autorizado.", "url": "https://brandeiks.github.io/buscador-dorks/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body {
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      cursor: auto;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+    a, button { cursor: pointer; }
+        .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+      box-shadow: 0 0 12px var(--green);
+    }
+        .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.85); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+.nav-back {
+  font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);
+  text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
+  margin-left: 1.4rem;
+}
+.nav-back:visited, .nav-logo:visited { color: inherit; }
+    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
+    .hero {
+      min-height: 38vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove { 0% { transform: translateY(0); } 100% { transform: translateY(60px); } }
+    .hero-glow {
+      position: absolute; width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.06) 0%, transparent 70%);
+      top: 0; left: -100px; pointer-events: none;
+    }
+    .hero-content { position: relative; z-index: 2; }
+    .hero-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); letter-spacing: 4px; margin-bottom: 1rem; }
+    .hero-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; letter-spacing: 2px; line-height: 1; }
+    .hero-title span { color: var(--green); }
+    .hero-sub { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-dim); margin-top: 1rem; letter-spacing: 1px; }
+    .hero-stats { display: flex; flex-wrap: wrap; gap: 1.1rem 1.9rem; margin-top: 2rem; }
+    .stat { font-family: var(--font-mono); flex: 0 0 auto; min-width: 4.5ch; }
+    .stat-num { font-size: 1.8rem; color: var(--green, #00ff88); display: block; line-height: 1.15; }
+    .stat-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 0.2rem; }
+
+
+
+    [hidden] { display: none !important; }
+    code { font-family: var(--font-mono); font-size: 0.9em; color: var(--green); }
+
+    /* MAIN */
+    .main { padding: 3rem 4rem; max-width: 1000px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color .2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+
+    /* AVISO ÉTICO */
+    .alerta {
+      border: 1px solid rgba(255,215,0,0.3); background: rgba(255,215,0,0.04);
+      color: var(--yellow); font-family: var(--font-mono); font-size: 0.75rem;
+      padding: 1.1rem 1.4rem; margin-bottom: 1.5rem; line-height: 1.8;
+    }
+    .alerta strong { color: var(--yellow); }
+
+    /* PANELES */
+    .panel { background: var(--bg2); border: 1px solid var(--dim); padding: 1.8rem 2rem; margin-bottom: 1.2rem; position: relative; }
+    .panel::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--green); opacity: 0.5; }
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
+    .step-num { font-family: var(--font-disp); font-size: .65rem; font-weight: 900; color: var(--bg); background: var(--green); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-title { font-family: var(--font-mono); font-size: .8rem; color: var(--green); letter-spacing: 2px; margin: 0; font-weight: normal; }
+    .panel > p { font-size: 1.02rem; line-height: 1.75; color: var(--text-dim); margin-bottom: 1rem; }
+
+    /* FORMULARIO */
+    .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem 1.4rem; }
+    .form label { display: flex; flex-direction: column; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+    .form .req { color: var(--green); }
+    input[type="text"], input[type="url"], select {
+      font-family: var(--font-mono); font-size: 0.82rem; color: var(--text);
+      background: var(--bg); border: 1px solid var(--dim); padding: 0.65rem 0.8rem; text-transform: none; letter-spacing: 0; width: 100%;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.12); }
+    .form-full { grid-column: 1 / -1; }
+    .acciones { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1.3rem; }
+    .btn {
+      display: inline-flex; align-items: center; gap: .4rem; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
+      padding: 0.65rem 1.2rem; border: 1px solid var(--green); background: transparent; color: var(--green); cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .btn:hover:not(:disabled) { background: rgba(0,255,136,0.06); box-shadow: 0 0 12px rgba(0,255,136,0.15); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-principal { background: var(--green); color: var(--bg); font-weight: 700; }
+    .btn-principal:hover:not(:disabled) { background: #5dffb2; }
+    .btn-sec { color: var(--text-dim); border-color: var(--dim); }
+    .btn-sec:hover:not(:disabled) { color: var(--cyan); border-color: var(--cyan); background: rgba(0,229,255,0.05); box-shadow: none; }
+    .btn-peligro { color: var(--red); border-color: rgba(255,45,85,0.5); }
+    .btn-peligro:hover:not(:disabled) { background: rgba(255,45,85,0.06); box-shadow: none; }
+    .estado { font-family: var(--font-mono); font-size: 0.74rem; min-height: 1.2em; margin-top: 1rem; color: var(--text-dim); }
+    .estado:empty { display: none; }
+    .estado.ok { color: var(--green); }
+    .estado.error { color: var(--red); }
+
+    /* RESULTADOS */
+    .res-intro { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 1.4rem; }
+    .obj-bloque { margin-bottom: 2rem; }
+    .obj-titulo { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 2px; color: var(--cyan); margin: 0 0 0.3rem; font-weight: normal; }
+    .obj-desc { font-size: 0.95rem; color: var(--text-dim); margin: 0 0 1rem; line-height: 1.5; }
+    .dork-card { background: var(--bg3); border: 1px solid var(--dim); border-left: 3px solid var(--green); padding: 1.1rem 1.3rem; margin-bottom: 1rem; }
+    .dork-fila { overflow-x: auto; }
+    .dork-q { display: block; font-family: var(--font-mono); font-size: 0.86rem; color: var(--text); white-space: nowrap; }
+    .dork-exp { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 1rem; margin: 0.9rem 0 0; font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.5; }
+    .dork-exp dt { color: var(--green); }
+    .dork-exp dd { margin: 0; color: var(--text-dim); }
+    .dork-acc { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.1rem; }
+    .dork-acc .btn { font-size: 0.62rem; padding: 0.5rem 0.9rem; }
+
+    /* REGISTRO */
+    .tabla-wrap { overflow-x: auto; margin-top: 1.2rem; }
+    table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.72rem; }
+    th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--dim); vertical-align: top; }
+    th { color: var(--cyan); font-weight: normal; letter-spacing: 1px; font-size: 0.62rem; border-bottom-color: rgba(0,229,255,0.2); white-space: nowrap; }
+    .reg-q { color: var(--green); white-space: nowrap; }
+    .reg-input { font-size: 0.72rem; padding: 0.35rem 0.5rem; min-width: 150px; }
+    .reg-sel { font-size: 0.68rem; padding: 0.35rem 0.4rem; }
+    .reg-del { background: none; border: none; color: var(--red); cursor: pointer; font-family: var(--font-mono); font-size: 0.9rem; padding: 0.2rem 0.4rem; }
+    .vacio { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-dim); font-style: italic; margin: 0.8rem 0 0; }
+
+    /* GLOSARIO */
+    .glosario { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.4rem; margin: 0; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; }
+    .glosario dt { color: var(--green); }
+    .glosario dd { margin: 0; color: var(--text-dim); }
+
+    @media (max-width: 768px) {
+      .hero { padding: 6rem 1.5rem 2.5rem; }
+      .hero-title { font-size: clamp(1.6rem, 8.2vw, 2.5rem); }
+      .hero-stats { gap: .8rem 1.3rem; margin-top: 1.5rem; }
+      .stat-num { font-size: 1.5rem; }
+      .main { padding: 2rem 1.5rem; }
+      .panel { padding: 1.4rem 1.2rem; }
+      .glosario, .dork-exp { grid-template-columns: 1fr; gap: 0.1rem; }
+      .glosario dd, .dork-exp dd { margin-bottom: 0.5rem; }
+      .dork-acc .btn { width: 100%; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+    /* MENU MOVIL */
+    .menu-check { position: absolute; opacity: 0; pointer-events: none; }
+    .menu-btn { display: none; }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+    footer {
+      padding: 2rem 4rem; border-top: 1px solid var(--dim);
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 4rem;
+    }
+    footer p {
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    footer span { color: var(--green); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../index.html" class="nav-back">INICIO</a>
+    <a href="../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="breadcrumb"><a href="../index.html">brandeiks</a> / <a href="../herramientas/index.html">herramientas</a> / <span>buscador dorks</span></div>
+    <p class="hero-label">// OSINT · AUDITORÍA DE EXPOSICIÓN</p>
+    <h1 class="hero-title">BUSCADOR <span>DORKS</span></h1>
+    <p class="hero-sub">Recomienda consultas con operadores de búsqueda para revisar qué expone públicamente un dominio propio o autorizado. Tú copias la consulta o la abres en Google.</p>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num">7</span><span class="stat-label">OBJETIVOS</span></div>
+      <div class="stat"><span class="stat-num">15</span><span class="stat-label">OPERADORES</span></div>
+      <div class="stat"><span class="stat-num">0</span><span class="stat-label">BÚSQUEDAS AUTOMÁTICAS</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="alerta">
+    <strong>// USO RESPONSABLE.</strong> Esta herramienta solo <strong>genera y explica consultas</strong>: no busca nada por su cuenta. Úsala únicamente sobre <strong>dominios propios o para los que tengas autorización por escrito</strong>. Buscar información es legal, pero acceder a lo que encuentres, o usarlo contra terceros, puede no serlo. En Perú, revisa la Ley N.º 30096 de delitos informáticos.
+  </div>
+
+  <!-- 01 · Parámetros -->
+  <section class="panel">
+    <div class="step-marker"><span class="step-num">01</span><h2 class="step-title">QUÉ QUIERES AUDITAR</h2></div>
+    <p>Indica el dominio que estás revisando y el tipo de información. La herramienta arma las consultas limitadas a ese dominio y te explica cada operador.</p>
+    <div class="form">
+      <label>Dominio autorizado <span class="req">*obligatorio</span>
+        <input type="text" id="dominio" placeholder="midominio.com" autocomplete="off" spellcheck="false" inputmode="url">
+      </label>
+      <label>Objetivo
+        <select id="objetivo"></select>
+      </label>
+      <label>Palabras clave (opcional)
+        <input type="text" id="kw" placeholder="política de seguridad" autocomplete="off" spellcheck="false">
+      </label>
+      <label>Tipo de archivo (opcional)
+        <select id="ft">
+          <option value="">Cualquiera</option>
+          <option value="pdf">PDF</option>
+          <option value="docx">Word (docx)</option>
+          <option value="xlsx">Excel (xlsx)</option>
+          <option value="pptx">PowerPoint (pptx)</option>
+          <option value="txt">Texto (txt)</option>
+          <option value="csv">CSV</option>
+        </select>
+      </label>
+    </div>
+    <div class="acciones">
+      <button type="button" id="btn-generar" class="btn btn-principal">Generar dorks</button>
+    </div>
+    <p class="estado" id="aviso-form" role="status"></p>
+  </section>
+
+  <!-- 02 · Consultas recomendadas -->
+  <section class="panel">
+    <div class="step-marker"><span class="step-num">02</span><h2 class="step-title">CONSULTAS RECOMENDADAS</h2></div>
+    <div id="resultados">
+      <p class="vacio">Completa el paso 01 y pulsa «Generar dorks» para ver las consultas y qué hace cada operador.</p>
+    </div>
+  </section>
+
+  <!-- 03 · Registro -->
+  <section class="panel">
+    <div class="step-marker"><span class="step-num">03</span><h2 class="step-title">REGISTRO DE HALLAZGOS</h2></div>
+    <p>Guarda las consultas útiles y anota la URL encontrada, tu observación y el estado. Se guarda solo en este navegador. Marca <strong>«Hallazgo validado»</strong> solo cuando lo hayas comprobado tú: una consulta que devuelve resultados no es, por sí sola, una vulnerabilidad.</p>
+    <div class="tabla-wrap">
+      <table id="reg-tabla" hidden>
+        <thead>
+          <tr><th>Fecha</th><th>Consulta</th><th>URL</th><th>Observación</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody id="reg-cuerpo"></tbody>
+      </table>
+      <p class="vacio" id="reg-vacio">Aún no hay consultas en el registro. Usa «Guardar en registro» en cualquier consulta.</p>
+    </div>
+    <p class="estado" id="estado-reg" role="status"></p>
+    <div class="acciones">
+      <button type="button" id="btn-csv" class="btn btn-sec" disabled>Exportar CSV</button>
+      <button type="button" id="btn-json" class="btn btn-sec" disabled>Exportar JSON</button>
+      <button type="button" id="btn-limpiar" class="btn btn-peligro" disabled>Borrar todo el registro</button>
+    </div>
+  </section>
+
+  <!-- 04 · Glosario -->
+  <section class="panel">
+    <div class="step-marker"><span class="step-num">04</span><h2 class="step-title">OPERADORES DE BÚSQUEDA</h2></div>
+    <p>Referencia rápida de los operadores que usan las consultas. Google puede dejar de aplicar alguno sin aviso.</p>
+    <dl class="glosario" id="glosario"></dl>
+  </section>
+</main>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Auditoría de exposición pública, uso académico y autorizado</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script src="app.js"></script>
+<script src="../assets/cursor.js" defer></script>
+</body>
+</html>
