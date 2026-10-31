@@ -469,13 +469,13 @@
         <div>02/25/2020  07:37 AM                32 <span class="o-cyan">user.txt</span></div>
         <div>&nbsp;</div>
         <div><span class="o-green">SQL&gt;</span> EXEC xp_cmdshell 'type C:\Users\sql_svc\Desktop\user.txt';</div>
-        <div><span class="o-green">3e7b102e78218e935bf3f4951fec21a3</span></div>
+        <div><span class="o-green">[flag oculta]</span></div>
       </div>
 
       <div class="info-box">
         <p class="info-box-title">// FLAG DE USUARIO</p>
         <p>
-          <strong>3e7b102e78218e935bf3f4951fec21a3</strong> — obtenida vía SMB → credenciales en claro →
+          <strong>[flag oculta]</strong> — obtenida vía SMB → credenciales en claro →
           MSSQL <code>xp_cmdshell</code>. Nos queda escalar a Administrator.
         </p>
       </div>
@@ -647,13 +647,13 @@
         <div>C:\Windows\system32&gt; whoami</div>
         <div><span class="o-cyan">nt authority\system</span></div>
         <div>C:\Windows\system32&gt; type C:\Users\Administrator\Desktop\root.txt</div>
-        <div><span class="o-green">b91ccec3305e98240082d4474b848528</span></div>
+        <div><span class="o-green">[flag oculta]</span></div>
       </div>
 
       <div class="info-box">
         <p class="info-box-title">// FLAG DE ROOT</p>
         <p>
-          <strong>b91ccec3305e98240082d4474b848528</strong> — acceso como
+          <strong>[flag oculta]</strong> — acceso como
           <strong>NT AUTHORITY\SYSTEM</strong> vía <code>impacket-psexec</code> con la contraseña de
           administrator rescatada del historial de PowerShell.
         </p>
