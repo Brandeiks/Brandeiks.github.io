@@ -539,8 +539,7 @@ def generar(videos, actualizado):
     <a href="../index.html" class="nav-back">INICIO</a>
     <a href="index.html" class="nav-back">VÍDEOS</a>
     <a href="../writeups/index.html" class="nav-back">WRITEUPS</a>
-    <a href="../diccionario/index.html" class="nav-back">DICCIONARIO</a>
-    <a href="../comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
     <a href="../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
   </nav>
 

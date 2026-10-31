@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Herramientas | Brandeiks</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español y buscador de los comandos usados en los writeups.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/herramientas/index.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Herramientas | Brandeiks">
+  <meta property="og:description" content="Herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español y buscador de los comandos usados en los writeups.">
+  <meta property="og:url" content="https://brandeiks.github.io/herramientas/index.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Herramientas | Brandeiks">
+  <meta name="twitter:description" content="Herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español y buscador de los comandos usados en los writeups.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Herramientas | Brandeiks", "description": "Herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español y buscador de los comandos usados en los writeups.", "url": "https://brandeiks.github.io/herramientas/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Análisis | Brandeiks", "description": "Writeups de máquinas CTF y retos web — DockerLabs, HackTheBox, Google XSS Game por Brandon Zevallos Pastrana.", "url": "https://brandeiks.github.io/writeups/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body {
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      cursor: auto;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+    a, button { cursor: pointer; }
+        .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+      box-shadow: 0 0 12px var(--green);
+    }
+        .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.85); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+.nav-back {
+  font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);
+  text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
+  margin-left: 1.4rem;
+}
+.nav-back:visited, .nav-logo:visited { color: inherit; }
+    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
+    .hero {
+      min-height: 38vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove { 0% { transform: translateY(0); } 100% { transform: translateY(60px); } }
+    .hero-glow {
+      position: absolute; width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.06) 0%, transparent 70%);
+      top: 0; left: -100px; pointer-events: none;
+    }
+    .hero-content { position: relative; z-index: 2; }
+    .hero-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); letter-spacing: 4px; margin-bottom: 1rem; }
+    .hero-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; letter-spacing: 2px; line-height: 1; }
+    .hero-title span { color: var(--green); }
+    .hero-sub { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-dim); margin-top: 1rem; letter-spacing: 1px; }
+    .hero-stats { display: flex; flex-wrap: wrap; gap: 1.1rem 1.9rem; margin-top: 2rem; }
+    .stat { font-family: var(--font-mono); flex: 0 0 auto; min-width: 4.5ch; }
+    .stat-num { font-size: 1.8rem; color: var(--green, #00ff88); display: block; line-height: 1.15; }
+    .stat-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 0.2rem; }
+
+
+    /* MAIN */
+    .main { padding: 4rem; }
+    .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); letter-spacing: 3px; margin-bottom: 1.5rem; }
+    .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.2rem; }
+
+    /* TARJETA DE HERRAMIENTA */
+    .tool-card {
+      background: var(--bg2); border: 1px solid var(--dim);
+      padding: 2rem; position: relative; overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+      text-decoration: none; color: inherit; display: flex; flex-direction: column;
+    }
+    .tool-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 3px; height: 0; background: var(--green); transition: height 0.4s;
+    }
+    .tool-card:hover { transform: translateY(-4px); border-color: rgba(0,255,136,0.3); }
+    .tool-card:hover::before { height: 100%; }
+    .tool-card.cyan::before { background: var(--cyan); }
+    .tool-card.cyan:hover { border-color: rgba(0,229,255,0.3); }
+    .tool-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.2rem; }
+    .tool-tag { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); letter-spacing: 2px; }
+    .tool-icon { font-family: var(--font-mono); font-size: 1rem; color: var(--green); line-height: 1; }
+    .tool-card.cyan .tool-icon { color: var(--cyan); }
+    .tool-name { font-family: var(--font-disp); font-size: 1.15rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 0.8rem; color: #fff; }
+    .tool-desc { font-size: 1rem; line-height: 1.6; color: var(--text); margin-bottom: 1.4rem; flex: 1; }
+    .tool-stack { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.4rem; }
+    .stack-tag {
+      font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 1px;
+      padding: 0.25rem 0.6rem; border: 1px solid var(--dim); color: var(--text-dim);
+    }
+    .tool-link { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); letter-spacing: 2px; }
+    .tool-card.cyan .tool-link { color: var(--cyan); }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 768px) {
+      .hero { padding: 6rem 1.5rem 2.5rem; }
+      .main { padding: 2rem 1.5rem; }
+      /* HERRAMIENTAS es una palabra larga: a 40px no cabe en un movil de 375px */
+      .hero-title { font-size: clamp(1.6rem, 8.2vw, 2.5rem); }
+      .hero-stats { gap: .8rem 1.3rem; margin-top: 1.5rem; }
+      .stat-num { font-size: 1.5rem; }
+      .tools-grid { grid-template-columns: 1fr; }
+      .tool-card { padding: 1.5rem; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+    /* MENU MOVIL */
+    .menu-check { position: absolute; opacity: 0; pointer-events: none; }
+    .menu-btn { display: none; }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+    footer {
+      padding: 2rem 4rem; border-top: 1px solid var(--dim);
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 4rem;
+    }
+    footer p {
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    footer span { color: var(--green); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../index.html" class="nav-back">INICIO</a>
+    <a href="../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <p class="hero-label">// REFERENCIA · KALI LINUX</p>
+    <h1 class="hero-title">HERRA<span>MIENTAS</span></h1>
+    <p class="hero-sub">Referencias rápidas para pentesting — Diccionario de Kali · Buscador de comandos</p>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num">2</span><span class="stat-label">HERRAMIENTAS</span></div>
+      <div class="stat"><span class="stat-num">553</span><span class="stat-label">UTILIDADES</span></div>
+      <div class="stat"><span class="stat-num">2.298</span><span class="stat-label">OPCIONES</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+  <p class="section-label">// SELECCIONA UNA HERRAMIENTA</p>
+  <div class="tools-grid">
+    <a href="../diccionario/index.html" class="tool-card reveal">
+      <div class="tool-top"><span class="tool-tag">// REFERENCIA</span><span class="tool-icon" aria-hidden="true">[ ? ]</span></div>
+      <h2 class="tool-name">DICCIONARIO DE KALI</h2>
+      <p class="tool-desc">Las herramientas de Kali Linux explicadas en español: 50 herramientas con todas sus opciones y ejemplos verificados contra su documentación real, más un catálogo de 553 utilidades organizadas por categoría.</p>
+      <div class="tool-stack"><span class="stack-tag">Kali Linux</span><span class="stack-tag">2.298 opciones</span><span class="stack-tag">553 herramientas</span><span class="stack-tag">Español</span></div>
+      <span class="tool-link">ABRIR DICCIONARIO →</span>
+    </a>
+    <a href="../comandos/index.html" class="tool-card cyan reveal">
+      <div class="tool-top"><span class="tool-tag">// REFERENCIA RÁPIDA</span><span class="tool-icon" aria-hidden="true">[ &gt;_ ]</span></div>
+      <h2 class="tool-name">BUSCADOR DE COMANDOS</h2>
+      <p class="tool-desc">Todos los comandos usados en los writeups en un solo buscador: nmap, hydra, sqlmap, xfreerdp, GTFOBins… cada uno con enlace directo al paso exacto del writeup donde se usa.</p>
+      <div class="tool-stack"><span class="stack-tag">Writeups</span><span class="stack-tag">HackTheBox</span><span class="stack-tag">DockerLabs</span><span class="stack-tag">Enlace al paso</span></div>
+      <span class="tool-link">ABRIR BUSCADOR →</span>
+    </a>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Herramientas de referencia para pentesting</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  // El cursor personalizado lo gestiona assets/cursor.js (unico para todo el sitio).
+
+  // REVEAL
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => { if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 80); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+<script src="../assets/cursor.js" defer></script>
+</body>
+</html>

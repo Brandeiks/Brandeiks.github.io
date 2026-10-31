@@ -649,8 +649,7 @@ def pagina_galeria(perfil, certs):
     <a href="{s}index.html" class="nav-back">INICIO</a>
     <a href="{s}videos/index.html" class="nav-back">VÍDEOS</a>
     <a href="{s}writeups/index.html" class="nav-back">WRITEUPS</a>
-    <a href="{s}diccionario/index.html" class="nav-back">DICCIONARIO</a>
-    <a href="{s}comandos/index.html" class="nav-back">COMANDOS</a>
+    <a href="{s}herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
     <a href="{s}certificaciones.html" class="nav-back">CERTIFICACIONES</a>
   </nav>
 

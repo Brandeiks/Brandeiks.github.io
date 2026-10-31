@@ -222,8 +222,7 @@ pagina = f'''<!DOCTYPE html>
   <a href="{'../' * a.salida.count('/')}index.html" class="nav-back">INICIO</a>
   <a href="{'../' * a.salida.count('/')}videos/index.html" class="nav-back">VÍDEOS</a>
   <a href="{'../' * a.salida.count('/')}writeups/index.html" class="nav-back">WRITEUPS</a>
-  <a href="{'../' * a.salida.count('/')}diccionario/index.html" class="nav-back">DICCIONARIO</a>
-  <a href="{'../' * a.salida.count('/')}comandos/index.html" class="nav-back">COMANDOS</a>
+  <a href="{'../' * a.salida.count('/')}herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
   <a href="{'../' * a.salida.count('/')}certificaciones.html" class="nav-back">CERTIFICACIONES</a>
 </nav>
 <div class="writeup-hero">
