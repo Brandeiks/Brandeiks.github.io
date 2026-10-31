@@ -35,6 +35,7 @@
       --cyan:      #00e5ff;
       --red:       #ff2d55;
       --yellow:    #ffd700;
+      --violeta:   #b14bff;
       --dim:       #1a2a2e;
       --text:      #c8d8e0;
       --text-dim:  #4a6a74;
@@ -162,9 +163,9 @@
     .tool-card.rojo::before { background: var(--red); }
     .tool-card.rojo:hover { border-color: rgba(255,45,85,0.3); }
     .tool-card.rojo .tool-icon, .tool-card.rojo .tool-link { color: var(--red); }
-    .tool-card.cian::before { background: var(--cyan); }
-    .tool-card.cian:hover { border-color: rgba(0,229,255,0.3); }
-    .tool-card.cian .tool-icon, .tool-card.cian .tool-link { color: var(--cyan); }
+    .tool-card.violeta::before { background: var(--violeta); }
+    .tool-card.violeta:hover { border-color: rgba(177,75,255,0.35); }
+    .tool-card.violeta .tool-icon, .tool-card.violeta .tool-link { color: var(--violeta); }
 
     /* REVEAL */
     .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
@@ -298,7 +299,7 @@
       <div class="tool-stack"><span class="stack-tag">454 documentos</span><span class="stack-tag">NIST SP 800</span><span class="stack-tag">Ley 29733</span><span class="stack-tag">ISO 27001</span></div>
       <span class="tool-link">ABRIR BUSCADOR →</span>
     </a>
-    <a href="../buscador-dorks/index.html" class="tool-card cian reveal">
+    <a href="../buscador-dorks/index.html" class="tool-card violeta reveal">
       <div class="tool-top"><span class="tool-tag">// OSINT · DORKS</span><span class="tool-icon" aria-hidden="true">[ ⌕ ]</span></div>
       <h2 class="tool-name">BUSCADOR DORKS</h2>
       <p class="tool-desc">Recomienda consultas con operadores de búsqueda (Google dorks) para auditar qué expone públicamente un dominio propio o autorizado. Explica cada operador y lleva un registro de hallazgos. No busca por su cuenta.</p>
