@@ -8,13 +8,13 @@
   <title>Herramientas | Brandeiks</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="Herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español y buscador de los comandos usados en los writeups.">
+  <meta name="description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups y laboratorio de privacidad sobre ubicación.">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <link rel="canonical" href="https://brandeiks.github.io/herramientas/index.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Brandeiks">
   <meta property="og:title" content="Herramientas | Brandeiks">
-  <meta property="og:description" content="Herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español y buscador de los comandos usados en los writeups.">
+  <meta property="og:description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups y laboratorio de privacidad sobre ubicación.">
   <meta property="og:url" content="https://brandeiks.github.io/herramientas/index.html">
   <meta property="og:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
   <meta property="og:image:width" content="1200">
@@ -22,10 +22,9 @@
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Herramientas | Brandeiks">
-  <meta name="twitter:description" content="Herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español y buscador de los comandos usados en los writeups.">
+  <meta name="twitter:description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups y laboratorio de privacidad sobre ubicación.">
   <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Herramientas | Brandeiks", "description": "Herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español y buscador de los comandos usados en los writeups.", "url": "https://brandeiks.github.io/herramientas/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Análisis | Brandeiks", "description": "Writeups de máquinas CTF y retos web — DockerLabs, HackTheBox, Google XSS Game por Brandon Zevallos Pastrana.", "url": "https://brandeiks.github.io/writeups/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Herramientas | Brandeiks", "description": "herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups y laboratorio de privacidad sobre ubicación.", "url": "https://brandeiks.github.io/herramientas/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -157,6 +156,9 @@
     }
     .tool-link { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); letter-spacing: 2px; }
     .tool-card.cyan .tool-link { color: var(--cyan); }
+    .tool-card.amarillo::before { background: var(--yellow); }
+    .tool-card.amarillo:hover { border-color: rgba(255,215,0,0.3); }
+    .tool-card.amarillo .tool-icon, .tool-card.amarillo .tool-link { color: var(--yellow); }
 
     /* REVEAL */
     .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
@@ -247,11 +249,11 @@
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
   <div class="hero-content">
-    <p class="hero-label">// REFERENCIA · KALI LINUX</p>
+    <p class="hero-label">// REFERENCIA · LABORATORIOS</p>
     <h1 class="hero-title">HERRA<span>MIENTAS</span></h1>
-    <p class="hero-sub">Referencias rápidas para pentesting — Diccionario de Kali · Buscador de comandos</p>
+    <p class="hero-sub">Referencias y laboratorios para pentesting — Diccionario de Kali · Buscador de comandos · Laboratorio de ubicación</p>
     <div class="hero-stats">
-      <div class="stat"><span class="stat-num">2</span><span class="stat-label">HERRAMIENTAS</span></div>
+      <div class="stat"><span class="stat-num">3</span><span class="stat-label">HERRAMIENTAS</span></div>
       <div class="stat"><span class="stat-num">553</span><span class="stat-label">UTILIDADES</span></div>
       <div class="stat"><span class="stat-num">2.298</span><span class="stat-label">OPCIONES</span></div>
     </div>
@@ -275,6 +277,13 @@
       <p class="tool-desc">Todos los comandos usados en los writeups en un solo buscador: nmap, hydra, sqlmap, xfreerdp, GTFOBins… cada uno con enlace directo al paso exacto del writeup donde se usa.</p>
       <div class="tool-stack"><span class="stack-tag">Writeups</span><span class="stack-tag">HackTheBox</span><span class="stack-tag">DockerLabs</span><span class="stack-tag">Enlace al paso</span></div>
       <span class="tool-link">ABRIR BUSCADOR →</span>
+    </a>
+    <a href="../laboratorio-ubicacion/index.html" class="tool-card amarillo reveal">
+      <div class="tool-top"><span class="tool-tag">// LABORATORIO · PRIVACIDAD</span><span class="tool-icon" aria-hidden="true">[ ◎ ]</span></div>
+      <h2 class="tool-name">LABORATORIO DE UBICACIÓN</h2>
+      <p class="tool-desc">Qué ubicación puede revelar una visita web: compara lo que un sitio estima por tu IP, sin pedir permiso, con lo que obtiene si aceptas compartir la del navegador. Sin servidor y con consentimiento explícito.</p>
+      <div class="tool-stack"><span class="stack-tag">Geolocation API</span><span class="stack-tag">GeoIP</span><span class="stack-tag">Privacidad</span><span class="stack-tag">Sin servidor</span></div>
+      <span class="tool-link">ABRIR LABORATORIO →</span>
     </a>
   </div>
 </main>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://ipapi.co https://ipwho.is; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Laboratorio de ubicación | Brandeiks</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Laboratorio académico de privacidad: compara la ubicación que una web estima por tu IP con la que obtiene si aceptas compartir la del navegador. Sin servidor y con consentimiento explícito.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/laboratorio-ubicacion/index.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Laboratorio de ubicación | Brandeiks">
+  <meta property="og:description" content="Laboratorio académico de privacidad: compara la ubicación que una web estima por tu IP con la que obtiene si aceptas compartir la del navegador. Sin servidor y con consentimiento explícito.">
+  <meta property="og:url" content="https://brandeiks.github.io/laboratorio-ubicacion/index.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Laboratorio de ubicación | Brandeiks">
+  <meta name="twitter:description" content="Laboratorio académico de privacidad: compara la ubicación que una web estima por tu IP con la que obtiene si aceptas compartir la del navegador. Sin servidor y con consentimiento explícito.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Laboratorio de ubicación | Brandeiks", "description": "Laboratorio académico de privacidad: compara la ubicación que una web estima por tu IP con la que obtiene si aceptas compartir la del navegador.", "url": "https://brandeiks.github.io/laboratorio-ubicacion/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #050a0e;
+      --bg2:       #080f14;
+      --bg3:       #0a1520;
+      --green:     #00ff88;
+      --cyan:      #00e5ff;
+      --red:       #ff2d55;
+      --yellow:    #ffd700;
+      --dim:       #1a2a2e;
+      --text:      #c8d8e0;
+      --text-dim:  #4a6a74;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-main: 'Rajdhani', sans-serif;
+      --font-disp: 'Orbitron', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body {
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      cursor: auto;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px
+      );
+      pointer-events: none; z-index: 1000;
+    }
+    a, button { cursor: pointer; }
+        .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+      box-shadow: 0 0 12px var(--green);
+    }
+        .cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.15s;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem 4rem;
+      background: rgba(5,10,14,0.85); backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,255,136,0.08);
+    }
+    .nav-logo { font-family: var(--font-disp); font-size: 1rem; color: var(--green); letter-spacing: 4px; text-decoration: none; }
+.nav-back {
+  font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);
+  text-decoration: none; letter-spacing: 2px; transition: color 0.3s;
+  margin-left: 1.4rem;
+}
+.nav-back:visited, .nav-logo:visited { color: inherit; }
+    .nav-back:hover, .nav-back:hover::before { color: var(--green); }
+    .hero {
+      min-height: 38vh; display: flex; align-items: flex-end;
+      padding: 8rem 4rem 3rem; position: relative; overflow: hidden;
+      border-bottom: 1px solid var(--dim);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove { 0% { transform: translateY(0); } 100% { transform: translateY(60px); } }
+    .hero-glow {
+      position: absolute; width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(0,255,136,0.06) 0%, transparent 70%);
+      top: 0; left: -100px; pointer-events: none;
+    }
+    .hero-content { position: relative; z-index: 2; }
+    .hero-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--green); letter-spacing: 4px; margin-bottom: 1rem; }
+    .hero-title { font-family: var(--font-disp); font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; letter-spacing: 2px; line-height: 1; }
+    .hero-title span { color: var(--green); }
+    .hero-sub { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-dim); margin-top: 1rem; letter-spacing: 1px; }
+    .hero-stats { display: flex; flex-wrap: wrap; gap: 1.1rem 1.9rem; margin-top: 2rem; }
+    .stat { font-family: var(--font-mono); flex: 0 0 auto; min-width: 4.5ch; }
+    .stat-num { font-size: 1.8rem; color: var(--green, #00ff88); display: block; line-height: 1.15; }
+    .stat-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 0.2rem; }
+
+
+
+    [hidden] { display: none !important; }
+    code { font-family: var(--font-mono); font-size: 0.9em; color: var(--green); }
+
+    /* MAIN */
+    .main { padding: 3rem 4rem; max-width: 1000px; }
+    .breadcrumb { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.2rem; }
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; transition: color .2s; }
+    .breadcrumb a:hover { color: var(--green); }
+    .breadcrumb span { color: var(--green); }
+
+    .alerta {
+      border: 1px solid rgba(255,215,0,0.3); background: rgba(255,215,0,0.04);
+      color: var(--yellow); font-family: var(--font-mono); font-size: 0.78rem;
+      padding: 1rem 1.3rem; margin-bottom: 1.5rem; line-height: 1.7;
+    }
+
+    /* PASOS */
+    .panel {
+      background: var(--bg2); border: 1px solid var(--dim);
+      padding: 1.8rem 2rem; margin-bottom: 1.2rem; position: relative;
+    }
+    .panel::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--green); opacity: 0.5; }
+    .step-marker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
+    .step-num {
+      font-family: var(--font-disp); font-size: .65rem; font-weight: 900; color: var(--bg); background: var(--green);
+      width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .step-title { font-family: var(--font-mono); font-size: .8rem; color: var(--green); letter-spacing: 2px; margin: 0; font-weight: normal; }
+    .panel p { font-size: 1.05rem; line-height: 1.8; color: var(--text-dim); margin-bottom: 0.9rem; }
+    .panel p strong, .lista strong { color: var(--text); font-weight: 600; }
+    .lista { margin: 0 0 1.2rem; padding-left: 1.2rem; font-size: 1.05rem; line-height: 1.8; color: var(--text-dim); }
+    .lista li { margin-bottom: 0.3rem; }
+    .lista li::marker { color: var(--green); }
+    .panel .nota { font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.7; color: var(--text-dim); }
+    .panel .nota a { color: var(--cyan); }
+    .permiso { font-family: var(--font-mono); font-size: 0.78rem !important; letter-spacing: 1px; }
+
+    /* CONTROLES */
+    .check { display: flex; gap: 0.7rem; align-items: flex-start; cursor: pointer; margin: 0.6rem 0 0.4rem; font-size: 1.05rem; color: var(--text); }
+    .check input { accent-color: var(--green); width: 17px; height: 17px; margin-top: 0.3rem; flex: none; cursor: pointer; }
+    .btn {
+      font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase;
+      padding: 0.7rem 1.3rem; border: 1px solid var(--green); background: transparent; color: var(--green);
+      transition: all 0.2s; cursor: pointer;
+    }
+    .btn:hover:not(:disabled) { background: rgba(0,255,136,0.06); box-shadow: 0 0 12px rgba(0,255,136,0.15); }
+    .btn:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-principal { background: var(--green); color: var(--bg); font-weight: 700; }
+    .btn-principal:hover:not(:disabled) { background: #5dffb2; }
+    .btn-sec { color: var(--text-dim); border-color: var(--dim); }
+    .btn-sec:hover:not(:disabled) { color: var(--cyan); border-color: var(--cyan); background: rgba(0,229,255,0.05); box-shadow: none; }
+    .btn-peligro { color: var(--red); border-color: rgba(255,45,85,0.5); }
+    .btn-peligro:hover:not(:disabled) { background: rgba(255,45,85,0.06); box-shadow: none; }
+    .acciones { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1.2rem; }
+    .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 0.6rem; }
+    .form label { display: flex; flex-direction: column; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+    select {
+      font-family: var(--font-mono); font-size: 0.78rem; color: var(--text);
+      background: var(--bg); border: 1px solid var(--dim); padding: 0.6rem 0.8rem; text-transform: none; letter-spacing: 0;
+    }
+    select:focus { outline: none; border-color: var(--green); }
+    .estado { font-family: var(--font-mono); font-size: 0.78rem !important; min-height: 1.2em; margin: 1rem 0 0 !important; color: var(--text-dim); }
+    .estado:empty { display: none; }
+    .estado.ok { color: var(--green); }
+    .estado.error { color: var(--red); }
+
+    /* RESULTADOS */
+    .datos {
+      display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.4rem;
+      margin: 1.2rem 0 0; padding: 1rem 1.2rem;
+      background: var(--bg3); border: 1px solid rgba(0,229,255,.15); border-left: 3px solid var(--cyan);
+      font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6;
+    }
+    .datos dt { color: var(--text-dim); letter-spacing: 1px; }
+    .datos dd { margin: 0; color: var(--text); word-break: break-word; }
+    .comparacion p { font-size: 1.05rem; line-height: 1.8; color: var(--text-dim); margin-bottom: 0.6rem; }
+    .comparacion .cifra { font-family: var(--font-disp); font-weight: 900; font-size: clamp(2rem, 6vw, 3rem); color: var(--green); line-height: 1.1; margin-bottom: 0.4rem; }
+    .comparacion .nota { color: var(--cyan); font-family: var(--font-mono); font-size: 0.78rem; }
+    .vacio { font-family: var(--font-mono); font-size: 0.78rem !important; color: var(--text-dim); margin: 0 !important; }
+
+    /* TABLAS */
+    .tabla-wrap { overflow-x: auto; margin-top: 1.2rem; }
+    table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem; }
+    th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--dim); white-space: nowrap; }
+    th { color: var(--cyan); font-weight: normal; letter-spacing: 2px; font-size: 0.65rem; border-bottom-color: rgba(0,229,255,0.2); }
+    td { color: var(--text); }
+    td button { background: none; border: none; color: var(--red); cursor: pointer; font-family: var(--font-mono); font-size: 0.9rem; padding: 0 0.3rem; }
+    #paso-red td { white-space: normal; }
+
+    @media (max-width: 768px) {
+      .hero { padding: 6rem 1.5rem 2.5rem; }
+      .hero-title { font-size: clamp(1.6rem, 8.2vw, 2.5rem); }
+      .hero-stats { gap: .8rem 1.3rem; margin-top: 1.5rem; }
+      .stat-num { font-size: 1.5rem; }
+      .main { padding: 2rem 1.5rem; }
+      .panel { padding: 1.4rem 1.2rem; }
+      .datos { grid-template-columns: 1fr; gap: 0.1rem; }
+      .datos dd { margin-bottom: 0.5rem; }
+      .btn { width: 100%; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+    /* MENU MOVIL */
+    .menu-check { position: absolute; opacity: 0; pointer-events: none; }
+    .menu-btn { display: none; }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+    footer {
+      padding: 2rem 4rem; border-top: 1px solid var(--dim);
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 4rem;
+    }
+    footer p {
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    footer span { color: var(--green); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../index.html" class="nav-back">INICIO</a>
+    <a href="../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="breadcrumb"><a href="../index.html">brandeiks</a> / <a href="../herramientas/index.html">herramientas</a> / <span>ubicación</span></div>
+    <p class="hero-label">// LAB-01 · PRIVACIDAD</p>
+    <h1 class="hero-title">UBICA<span>CIÓN</span></h1>
+    <p class="hero-sub">Qué ubicación puede revelar una visita web: lo que un sitio estima por tu IP frente a lo que obtiene cuando tú aceptas compartir la del navegador.</p>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num">2</span><span class="stat-label">MÉTODOS</span></div>
+      <div class="stat"><span class="stat-num">6</span><span class="stat-label">PASOS</span></div>
+      <div class="stat"><span class="stat-num">0</span><span class="stat-label">COORDENADAS ENVIADAS</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+  <div id="alerta-contexto" class="alerta" hidden>
+    Esta página no está en un contexto seguro (HTTPS o <code>localhost</code>). El navegador bloqueará la geolocalización.
+  </div>
+
+  <!-- 01 · Aviso y consentimiento -->
+  <section class="panel" id="paso-aviso">
+    <div class="step-marker"><span class="step-num">01</span><h2 class="step-title">ANTES DE EMPEZAR</h2></div>
+    <ul class="lista">
+      <li><strong>Qué se pide:</strong> una estimación de ubicación por tu IP y, si lo autorizas, la ubicación de tu navegador (latitud, longitud y margen de precisión).</li>
+      <li><strong>Para qué:</strong> comparar ambos métodos y medir su diferencia. Nada más.</li>
+      <li><strong>Dónde se guarda:</strong> solo en este navegador, y solo si pulsas «Guardar». No hay servidor que reciba tus coordenadas.</li>
+      <li><strong>Cómo se borra:</strong> con el botón «Borrar todo» del paso 05.</li>
+      <li><strong>Puedes rechazar:</strong> en cualquier momento. Rechazar el permiso también es un resultado válido.</li>
+    </ul>
+    <label class="check">
+      <input type="checkbox" id="acepto">
+      <span>He leído el aviso y acepto participar en la demostración.</span>
+    </label>
+  </section>
+
+  <!-- 02 · Estimación por IP -->
+  <section class="panel" id="paso-ip">
+    <div class="step-marker"><span class="step-num">02</span><h2 class="step-title">ESTIMACIÓN POR IP</h2></div>
+    <p>Cualquier servidor que visitas ve tu IP pública. Con bases de datos GeoIP se puede estimar país, región o ciudad, <strong>sin pedirte permiso</strong>.</p>
+    <p class="nota">// Al pulsar, tu navegador consulta un servicio externo (ipapi.co, o ipwho.is si falla). Ese servicio recibe tu IP.</p>
+    <button type="button" id="btn-ip" class="btn" disabled>Estimar mi ubicación por IP</button>
+    <p class="estado" id="estado-ip" role="status"></p>
+    <dl class="datos" id="res-ip" hidden></dl>
+  </section>
+
+  <!-- 03 · Geolocalización del navegador -->
+  <section class="panel" id="paso-geo">
+    <div class="step-marker"><span class="step-num">03</span><h2 class="step-title">UBICACIÓN DEL NAVEGADOR</h2></div>
+    <p>Usa la API <code>navigator.geolocation</code>. El navegador te mostrará su propio aviso: si no aceptas, la página no recibe coordenadas.</p>
+    <p class="permiso">Estado del permiso: <code id="permiso">—</code></p>
+    <button type="button" id="btn-geo" class="btn btn-principal" disabled>Compartir mi ubicación para la demostración</button>
+    <p class="estado" id="estado-geo" role="status"></p>
+    <dl class="datos" id="res-geo" hidden></dl>
+    <p class="nota" id="nota-osm" hidden>
+      <a id="link-osm" href="#" target="_blank" rel="noopener noreferrer">Ver en OpenStreetMap ↗</a>
+      — abrir el enlace envía estas coordenadas a OpenStreetMap.
+    </p>
+  </section>
+
+  <!-- 04 · Comparación -->
+  <section class="panel" id="paso-comparacion">
+    <div class="step-marker"><span class="step-num">04</span><h2 class="step-title">COMPARACIÓN</h2></div>
+    <div id="comparacion" class="comparacion">
+      <p class="vacio">Completa los pasos 02 y 03 para ver la diferencia entre ambos métodos.</p>
+    </div>
+  </section>
+
+  <!-- 05 · Guardar y borrar -->
+  <section class="panel" id="paso-guardar">
+    <div class="step-marker"><span class="step-num">05</span><h2 class="step-title">GUARDAR Y BORRAR</h2></div>
+    <p>Guarda el intento en <strong>este navegador</strong> para comparar dispositivos y redes. No se guarda tu IP, tu proveedor ni tu user agent.</p>
+    <div class="form">
+      <label>Dispositivo
+        <select id="dispositivo">
+          <option>PC de escritorio</option>
+          <option>Laptop</option>
+          <option>Móvil</option>
+          <option>Tablet</option>
+          <option>Otro</option>
+        </select>
+      </label>
+      <label>Red
+        <select id="red">
+          <option>Wi-Fi</option>
+          <option>Datos móviles</option>
+          <option>Cable</option>
+          <option>VPN</option>
+          <option>Otra</option>
+        </select>
+      </label>
+    </div>
+    <label class="check">
+      <input type="checkbox" id="redondear" checked>
+      <span>Redondear coordenadas a 3 decimales (≈ 110 m) antes de guardar.</span>
+    </label>
+    <div class="acciones">
+      <button type="button" id="btn-guardar" class="btn">Guardar este intento</button>
+    </div>
+    <p class="estado" id="estado-guardar" role="status"></p>
+
+    <div class="tabla-wrap">
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th>FECHA</th><th>DISPOSITIVO</th><th>RED</th><th>PERMISO</th>
+            <th>PRECISIÓN</th><th>CIUDAD (IP)</th><th>DISTANCIA</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-cuerpo"></tbody>
+      </table>
+      <p class="vacio" id="tabla-vacia">Aún no hay intentos guardados.</p>
+    </div>
+
+    <div class="acciones">
+      <button type="button" id="btn-csv" class="btn btn-sec">Exportar CSV</button>
+      <button type="button" id="btn-json" class="btn btn-sec">Exportar JSON</button>
+      <button type="button" id="btn-borrar" class="btn btn-peligro">Borrar todo</button>
+    </div>
+  </section>
+
+  <!-- 06 · Transparencia -->
+  <section class="panel" id="paso-red">
+    <div class="step-marker"><span class="step-num">06</span><h2 class="step-title">QUÉ SALE A LA RED</h2></div>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>CUÁNDO</th><th>DESTINO</th><th>QUÉ RECIBE</th></tr></thead>
+        <tbody>
+          <tr><td>Al abrir la página</td><td>Google Fonts</td><td>Tu IP (al descargar las fuentes)</td></tr>
+          <tr><td>Paso 02, solo si pulsas</td><td>ipapi.co / ipwho.is</td><td>Tu IP</td></tr>
+          <tr><td>Paso 03</td><td>Esta página: nadie</td><td>Las coordenadas se quedan en tu navegador</td></tr>
+          <tr><td>Paso 03, el propio navegador</td><td>Su servicio de ubicación (Google en Chrome y Brave)</td><td>Puede recibir las redes Wi-Fi cercanas para calcular tu posición</td></tr>
+          <tr><td>Enlace a OpenStreetMap, solo si lo abres</td><td>openstreetmap.org</td><td>Tus coordenadas e IP</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Uso académico, con participantes que aceptaron el ejercicio</p>
+    <p>No usar para identificar ni rastrear <span>personas</span></p>
+  </footer>
+
+<script src="app.js"></script>
+<script src="../assets/cursor.js" defer></script>
+</body>
+</html>
