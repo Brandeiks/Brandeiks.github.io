@@ -8,13 +8,13 @@
   <title>Herramientas | Brandeiks</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
-  <meta name="description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups y laboratorio de privacidad sobre ubicación.">
+  <meta name="description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups, laboratorio de privacidad sobre ubicación y buscador de normas de ciberseguridad.">
   <meta name="author" content="Brandon Zevallos Pastrana">
   <link rel="canonical" href="https://brandeiks.github.io/herramientas/index.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Brandeiks">
   <meta property="og:title" content="Herramientas | Brandeiks">
-  <meta property="og:description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups y laboratorio de privacidad sobre ubicación.">
+  <meta property="og:description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups, laboratorio de privacidad sobre ubicación y buscador de normas de ciberseguridad.">
   <meta property="og:url" content="https://brandeiks.github.io/herramientas/index.html">
   <meta property="og:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
   <meta property="og:image:width" content="1200">
@@ -22,9 +22,9 @@
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Herramientas | Brandeiks">
-  <meta name="twitter:description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups y laboratorio de privacidad sobre ubicación.">
+  <meta name="twitter:description" content="herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups, laboratorio de privacidad sobre ubicación y buscador de normas de ciberseguridad.">
   <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/diccionario.png">
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Herramientas | Brandeiks", "description": "herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups y laboratorio de privacidad sobre ubicación.", "url": "https://brandeiks.github.io/herramientas/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Herramientas | Brandeiks", "description": "herramientas de referencia de Brandeiks: diccionario de comandos de Kali Linux en español, buscador de los comandos usados en los writeups, laboratorio de privacidad sobre ubicación y buscador de normas de ciberseguridad.", "url": "https://brandeiks.github.io/herramientas/index.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -126,7 +126,7 @@
     /* MAIN */
     .main { padding: 4rem; }
     .section-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); letter-spacing: 3px; margin-bottom: 1.5rem; }
-    .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.2rem; }
+    .tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
 
     /* TARJETA DE HERRAMIENTA */
     .tool-card {
@@ -159,6 +159,9 @@
     .tool-card.amarillo::before { background: var(--yellow); }
     .tool-card.amarillo:hover { border-color: rgba(255,215,0,0.3); }
     .tool-card.amarillo .tool-icon, .tool-card.amarillo .tool-link { color: var(--yellow); }
+    .tool-card.rojo::before { background: var(--red); }
+    .tool-card.rojo:hover { border-color: rgba(255,45,85,0.3); }
+    .tool-card.rojo .tool-icon, .tool-card.rojo .tool-link { color: var(--red); }
 
     /* REVEAL */
     .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
@@ -251,9 +254,9 @@
   <div class="hero-content">
     <p class="hero-label">// REFERENCIA · LABORATORIOS</p>
     <h1 class="hero-title">HERRA<span>MIENTAS</span></h1>
-    <p class="hero-sub">Referencias y laboratorios para pentesting — Diccionario de Kali · Buscador de comandos · Laboratorio de ubicación</p>
+    <p class="hero-sub">Referencias y laboratorios para pentesting — Diccionario de Kali · Buscador de comandos · Laboratorio de ubicación · Abogado Cibernético</p>
     <div class="hero-stats">
-      <div class="stat"><span class="stat-num">3</span><span class="stat-label">HERRAMIENTAS</span></div>
+      <div class="stat"><span class="stat-num">4</span><span class="stat-label">HERRAMIENTAS</span></div>
       <div class="stat"><span class="stat-num">553</span><span class="stat-label">UTILIDADES</span></div>
       <div class="stat"><span class="stat-num">2.298</span><span class="stat-label">OPCIONES</span></div>
     </div>
@@ -284,6 +287,13 @@
       <p class="tool-desc">Qué ubicación puede revelar una visita web: compara lo que un sitio estima por tu IP, sin pedir permiso, con lo que obtiene si aceptas compartir la del navegador. Sin servidor y con consentimiento explícito.</p>
       <div class="tool-stack"><span class="stack-tag">Geolocation API</span><span class="stack-tag">GeoIP</span><span class="stack-tag">Privacidad</span><span class="stack-tag">Sin servidor</span></div>
       <span class="tool-link">ABRIR LABORATORIO →</span>
+    </a>
+    <a href="../abogado-cibernetico/index.html" class="tool-card rojo reveal">
+      <div class="tool-top"><span class="tool-tag">// NORMATIVA · NIST · ISO</span><span class="tool-icon" aria-hidden="true">[ § ]</span></div>
+      <h2 class="tool-name">ABOGADO CIBERNÉTICO</h2>
+      <p class="tool-desc">Buscador de normas de ciberseguridad: leyes peruanas, normativa internacional, la serie NIST SP 800 y las normas ISO/IEC 27000. Búsqueda en español o inglés y cada documento enlazado a su fuente oficial.</p>
+      <div class="tool-stack"><span class="stack-tag">454 documentos</span><span class="stack-tag">NIST SP 800</span><span class="stack-tag">Ley 29733</span><span class="stack-tag">ISO 27001</span></div>
+      <span class="tool-link">ABRIR BUSCADOR →</span>
     </a>
   </div>
 </main>
