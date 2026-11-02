@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Certificaciones | Brandon Zevallos</title>
-  <meta name="description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u y DockerLabs, con enlaces de verificación.">
+  <meta name="description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u, DockerLabs y CTF, con enlaces de verificación.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
@@ -268,13 +268,13 @@
     .cert-info .status-planned  { color: var(--text-dim); }
 
     /* COURSERA CARD */
-    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc, .cert-ieee {
+    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc, .cert-ieee, .cert-ctf {
       flex-direction: column;
       gap: 0.8rem;
       border-color: rgba(0,229,255,0.12);
       background: rgba(0,229,255,0.02);
     }
-    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover, .cert-ieee:hover {
+    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover, .cert-ieee:hover, .cert-ctf:hover {
       border-color: rgba(0,229,255,0.4);
       transform: translateY(-2px);
     }
@@ -445,6 +445,18 @@
       letter-spacing: 1px;
     }
 
+    /* CTF · NODO TRAMA: mismas tarjetas que Coursera (.cert-ctf comparte sus estilos);
+       "Verificar certificado" abre la credencial publica en Certifier (credsverse) */
+    .badge-ctf {
+      background: #7b2ff7;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.6rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
     /* REVEAL ANIMATION */
     .reveal {
       opacity: 0;
@@ -553,7 +565,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Brandeiks">
   <meta property="og:title" content="Certificaciones | Brandon Zevallos">
-  <meta property="og:description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u y DockerLabs, con enlaces de verificación.">
+  <meta property="og:description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u, DockerLabs y CTF, con enlaces de verificación.">
   <meta property="og:url" content="https://brandeiks.github.io/certificaciones.html">
   <meta property="og:image" content="https://brandeiks.github.io/assets/og/certificaciones.png">
   <meta property="og:image:width" content="1200">
@@ -561,9 +573,9 @@
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Certificaciones | Brandon Zevallos">
-  <meta name="twitter:description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u y DockerLabs, con enlaces de verificación.">
+  <meta name="twitter:description" content="Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u, DockerLabs y CTF, con enlaces de verificación.">
   <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/certificaciones.png">
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Certificaciones | Brandon Zevallos", "description": "Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u y DockerLabs, con enlaces de verificación.", "url": "https://brandeiks.github.io/certificaciones.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Certificaciones | Brandon Zevallos", "description": "Certificaciones y formación en ciberseguridad de Brandon Zevallos Pastrana: UPC, IBM, Udemy, IEEE, Cisco, Hack4u, DockerLabs y CTF, con enlaces de verificación.", "url": "https://brandeiks.github.io/certificaciones.html", "inLanguage": "es", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}}</script>
 </head>
 <body>
 
@@ -589,9 +601,9 @@
       <p class="page-subtitle">Formación académica, certificaciones obtenidas y objetivos próximos</p>
       <!-- Los numeros se recalculan al cargar (script del final); estos son el respaldo -->
       <div class="cert-stats">
-        <div class="dl-stat"><span class="dl-num" id="totalCertificados">26</span><span class="dl-lbl">CERTIFICADOS</span></div>
-        <div class="dl-stat"><span class="dl-num" id="totalEmisores">7</span><span class="dl-lbl">EMISORES</span></div>
-        <div class="dl-stat"><span class="dl-num" id="ultimoCertificado">AGO 2026</span><span class="dl-lbl">ÚLTIMO CERTIFICADO</span></div>
+        <div class="dl-stat"><span class="dl-num" id="totalCertificados">28</span><span class="dl-lbl">CERTIFICADOS</span></div>
+        <div class="dl-stat"><span class="dl-num" id="totalEmisores">8</span><span class="dl-lbl">EMISORES</span></div>
+        <div class="dl-stat"><span class="dl-num" id="ultimoCertificado">NOV 2026</span><span class="dl-lbl">ÚLTIMO CERTIFICADO</span></div>
       </div>
     </div>
   </div>
@@ -606,6 +618,7 @@
     <a href="#cisco" data-emisor>CISCO</a>
     <a href="#hack4u" data-emisor>HACK4U</a>
     <a href="#dockerlabs" data-emisor>DOCKERLABS</a>
+    <a href="#ctf" data-emisor>CTF</a>
     <a href="#objetivos">OBJETIVOS</a>
   </div>
 
@@ -957,6 +970,28 @@
       </div>
     </a>
     <!-- DOCKERLABS:FIN -->
+
+    <!-- CTF · COMPETENCIAS -->
+    <div class="cat-header" id="ctf" style="margin-top:3.5rem;">
+      <span class="cat-label">// CTF · COMPETENCIAS</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card cert-ctf reveal">
+        <div class="cert-badge">
+          <span class="badge-ctf">NODO TRAMA</span>
+          <span class="badge-ruta">Top 32 · Puesto 23</span>
+        </div>
+        <div class="cert-info">
+          <h4>TRAMA CTF 2026 «Vector Fantasma»</h4>
+          <p>Capture The Flag · remoto · 253 participantes de 5 países</p>
+          <p class="cert-date">📅 Noviembre 2026</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="https://credsverse.com/credentials/a9763cb1-f47b-4aa1-884c-31f3eb4524e3" target="_blank" rel="noopener noreferrer" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+    </div>
 
     <!-- OBJETIVOS -->
     <div class="cat-header" id="objetivos" style="margin-top:3.5rem;">
