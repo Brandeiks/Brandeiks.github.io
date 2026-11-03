@@ -186,11 +186,12 @@
     /* .cert-info delante: si no, .cert-info p (mas especifica) los deja en gris */
     .cert-info .status-active { color: var(--green); } .cert-info .status-progress { color: #ffbd2e; } .cert-info .status-planned { color: var(--text-dim); }
     /* Destacados: mismas tarjetas que en certificaciones.html; "VER →" salta a su seccion */
-    .cert-coursera, .cert-hack4u, .cert-upc, .cert-cisco { flex-direction: column; gap: 0.8rem; border-color: rgba(0,229,255,0.15); }
-    .cert-coursera:hover, .cert-hack4u:hover, .cert-upc:hover, .cert-cisco:hover { border-color: rgba(0,229,255,0.4); }
+    .cert-coursera, .cert-hack4u, .cert-upc, .cert-cisco, .cert-htb { flex-direction: column; gap: 0.8rem; border-color: rgba(0,229,255,0.15); }
+    .cert-coursera:hover, .cert-hack4u:hover, .cert-upc:hover, .cert-cisco:hover, .cert-htb:hover { border-color: rgba(0,229,255,0.4); }
     .cert-badge { display: flex; gap: 0.5rem; }
     .badge-ibm, .badge-hack4u, .badge-upc, .badge-cisco { color: #fff; font-family: var(--font-mono); font-size: 0.62rem; padding: 0.2rem 0.5rem; font-weight: bold; letter-spacing: 1px; }
     .badge-ibm { background: #1f70c1; } .badge-hack4u { background: #e3262f; } .badge-upc { background: #d6001c; } .badge-cisco { background: #049fd9; }
+    .badge-htb { background: #9fef00; color: #111927; font-family: var(--font-mono); font-size: 0.62rem; padding: 0.2rem 0.5rem; font-weight: bold; letter-spacing: 1px; }
     .badge-coursera { background: rgba(0,229,255,0.12); color: var(--cyan); font-family: var(--font-mono); font-size: 0.62rem; padding: 0.2rem 0.5rem; border: 1px solid rgba(0,229,255,0.3); letter-spacing: 1px; }
     .cert-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 0.2rem; }
     .cert-ver { display: inline-block; margin-top: 0.6rem; font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); text-decoration: none; letter-spacing: 1px; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
@@ -460,6 +461,19 @@
         </div>
       </div>
       <!-- Destacados, del mas reciente al mas antiguo (el resto, en certificaciones.html) -->
+      <div class="cert-card cert-htb reveal">
+        <div class="cert-badge">
+          <span class="badge-htb">HACK THE BOX</span>
+          <span class="badge-coursera">CJCA</span>
+        </div>
+        <div class="cert-info">
+          <h4>HTB Certified Junior Cybersecurity Associate</h4>
+          <p>Certificación de Hack The Box · examen práctico</p>
+          <p class="cert-date">📅 Noviembre 2026</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones.html#htb" class="cert-ver">VER →</a>
+        </div>
+      </div>
       <div class="cert-card cert-hack4u reveal">
         <div class="cert-badge">
           <span class="badge-hack4u">HACK4U</span>

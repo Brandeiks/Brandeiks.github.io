@@ -268,13 +268,13 @@
     .cert-info .status-planned  { color: var(--text-dim); }
 
     /* COURSERA CARD */
-    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc, .cert-ieee, .cert-ctf {
+    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc, .cert-ieee, .cert-ctf, .cert-htb {
       flex-direction: column;
       gap: 0.8rem;
       border-color: rgba(0,229,255,0.12);
       background: rgba(0,229,255,0.02);
     }
-    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover, .cert-ieee:hover, .cert-ctf:hover {
+    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover, .cert-ieee:hover, .cert-ctf:hover, .cert-htb:hover {
       border-color: rgba(0,229,255,0.4);
       transform: translateY(-2px);
     }
@@ -388,6 +388,18 @@
     .badge-hack4u {
       background: #e3262f;
       color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.6rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    /* HACK THE BOX: mismas tarjetas que Coursera (.cert-htb comparte sus estilos);
+       "Ver certificado" lleva a la galeria certificaciones/htb/ (HTB valida con nombre + ID) */
+    .badge-htb {
+      background: #9fef00;
+      color: #111927;
       font-family: var(--font-mono);
       font-size: 0.62rem;
       padding: 0.2rem 0.6rem;
@@ -616,6 +628,7 @@
     <a href="#udemy" data-emisor>UDEMY</a>
     <a href="#ieee" data-emisor>IEEE</a>
     <a href="#cisco" data-emisor>CISCO</a>
+    <a href="#htb" data-emisor>HACK THE BOX</a>
     <a href="#hack4u" data-emisor>HACK4U</a>
     <a href="#dockerlabs" data-emisor>DOCKERLABS</a>
     <a href="#ctf" data-emisor>CTF</a>
@@ -892,6 +905,28 @@
           <p class="cert-date">📅 Enero 2026</p>
           <p class="cert-status status-active">● COMPLETADO</p>
           <a href="https://www.credly.com/badges/44a79d3e-cc2d-40a7-b7ac-e113aa042510/public_url" target="_blank" rel="noopener noreferrer" class="cert-verify">🔗 Verificar certificado</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- HACK THE BOX -->
+    <div class="cat-header" id="htb" style="margin-top:3.5rem;">
+      <span class="cat-label">// HACK THE BOX · CERTIFICACIONES</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card cert-htb reveal">
+        <div class="cert-badge">
+          <span class="badge-htb">HACK THE BOX</span>
+          <span class="badge-ruta">CJCA</span>
+        </div>
+        <div class="cert-info">
+          <h4>HTB Certified Junior Cybersecurity Associate</h4>
+          <p>Hack The Box Academy · examen práctico</p>
+          <p class="cert-date">📅 Noviembre 2026</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones/htb/index.html" class="cert-verify">🔗 Ver certificado</a>
         </div>
       </div>
     </div>
