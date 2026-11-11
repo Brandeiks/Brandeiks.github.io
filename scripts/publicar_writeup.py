@@ -85,7 +85,17 @@ def insertar(html, lineas_tarjeta, diff, plataforma):
                 ultimo = i
         if ultimo is None:
             return html, False
-        destino = ultimo + 1
+        # avanzar hasta el </a> que cierra esa ultima tarjeta (no justo tras su <a>)
+        cierre = ultimo
+        while cierre < len(lineas) and lineas[cierre].strip() != "</a>":
+            cierre += 1
+        if cierre >= len(lineas):
+            return html, False
+        destino = cierre + 1
+        if destino < len(lineas) and lineas[destino].strip() == "":
+            destino += 1  # dejar la linea en blanco que separa las tarjetas
+        else:
+            lineas_tarjeta = [""] + lineas_tarjeta
     nuevas = lineas[:destino] + lineas_tarjeta + [""] + lineas[destino:]
     return "\n".join(nuevas), True
 
