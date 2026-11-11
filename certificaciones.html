@@ -268,13 +268,13 @@
     .cert-info .status-planned  { color: var(--text-dim); }
 
     /* COURSERA CARD */
-    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc, .cert-ieee, .cert-ctf, .cert-htb {
+    .cert-coursera, .cert-hack4u, .cert-udemy, .cert-cisco, .cert-upc, .cert-ieee, .cert-csh, .cert-ctf, .cert-htb {
       flex-direction: column;
       gap: 0.8rem;
       border-color: rgba(0,229,255,0.12);
       background: rgba(0,229,255,0.02);
     }
-    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover, .cert-ieee:hover, .cert-ctf:hover, .cert-htb:hover {
+    .cert-coursera:hover, .cert-hack4u:hover, .cert-udemy:hover, .cert-cisco:hover, .cert-upc:hover, .cert-ieee:hover, .cert-csh:hover, .cert-ctf:hover, .cert-htb:hover {
       border-color: rgba(0,229,255,0.4);
       transform: translateY(-2px);
     }
@@ -457,6 +457,18 @@
       letter-spacing: 1px;
     }
 
+    /* CSH · CYBER SECURITY HUB UTEC: mismas tarjetas que Coursera (.cert-csh comparte sus estilos);
+       "Ver certificado" lleva a la galeria certificaciones/csh/ (lima del propio certificado) */
+    .badge-csh {
+      background: #c7fe3a;
+      color: #0b0f0b;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 0.2rem 0.6rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
     /* CTF · NODO TRAMA: mismas tarjetas que Coursera (.cert-ctf comparte sus estilos);
        "Verificar certificado" abre la credencial publica en Certifier (credsverse) */
     .badge-ctf {
@@ -627,6 +639,7 @@
     <a href="#ibm" data-emisor>IBM</a>
     <a href="#udemy" data-emisor>UDEMY</a>
     <a href="#ieee" data-emisor>IEEE</a>
+    <a href="#csh" data-emisor>CSH · UTEC</a>
     <a href="#cisco" data-emisor>CISCO</a>
     <a href="#htb" data-emisor>HACK THE BOX</a>
     <a href="#hack4u" data-emisor>HACK4U</a>
@@ -883,6 +896,28 @@
           <p class="cert-date">📅 Septiembre 2025</p>
           <p class="cert-status status-active">● COMPLETADO</p>
           <a href="certificaciones/ieee/index.html" class="cert-verify">🔗 Ver certificado</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CSH · CYBER SECURITY HUB UTEC -->
+    <div class="cat-header" id="csh" style="margin-top:3.5rem;">
+      <span class="cat-label">// CSH · CYBER SECURITY HUB UTEC</span>
+      <div class="cat-line"></div>
+    </div>
+
+    <div class="certs-grid">
+      <div class="cert-card cert-csh reveal">
+        <div class="cert-badge">
+          <span class="badge-csh">CSH</span>
+          <span class="badge-ruta">Conference 2026</span>
+        </div>
+        <div class="cert-info">
+          <h4>CSH Conference 2026</h4>
+          <p>Asistente · 1.ª edición · UTEC</p>
+          <p class="cert-date">📅 Octubre 2026</p>
+          <p class="cert-status status-active">● COMPLETADO</p>
+          <a href="certificaciones/csh/index.html" class="cert-verify">🔗 Ver certificado</a>
         </div>
       </div>
     </div>
