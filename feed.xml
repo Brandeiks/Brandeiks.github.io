@@ -8,6 +8,69 @@
     <lastBuildDate>Sun, 12 Oct 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://brandeiks.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>Access — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/access.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/access.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Access de HackTheBox (Windows, Fácil): FTP anónimo entrega una base de Access y un ZIP con un PST; la contraseña de la cuenta security abre Telnet, y las credenciales cacheadas del Administrador permiten runas /savecred para leer la root flag.</description>
+    </item>
+    <item>
+      <title>Buff — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/buff.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/buff.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Buff de HackTheBox (Windows, Fácil): subida sin autenticar en Gym Management System 1.0 → webshell shaun; CloudMe 1.11.2 en localhost y un túnel chisel permiten un buffer overflow (EDB 48389) que da shell como Administrator.</description>
+    </item>
+    <item>
+      <title>Knife — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/knife.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/knife.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Knife de HackTheBox (Linux, Fácil): la web corre PHP 8.1.0-dev backdoorizado; la cabecera User-Agentt: zerodiumsystem() da RCE como james, y sudo knife exec -E ejecuta Ruby como root.</description>
+    </item>
+    <item>
+      <title>MetaTwo — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/metatwo.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/metatwo.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina MetaTwo de HackTheBox (Linux, Fácil): SQLi en BookingPress (CVE-2022-0739) saca el hash de manager; un XXE en WordPress 5.6.2 (CVE-2021-29447) lee wp-config.php, y FTP, SSH y passpie/GPG llevan a root.</description>
+    </item>
+    <item>
+      <title>Paper — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/paper.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/paper.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Paper de HackTheBox (Linux, Fácil): ?static=1 (CVE-2019-17671) muestra un borrador con la URL de Rocket.Chat; el bot recyclops tiene un directory traversal que filtra credenciales, y polkit (CVE-2021-3560) escala a root.</description>
+    </item>
+    <item>
+      <title>Postman — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/postman.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/postman.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Postman de HackTheBox (Linux, Fácil): Redis 4.0.9 sin auth permite escribir authorized_keys para entrar como redis; una clave de Matt se crackea con john, y Webmin 1.910 (CVE-2019-12840) da ejecución de comandos como root.</description>
+    </item>
+    <item>
+      <title>Remote — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/remote.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/remote.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Remote de HackTheBox (Windows, Fácil): NFS exporta /site_backups con Umbraco.sdf; el hash SHA1 del admin cae con rockyou, la RCE XSLT de Umbraco (EDB 46153) da shell IIS, y TeamViewer 7 guarda la contraseña del administrador cifrada con AES en el registro.</description>
+    </item>
+    <item>
+      <title>Timelapse — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/timelapse.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/timelapse.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Timelapse de HackTheBox (Windows / Active Directory, Fácil): una SMB null session entrega winrm_backup.zip; el ZIP y el PFX se crackean con john para autenticar por WinRM SSL como legacyy, y svc_deploy (LAPS_Readers) lee la contraseña del administrador.</description>
+    </item>
+    <item>
+      <title>Valentine — HackTheBox Writeup | Brandeiks</title>
+      <link>https://brandeiks.github.io/writeups/hackthebox/facil/valentine.html</link>
+      <guid>https://brandeiks.github.io/writeups/hackthebox/facil/valentine.html</guid>
+      <pubDate>Thu, 12 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Writeup de la máquina Valentine de HackTheBox (Linux, Fácil): el 443 es vulnerable a Heartbleed (CVE-2014-0160); el volcado de memoria revela la passphrase de hype_key para entrar por SSH como hype, y una sesión tmux de root con el socket accesible entrega root.</description>
+    </item>
+    <item>
       <title>Arctic — HackTheBox Writeup | Brandeiks</title>
       <link>https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html</link>
       <guid>https://brandeiks.github.io/writeups/hackthebox/facil/arctic.html</guid>

