@@ -36,7 +36,10 @@ import io
 import json
 import os
 import re
+import socket
 import sys
+import time
+import urllib.error
 import urllib.request
 
 # La consola de Windows usa cp1252 y no puede escribir los acentos.
@@ -381,10 +384,33 @@ CSS_RESUMEN = """    .diff-muy-facil { color: var(--cyan);   border-color: rgba(
 
 
 # ------------------------------------------------------------------ descarga
+# Esperas (en segundos) antes de cada reintento. DockerLabs a veces tarda en
+# responder (p. ej. el 23/11/2026 dio timeout y el run fallo); con esto un
+# corte suelto no tumba la ejecucion. 3 intentos en total.
+ESPERAS_REINTENTO = (30, 90)
+
+
+def es_error_temporal(e):
+    """Timeouts, cortes de red y errores 5xx/429 merecen otro intento;
+    un 404 o 403 no se arregla reintentando."""
+    if isinstance(e, urllib.error.HTTPError):
+        return e.code >= 500 or e.code == 429
+    return isinstance(e, (urllib.error.URLError, socket.timeout,
+                          TimeoutError, ConnectionError))
+
+
 def bajar(url, timeout=45):
     peticion = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(peticion, timeout=timeout) as r:
-        return r.read()
+    for intento, espera in enumerate(ESPERAS_REINTENTO + (None,), start=1):
+        try:
+            with urllib.request.urlopen(peticion, timeout=timeout) as r:
+                return r.read()
+        except Exception as e:
+            if espera is None or not es_error_temporal(e):
+                raise
+            print("   aviso: intento %d fallido (%s); reintento en %d s"
+                  % (intento, e, espera))
+            time.sleep(espera)
 
 
 def url_dockerlabs(ruta):
