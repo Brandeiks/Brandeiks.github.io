@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Descargar el repositorio
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # historial completo: con el clon superficial que hace checkout por
           # defecto, hacer push despues puede corromper el historial del repo
